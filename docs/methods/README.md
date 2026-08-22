@@ -14,6 +14,7 @@ später genau hierher.
 | [005 Sonne](005-solar.md) | Sonnenstand, Erbs-Zerlegung, geneigte Flächen |
 | [006 Raummodell 5R1C](006-room-model-5r1c.md) | EN ISO 13790, Knotenbild, Energiebilanzprüfung |
 | [007 Visualisierung](007-visualisierung.md) | Form, Farbrollen, Hell/Dunkel, Interaktion |
+| [008 Langwellige Abstrahlung](008-langwellige-abstrahlung.md) | Himmelstemperatur, Φ_r, gemessene Wirkung |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

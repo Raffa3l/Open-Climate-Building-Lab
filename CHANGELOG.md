@@ -25,10 +25,25 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   [006](docs/methods/006-room-model-5r1c.md).
 
 ### Geändert
+- **`building.simulate5R1C` auf 1.1.0**, weil die Himmelsabstrahlung die
+  Ergebnisse für gleiche Eingaben ändert. Alle davon abhängigen
+  Berechnungs-Hashes ändern sich mit. `skyViewFactor: 0` schaltet den Term ab,
+  reproduziert aber nicht den 1.0.0-Hash — das ist beabsichtigt.
+- `SimulationResult.skyLoss` meldet den **wirksamen** Verlust F_r · Φ_r, nicht
+  den ungewichteten. Die erste Fassung war hier zweideutig.
 - **Normzuordnung korrigiert:** Das 5R1C-Modell stammt aus EN ISO 13790:2008,
   nicht aus ISO 52016-1. 52016-1 hat 13790 abgelöst, verwendet aber ein
   anderes, knotenbasiertes Stundenverfahren. Die früheren Verweise waren
   falsch und sind in allen Dokumenten berichtigt.
+
+### Gemessen
+- Wirkung der Himmelsabstrahlung, Südbüro Zürich 2023: beim **Neubau** −9 %
+  Übertemperaturstunden und −0,15 K Spitzentemperatur, beim **ungedämmten
+  Altbau** −26 %. Der Schritt von „gar nicht" zu „pauschal 11 K" wiegt dabei
+  schwerer als der von „pauschal" zu „gemessen" (2–3 %).
+- Δθ_sky an Zürich/Fluntern 2023: Mittel 9,78 K, aber Spannweite 1,4 bis
+  25,3 K — der Pauschalwert der Norm kann eine bedeckte Nacht nicht von einer
+  klaren unterscheiden.
 
 ### Validierung
 - **Geschlossene Energiebilanz im Beharrungszustand** auf besser als 10⁻⁶ W —
@@ -47,9 +62,13 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   legt die Stationsjahre daneben.
 - [ADR 0006](docs/adr/0006-browser-emit.md) und
   [Methode 007](docs/methods/007-visualisierung.md).
+- `sky` — **langwellige Abstrahlung gegen den Himmel** nach EN ISO 13790
+  §11.3.5. Himmelstemperatur aus der gemessenen Einstrahlung `oli000h0`, sonst
+  Pauschalwert 11 K der Norm. Neuer Parameter `skyViewFactor` (0,5 senkrecht).
+- `core/scripts/sky-effect.ts` — beziffert die Wirkung an echten Daten;
+  Grundlage für [Methode 008](docs/methods/008-langwellige-abstrahlung.md).
 
 ### Geplant
-- Langwellige Abstrahlung gegen den Himmel (Φ_r) — `oli000h0` liegt vor
 - Perez statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
   ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
@@ -146,8 +165,10 @@ Alle Verfahren starten bei `1.0.0`:
 `comfort.runningMeanOutdoorTemperature`, `comfort.adaptiveComfortBand`,
 `comfort.exceedanceHours`.
 
-Neu in Unveröffentlicht, ebenfalls bei `1.0.0`: `solar.position`,
-`solar.diffuseFraction`, `solar.tiltedIrradiance`, `building.simulate5R1C`.
+Neu in Unveröffentlicht bei `1.0.0`: `solar.position`,
+`solar.diffuseFraction`, `solar.tiltedIrradiance`, `sky.temperature`.
+
+**`building.simulate5R1C` steht bei `1.1.0`.**
 
 Das Frontend führt keine eigenen Verfahren: Es ruft denselben Rechenkern auf
 und zeigt dessen `MethodRef` an. Ein Versionssprung dort schlägt unmittelbar

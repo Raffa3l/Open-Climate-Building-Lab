@@ -13,6 +13,7 @@
 import type { Computation, DatasetRef, MethodRef } from "./provenance.ts";
 import { intervalMidpointUtcMs, localHour, localWeekday, type TimeAxis } from "./series.ts";
 import { diffuseFraction, solarPosition, tiltedIrradiance, type SurfaceOrientation } from "./solar.ts";
+import { DELTA_SKY_DEFAULT_K, skyRadiationLoss, skyTemperature } from "./sky.ts";
 
 // --- Normkonstanten nach EN ISO 13790 ---------------------------------------
 
@@ -29,7 +30,10 @@ const F_W = 0.9;
 
 export const METHOD_ROOM_5R1C: MethodRef = {
   id: "building.simulate5R1C",
-  version: "1.0.0",
+  // 1.1.0: langwellige Abstrahlung gegen den Himmel ergänzt (§11.3.5).
+  // Ergebnisse ändern sich gegenüber 1.0.0 — publizierte Werte bleiben über
+  // die Version zuordenbar.
+  version: "1.1.0",
   doc: "docs/methods/006-room-model-5r1c.md#stundenschritt",
   sources: ["en-iso-13790-2008"],
 };
@@ -94,6 +98,12 @@ export interface RoomSpec {
   nightVentilation?: NightVentilationControl;
   /** Bodenreflexionsgrad für die Einstrahlung. */
   groundAlbedo?: number;
+  /**
+   * Formfaktor der Aussenbauteile zum Himmel, 0…1. EN ISO 13790 §11.4.6:
+   * 1.0 für ein unverschattetes Flachdach, **0.5 für eine senkrechte Fassade**
+   * — die andere Hälfte des Halbraums ist Boden und Umgebung.
+   */
+  skyViewFactor?: number;
 }
 
 /**
@@ -192,6 +202,11 @@ export interface SimulationInput {
   globalHorizontal: Float64Array;
   /** Gemessene Diffusstrahlung horizontal, W/m². Fehlt sie, greift Erbs. */
   diffuseHorizontal?: Float64Array;
+  /**
+   * Langwellige Einstrahlung horizontal, W/m² — `oli000h0`. Daraus folgt die
+   * Himmelstemperatur stündlich. Fehlt sie, greift der Pauschalwert der Norm.
+   */
+  downwellingLongwave?: Float64Array;
   axis: TimeAxis;
   latitude: number;
   longitude: number;
@@ -202,8 +217,16 @@ export interface SimulationResult {
   operativeTemperature: Float64Array;
   airTemperature: Float64Array;
   massTemperature: Float64Array;
-  /** Solare Wärmeeinträge, W. */
+  /** Solare Wärmeeinträge nach Abzug der Himmelsabstrahlung, W. */
   solarGains: Float64Array;
+  /**
+   * Tatsächlich wirksamer Verlust durch Abstrahlung gegen den Himmel, W —
+   * also F_r · Φ_r, bereits mit dem Formfaktor gewichtet. Immer ≥ 0.
+   * Bei `skyViewFactor: 0` durchgehend null.
+   */
+  skyLoss: Float64Array;
+  /** Woher die Himmelstemperatur stammt. */
+  longwaveSource: "gemessen" | "pauschal";
   /** Stunden, in denen der Sonnenschutz aktiv war. */
   shadedHours: number;
   /** Stunden, in denen die Nachtlüftung lief. */
@@ -231,8 +254,11 @@ export function simulate5R1C(
   const airTemperature = new Float64Array(n).fill(NaN);
   const massTemperature = new Float64Array(n).fill(NaN);
   const solarGains = new Float64Array(n).fill(NaN);
+  const skyLoss = new Float64Array(n).fill(NaN);
 
   const albedo = room.groundAlbedo ?? 0.2;
+  const skyViewFactor = room.skyViewFactor ?? 0.5;
+  const hasLongwave = input.downwellingLongwave !== undefined;
 
   // Startwert des Massenknotens: erster gültiger Aussenwert. Der Einschwing-
   // vorgang klingt in wenigen Tagen ab; die Aufwärmphase wird beim Auswerten
@@ -277,6 +303,24 @@ export function simulate5R1C(
       solarW += shadingFactor * F_W * window.gValue * glazedArea * irradiance;
     }
     if (anyShaded) shadedHours++;
+
+    // --- langwellige Abstrahlung gegen den Himmel, §11.3.5 ---
+    // Der Himmel ist kälter als die Luft; Flächen mit Himmelssicht verlieren
+    // dadurch mehr, als der U-Wert abbildet. Nachts kann der solare Eintrag
+    // dadurch negativ werden — das ist physikalisch richtig, kein Fehler.
+    let deltaSky = DELTA_SKY_DEFAULT_K;
+    if (hasLongwave) {
+      const measured = skyTemperature(input.downwellingLongwave![i]);
+      if (Number.isFinite(measured)) deltaSky = Math.max(0, outdoor - measured);
+    }
+
+    let radiativeLoss = skyRadiationLoss(room.opaqueUValue, room.opaqueArea, deltaSky);
+    for (const window of room.windows) {
+      radiativeLoss += skyRadiationLoss(window.uValue, window.area, deltaSky);
+    }
+    const appliedLoss = skyViewFactor * radiativeLoss;
+    skyLoss[i] = appliedLoss;
+    solarW -= appliedLoss;
     solarGains[i] = solarW;
 
     // --- Belegung ---
@@ -371,6 +415,8 @@ export function simulate5R1C(
       airTemperature,
       massTemperature,
       solarGains,
+      skyLoss,
+      longwaveSource: hasLongwave ? "gemessen" : "pauschal",
       shadedHours,
       nightVentilationHours,
       occupiedHours,
@@ -388,6 +434,8 @@ export function simulate5R1C(
       airChangeRate: room.airChangeRate,
       internalGains: room.internalGains,
       groundAlbedo: albedo,
+      skyViewFactor,
+      longwaveSource: hasLongwave ? "gemessen" : `pauschal ${DELTA_SKY_DEFAULT_K} K`,
       windows: JSON.stringify(room.windows),
       nightVentilation: room.nightVentilation ? JSON.stringify(room.nightVentilation) : "aus",
       occupancy: room.occupancy ? JSON.stringify(room.occupancy) : "durchgehend",

@@ -127,15 +127,17 @@ dann, statt eine negative Leitfähigkeit zu erzeugen.
 
 Bekannte Vereinfachungen, in dieser Reihenfolge relevant:
 
-1. **Keine langwellige Abstrahlung gegen den Himmel.** EN ISO 13790 sieht Φ_r
-   vor; es fehlt hier. Damit wird die nächtliche Auskühlung unterschätzt und
-   die Überhitzung eher überschätzt. Die SMN-Stationen liefern mit `oli000h0`
-   die langwellige Einstrahlung — die Datengrundlage wäre also da.
-2. **Ein Raum, eine Zone.** Kein Wärmeaustausch mit Nachbarräumen.
-3. **Sonnenschutz schaltet hart** an einer Bestrahlungsschwelle, ohne
+1. **Ein Raum, eine Zone.** Kein Wärmeaustausch mit Nachbarräumen.
+2. **Sonnenschutz schaltet hart** an einer Bestrahlungsschwelle, ohne
    Hysterese und ohne Nutzerverhalten.
-4. **Keine Verschattung durch Umgebung**, Horizont oder Auskragungen.
-5. **Isotroper Himmel** bei der Einstrahlung, siehe [005](005-solar.md).
+3. **Keine Verschattung durch Umgebung**, Horizont oder Auskragungen. Das
+   betrifft auch den Formfaktor zum Himmel, siehe
+   [008](008-langwellige-abstrahlung.md#grenzen).
+4. **Isotroper Himmel** bei der kurzwelligen Einstrahlung, siehe
+   [005](005-solar.md).
+
+Seit Version 1.1.0 ist die **langwellige Abstrahlung gegen den Himmel**
+enthalten — siehe [008](008-langwellige-abstrahlung.md).
 
 Das Belegungsprofil war zunächst nicht vorgesehen und wurde nachgezogen: ohne
 es laufen interne Lasten rund um die Uhr, was die Übertemperaturstunden

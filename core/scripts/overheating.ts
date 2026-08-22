@@ -34,12 +34,14 @@ const series = readPacked(
 const outdoor = getVariable(series, "tre200h0");
 const global = getVariable(series, "gre000h0");
 const hasDiffuse = series.variables.has("ods000h0");
+const hasLongwave = series.variables.has("oli000h0");
 const inputs = [series.source];
 
 const simInput = {
   outdoorTemperature: outdoor,
   globalHorizontal: global,
   diffuseHorizontal: hasDiffuse ? getVariable(series, "ods000h0") : undefined,
+  downwellingLongwave: hasLongwave ? getVariable(series, "oli000h0") : undefined,
   axis: series.axis,
   latitude: entry.lat,
   longitude: entry.lon,
@@ -51,14 +53,17 @@ const band = adaptiveComfortBand(runningMean.value, inputs, { category: "II" });
 
 const FACADE = 9.8;
 
+/** Siehe web/app.js: Gleitkommareste gehören nicht in den Berechnungs-Hash. */
+const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
+
 function room(overrides: Partial<RoomSpec> & { windowFraction?: number; shadingFactor?: number } = {}): RoomSpec {
   const fraction = overrides.windowFraction ?? 0.4;
-  const windowArea = FACADE * fraction;
+  const windowArea = round6(FACADE * fraction);
   const shadingFactor = overrides.shadingFactor;
   return {
     floorArea: 20,
     height: 2.8,
-    opaqueArea: FACADE - windowArea,
+    opaqueArea: round6(FACADE - windowArea),
     opaqueUValue: 0.2,
     thermalBridges: 0.5,
     windows: [
@@ -111,7 +116,8 @@ console.log(`\n${station} — ${entry.name}, ${year}`);
 console.log(`Südorientiertes Büro, 20 m², U_opak 0.2, U_Fenster 1.0, g 0.5`);
 console.log(`Belegung Mo–Fr 07–19 Uhr, 20 W/m² belegt / 2 W/m² unbelegt, n 1.5 / 0.3 1/h`);
 console.log(`Bewertung: EN 16798-1 Kat. II, Belegung 07–19 Uhr`);
-console.log(`Diffusstrahlung: ${hasDiffuse ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}\n`);
+console.log(`Diffusstrahlung: ${hasDiffuse ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}`);
+console.log(`Himmelstemperatur: ${hasLongwave ? "aus oli000h0 gemessen" : "pauschal 11 K nach EN ISO 13790"}\n`);
 
 const header =
   "Variante".padEnd(46) + "ÜTS".padStart(6) + "Kh".padStart(8) + "θ_op max".padStart(10) +

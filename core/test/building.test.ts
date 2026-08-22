@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { hourlyAxis } from "../src/series.ts";
+import { H_R, R_SE } from "../src/sky.ts";
 import { computationHash, type DatasetRef } from "../src/provenance.ts";
 import {
   NO_SHADING,
@@ -117,8 +118,10 @@ test("abgeleitete Kenngrössen entsprechen Tabelle 12 der Norm", () => {
   assert.equal(heavy.effectiveCapacity, 260_000 * 20);
 });
 
-test("ohne Gewinne läuft der Raum exakt auf die Aussentemperatur", () => {
-  const room = referenceRoom({ internalGains: 0, windows: [] });
+test("ohne Gewinne und ohne Himmelssicht läuft der Raum exakt auf die Aussentemperatur", () => {
+  // skyViewFactor 0 schaltet die langwellige Abstrahlung ab und isoliert
+  // damit den reinen Transmissions- und Lüftungspfad.
+  const room = referenceRoom({ internalGains: 0, windows: [], skyViewFactor: 0 });
   const r = simulate5R1C(room, input(constant(12), constant(0)), [SOURCE]).value;
 
   const last = HOURS - 1;
@@ -143,7 +146,10 @@ test("im Beharrungszustand ist die Energiebilanz geschlossen", () => {
   const d = r.derived;
   const ventilation = (1200 * room.airChangeRate * d.volume) / 3600;
 
-  const gains = room.internalGains * room.floorArea;
+  // Der Solarterm ist hier rein negativ: keine Sonne, aber Abstrahlung
+  // gegen den Himmel. Er gehört als Gewinn mit negativem Vorzeichen in die
+  // Bilanz, sonst fehlt genau F_r · Φ_r.
+  const gains = room.internalGains * room.floorArea + r.solarGains[i];
   const losses =
     ventilation * (air - outdoorC) +
     d.windowConductance * (surface - outdoorC) +
@@ -260,6 +266,7 @@ test("Nachtlüftung bleibt aus, wenn kein Gefälle nach aussen besteht", () => {
     referenceRoom({
       internalGains: 0,
       windows: [],
+      skyViewFactor: 0,
       nightVentilation: { airChangeRate: 3, fromHour: 22, toHour: 6, minIndoorC: 22, minDeltaK: 2 },
     }),
     input(constant(30), constant(0)),
@@ -373,4 +380,83 @@ test("Belegungsprofil landet in der Provenance", async () => {
   );
   assert.match(String(scheduled.params.occupancy), /"weekdaysOnly":true/);
   assert.notEqual(await computationHash(base), await computationHash(scheduled));
+});
+
+
+// ---------------------------------------------------------------------------
+// Langwellige Abstrahlung gegen den Himmel
+// ---------------------------------------------------------------------------
+
+test("Himmelsabstrahlung kühlt den Raum unter die Aussentemperatur", () => {
+  const withSky = referenceRoom({ internalGains: 0, windows: [] });
+  const without = referenceRoom({ internalGains: 0, windows: [], skyViewFactor: 0 });
+
+  const a = simulate5R1C(withSky, input(constant(12), constant(0)), [SOURCE]).value;
+  const b = simulate5R1C(without, input(constant(12), constant(0)), [SOURCE]).value;
+
+  assert.ok(a.operativeTemperature[HOURS - 1] < b.operativeTemperature[HOURS - 1]);
+  assert.ok(a.operativeTemperature[HOURS - 1] < 12, "unter der Aussentemperatur");
+  // Bei einer gut gedämmten Wand ist der Effekt klein — das ist das Ergebnis,
+  // nicht ein Mangel: R_se · U ist bei U = 0.2 nur 0.8 %.
+  assert.ok(12 - a.operativeTemperature[HOURS - 1] < 0.5, "gedämmt bleibt der Effekt gering");
+});
+
+test("Abstrahlungsverlust entspricht exakt der Normformel", () => {
+  const room = referenceRoom({ internalGains: 0, windows: [] });
+  const r = simulate5R1C(room, input(constant(12), constant(0)), [SOURCE]).value;
+  // Ohne Messreihe gilt der Pauschalwert 11 K der Norm; der gemeldete Wert
+  // ist bereits mit dem Formfaktor 0.5 gewichtet.
+  const expected = 0.5 * R_SE * room.opaqueUValue * room.opaqueArea * H_R * 11;
+  assert.ok(Math.abs(r.skyLoss[100] - expected) < 1e-9, `${r.skyLoss[100]} ≠ ${expected}`);
+  assert.equal(r.longwaveSource, "pauschal");
+});
+
+test("gemessene Himmelstemperatur wird der Pauschale vorgezogen", () => {
+  const room = referenceRoom({ internalGains: 0, windows: [] });
+  // 380 W/m² bei 12 °C Luft: θ_Himmel ≈ 12.6 °C, also praktisch kein Gefälle
+  const bright = new Float64Array(HOURS).fill(380);
+  const r = simulate5R1C(
+    room,
+    { ...input(constant(12), constant(0)), downwellingLongwave: bright },
+    [SOURCE],
+  ).value;
+
+  assert.equal(r.longwaveSource, "gemessen");
+  assert.ok(r.skyLoss[100] < 1e-6, `bedeckter Himmel: kaum Verlust, gemessen ${r.skyLoss[100]}`);
+
+  // 250 W/m² — klarer Nachthimmel, deutliches Gefälle
+  const clear = new Float64Array(HOURS).fill(250);
+  const cold = simulate5R1C(
+    room,
+    { ...input(constant(12), constant(0)), downwellingLongwave: clear },
+    [SOURCE],
+  ).value;
+  assert.ok(cold.skyLoss[100] > r.skyLoss[100], "klarer Himmel kühlt stärker als bedeckter");
+  assert.ok(cold.operativeTemperature[HOURS - 1] < r.operativeTemperature[HOURS - 1]);
+});
+
+test("bei skyViewFactor 0 wird kein Verlust gemeldet", () => {
+  const r = simulate5R1C(
+    referenceRoom({ internalGains: 0, windows: [], skyViewFactor: 0 }),
+    input(constant(12), constant(0)),
+    [SOURCE],
+  ).value;
+  assert.equal(r.skyLoss[100], 0);
+});
+
+test("schlecht gedämmte Bauteile spüren die Abstrahlung deutlich stärker", () => {
+  const modern = referenceRoom({ internalGains: 0, windows: [], opaqueUValue: 0.2 });
+  const old = referenceRoom({ internalGains: 0, windows: [], opaqueUValue: 1.4, massClass: "schwer" });
+
+  const a = simulate5R1C(modern, input(constant(12), constant(0)), [SOURCE]).value;
+  const b = simulate5R1C(old, input(constant(12), constant(0)), [SOURCE]).value;
+  assert.ok(b.skyLoss[100] > 5 * a.skyLoss[100], "Verlust skaliert mit dem U-Wert");
+});
+
+test("Himmelsabstrahlung ändert den Berechnungs-Hash", async () => {
+  const base = simulate5R1C(referenceRoom(), input(constant(20), constant(300)), [SOURCE]);
+  const noSky = simulate5R1C(referenceRoom({ skyViewFactor: 0 }), input(constant(20), constant(300)), [SOURCE]);
+  assert.notEqual(await computationHash(base), await computationHash(noSky));
+  assert.equal(base.params.skyViewFactor, 0.5);
+  assert.equal(base.method.version, "1.1.0", "Versionssprung gegenüber 1.0.0 ist verankert");
 });

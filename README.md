@@ -17,7 +17,7 @@ Frühes Gerüst. Die Kette steht vollständig, aber schmal:
 - ✅ Provenance und Berechnungs-Hashes
 - ✅ Binärformat mit Prüfsummen, Python schreibt, TypeScript liest
 - ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung auf geneigte Flächen
-- ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil
+- ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil und Himmelsabstrahlung
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
 - ⬜ Zukunftsklima (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 

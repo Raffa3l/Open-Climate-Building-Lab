@@ -85,12 +85,23 @@ function readUrl() {
 
 // --- Raumbeschreibung aus dem Zustand ---------------------------------------
 
+/**
+ * Rundet Eingabegeometrie auf sechs Nachkommastellen.
+ *
+ * 9.8 − 9.8·0.4 ergibt in Gleitkomma 5.880000000000001. Der Rest ist
+ * physikalisch bedeutungslos, wandert aber in den Berechnungs-Hash und macht
+ * ihn damit vom Rechenweg abhängig statt vom Sachverhalt.
+ */
+function round6(value) {
+  return Math.round(value * 1e6) / 1e6;
+}
+
 function buildRoom(s) {
-  const windowArea = FACADE_AREA * s.windowFraction;
+  const windowArea = round6(FACADE_AREA * s.windowFraction);
   return {
     floorArea: 20,
     height: 2.8,
-    opaqueArea: FACADE_AREA - windowArea,
+    opaqueArea: round6(FACADE_AREA - windowArea),
     opaqueUValue: 0.2,
     thermalBridges: 0.5,
     windows: [
@@ -104,7 +115,7 @@ function buildRoom(s) {
         // gegenüber der ungeschützten Verglasung.
         shading: s.shading >= 1
           ? { factorClosed: 1, activationIrradiance: Infinity }
-          : { factorClosed: s.shading / 0.5, activationIrradiance: 200 },
+          : { factorClosed: round6(s.shading / 0.5), activationIrradiance: 200 },
       },
     ],
     massClass: s.massClass,
@@ -158,6 +169,7 @@ async function recompute() {
     outdoorTemperature: getVariable(series, "tre200h0"),
     globalHorizontal: getVariable(series, "gre000h0"),
     diffuseHorizontal: series.variables.has("ods000h0") ? getVariable(series, "ods000h0") : undefined,
+    downwellingLongwave: series.variables.has("oli000h0") ? getVariable(series, "oli000h0") : undefined,
     axis: series.axis,
     latitude: entry.lat,
     longitude: entry.lon,
@@ -282,6 +294,8 @@ async function renderProof(elapsed) {
       <dt>H_tr,em Masse ↔ aussen</dt><dd>${d.externalMassConductance.toFixed(2)} W/K</dd>
       <dt>Einschwingphase</dt><dd>${skip} h verworfen</dd>
       <dt>Belegte Stunden</dt><dd>${simulation.value.occupiedHours}</dd>
+      <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource}</dd>
+      <dt>Ø Abstrahlungsverlust</dt><dd>${meanFinite(simulation.value.skyLoss).toFixed(1)} W</dd>
     </dl>
 
     <h3>Parameter Raummodell</h3>
@@ -303,6 +317,13 @@ async function renderProof(elapsed) {
     <p style="color: var(--ink-muted); margin-top: 16px">
       Gerechnet im Browser in ${elapsed.toFixed(0)} ms — derselbe Rechenkern wie im CLI und in den Tests.
     </p>`;
+}
+
+function meanFinite(values) {
+  let sum = 0;
+  let n = 0;
+  for (const v of values) if (Number.isFinite(v)) { sum += v; n++; }
+  return n ? sum / n : 0;
 }
 
 function escapeHtml(s) {
