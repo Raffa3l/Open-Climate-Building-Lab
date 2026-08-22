@@ -458,5 +458,38 @@ test("Himmelsabstrahlung ändert den Berechnungs-Hash", async () => {
   const noSky = simulate5R1C(referenceRoom({ skyViewFactor: 0 }), input(constant(20), constant(300)), [SOURCE]);
   assert.notEqual(await computationHash(base), await computationHash(noSky));
   assert.equal(base.params.skyViewFactor, 0.5);
-  assert.equal(base.method.version, "1.1.0", "Versionssprung gegenüber 1.0.0 ist verankert");
+  // Die Version ist bewusst festgenagelt: Wer die Physik ändert, muss diesen
+  // Test anfassen und dabei über den Versionssprung nachdenken.
+  assert.equal(base.method.version, "1.2.0");
+});
+
+
+test("Perez ist das Standard-Himmelsmodell und lässt sich umschalten", async () => {
+  const outdoor = syntheticTemperature(10, 9, 6);
+  const global = syntheticGlobal(700);
+
+  const standard = simulate5R1C(referenceRoom(), input(outdoor, global), [SOURCE]);
+  assert.equal(standard.params.skyModel, "perez");
+
+  const isotropic = simulate5R1C(referenceRoom({ skyModel: "isotrop" }), input(outdoor, global), [SOURCE]);
+  assert.equal(isotropic.params.skyModel, "isotrop");
+  assert.notEqual(await computationHash(standard), await computationHash(isotropic));
+});
+
+test("Perez liefert auf der Südfassade mehr solaren Eintrag als isotrop", () => {
+  const outdoor = syntheticTemperature(10, 9, 6);
+  const global = syntheticGlobal(700);
+
+  const meanGain = (skyModel: "perez" | "isotrop") => {
+    const r = simulate5R1C(referenceRoom({ skyModel }), input(outdoor, global), [SOURCE]).value;
+    // Nur die Sommerhälfte, damit die Abstrahlung das Bild nicht dominiert
+    const slice = [...r.solarGains.slice(24 * 120, 24 * 260)].filter(Number.isFinite);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  };
+
+  const perez = meanGain("perez");
+  const isotropic = meanGain("isotrop");
+  assert.ok(perez > isotropic, `Perez ${perez.toFixed(1)} W ≤ isotrop ${isotropic.toFixed(1)} W`);
+  // Der Unterschied gehört in eine plausible Grössenordnung, nicht ins Absurde
+  assert.ok(perez / isotropic < 2, `Verhältnis ${(perez / isotropic).toFixed(2)} unplausibel`);
 });

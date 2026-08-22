@@ -70,31 +70,123 @@ fällt der Diffusanteil streng.
 
 ## Einstrahlung auf geneigte Flächen
 
-Isotropes Himmelsmodell nach Liu & Jordan (1963):
+Zwei Modelle stehen zur Wahl, als **getrennte Verfahren mit eigener
+`MethodRef`** — nicht als zwei Versionen desselben. So bleiben Werte beider
+Modelle nebeneinander zuordenbar.
 
-$$I_\beta = I_b \cdot R_b + I_d \cdot \frac{1 + \cos\beta}{2} + G \cdot \rho \cdot \frac{1 - \cos\beta}{2}$$
+### Direktanteil, beiden gemeinsam
+
+$$I_{bn} = \min\left(\frac{I_{b,hor}}{\sin h_s},\ I_{bn,max}\right), \qquad I_\beta^{beam} = I_{bn}\max(0, \cos\theta)$$
 
 mit dem Einfallswinkel
 
 $$\cos\theta = \cos h_s \sin\beta \cos(\gamma_s - \gamma_f) + \sin h_s \cos\beta$$
 
-und $R_b = \cos\theta / \sin h_s$, auf null begrenzt, wenn die Sonne hinter der
-Fläche steht. Bodenreflexionsgrad $\rho$ standardmässig 0,2.
+**Die Obergrenze $I_{bn,max} = 1{,}035 \cdot 1367\ \text{W/m²}$ ist nicht
+kosmetisch.** Die Zerlegung teilt durch $\sin h_s$; bei flachem Sonnenstand
+geht der Nenner gegen null, während ein womöglich fehlerhaft gemessener Zähler
+stehen bleibt. Ohne Grenze entstehen Einstrahlungen von mehreren tausend W/m².
+Die Grenze ist die extraterrestrische Bestrahlungsstärke im Perihel — mehr kann
+am Boden unter keinen Umständen ankommen.
 
-### Bewusste Grenze
+An den SwissMetNet-Daten von Zürich/Fluntern greift sie in **5 von 26 078
+Sonnenstunden** (0,019 %); der höchste unbegrenzte Wert lag bei 1561 W/m².
+Selten, aber real.
 
-Das isotrope Modell ist das einfachste defensible Verfahren. Es **unterschätzt
-die Einstrahlung auf sonnenzugewandte Fassaden bei klarem Himmel**, weil es
-weder die Aufhellung um die Sonne noch den Horizontbereich abbildet. Für
-Überhitzungsfragen liegt es damit auf der optimistischen Seite.
+Zusätzlich wird der Direktanteil unterhalb $\sin h_s = 0{,}01$ (etwa 0,6°
+Sonnenhöhe) ganz auf null gesetzt.
 
-Perez wäre genauer und ist nachrüstbar — dann als **eigenes Verfahren mit
-eigener `MethodRef`**, nicht als neue Version dieses. So bleiben publizierte
-Werte beider Verfahren nebeneinander zuordenbar.
+### Isotropes Himmelsmodell
 
-### Numerische Absicherung
+Nach Liu & Jordan (1963) — der Himmel strahlt aus allen Richtungen gleich:
 
-Unter etwa 0,6° Sonnenhöhe wird $R_b$ beliebig gross, weil $\sin h_s$ gegen
-null geht. Der Direktanteil wird deshalb unterhalb $\sin h_s = 0{,}01$ zu null
-gesetzt. Ohne diese Schranke entstehen in Dämmerungsstunden Einstrahlungswerte
-von mehreren tausend W/m².
+$$I_\beta = I_\beta^{beam} + I_d \frac{1 + \cos\beta}{2} + G \rho \frac{1 - \cos\beta}{2}$$
+
+Einfach und robust, aber es kennt weder die Aufhellung um die Sonne noch den
+helleren Horizontstreifen. Auf sonnenzugewandten Fassaden unterschätzt es
+deshalb bei klarem Himmel.
+
+### Anisotropes Himmelsmodell nach Perez
+
+Perez et al. (1990) zerlegen die Diffusstrahlung in drei Anteile:
+
+$$I_{d,\beta} = I_d\left[(1 - F_1)\frac{1 + \cos\beta}{2} + F_1\frac{a}{b} + F_2 \sin\beta\right]$$
+
+| Term | Bedeutung |
+|---|---|
+| $(1-F_1)\frac{1+\cos\beta}{2}$ | isotroper Rest |
+| $F_1 \frac{a}{b}$ | **zirkumsolare Aufhellung** — der helle Bereich um die Sonne |
+| $F_2 \sin\beta$ | **Horizontaufhellung** |
+
+mit $a = \max(0, \cos\theta)$ und $b = \max(\cos 85°, \sin h_s)$; die
+Begrenzung von $b$ hält den zirkumsolaren Term bei streifendem Einfall endlich.
+
+Die Koeffizienten $F_1, F_2$ folgen aus Himmelsklarheit ε und -helligkeit Δ:
+
+$$\varepsilon = \frac{(I_d + I_{bn})/I_d + \kappa Z^3}{1 + \kappa Z^3}, \qquad \kappa = 1{,}041,\ Z\ \text{in rad}$$
+
+$$\Delta = \frac{I_d \cdot m}{I_0}$$
+
+Die Luftmasse $m$ folgt Kasten & Young (1989) statt der Näherung $1/\cos Z$,
+die bei tiefem Sonnenstand entgleist. ε reicht von 1 bei völlig bedecktem
+Himmel bis über 6 bei sehr klarem; daraus wählt eine Achtertabelle
+(Perez 1990, Tabelle 6) die sechs Koeffizienten.
+
+**Bei bedecktem Himmel geht Perez in das isotrope Modell über** — ε → 1 macht
+$F_1$ und $F_2$ klein. Im Test verankert.
+
+### Validierung an Jahressummen
+
+Jahressumme der Einstrahlung, kWh/m², Zürich/Fluntern:
+
+| Fläche | 2019 | 2021 | 2023 | Modell |
+|---|---|---|---|---|
+| horizontal | 1253 | 1198 | 1252 | isotrop |
+| horizontal | 1253 | 1197 | 1252 | **Perez** |
+| Süd 90° | 959 | 908 | 937 | isotrop |
+| Süd 90° | 1033 | 979 | 1008 | **Perez** |
+| Süd 30° geneigt | 1412 | 1340 | 1399 | isotrop |
+| Süd 30° geneigt | 1476 | 1403 | 1462 | **Perez** |
+| Ost 90° | 723 | 687 | 708 | isotrop |
+| Ost 90° | 749 | 709 | 731 | **Perez** |
+| Nord 90° | 415 | 411 | 419 | isotrop |
+| Nord 90° | 369 | 360 | 371 | **Perez** |
+
+Drei Prüfungen daraus:
+
+1. **Horizontal ist in beiden Modellen identisch.** Das muss so sein — auf der
+   Horizontalen reduzieren sich beide auf die Globalstrahlung. Die Zeile ist
+   der schärfste Selbsttest der Implementierung.
+2. **Die Richtung stimmt.** Perez hebt sonnenzugewandte Flächen (Süd +8 %,
+   Ost und West +4 %, 30° geneigt +5 %) und senkt Nord um 12 %. Genau das ist
+   das bekannte Verhalten anisotroper gegenüber isotropen Modellen: Das
+   isotrope Modell verteilt zu viel Diffusstrahlung auf abgewandte Flächen.
+3. **Die Grössenordnung passt.** Für Zürich liegen publizierte Werte bei rund
+   1150–1250 kWh/m² horizontal, 900–1000 auf der Südfassade und 1350–1450 bei
+   30° Südneigung. Die Werte liegen am oberen Rand — Fluntern liegt erhöht,
+   und 2019 und 2023 waren überdurchschnittlich sonnige Jahre.
+
+### Wirkung auf die Überhitzung
+
+Südbüro Zürich 2023, Sonnenschutz und Nachtlüftung aktiv:
+
+| Fall | ÜTS | θ_op max |
+|---|---|---|
+| Neubau, isotrop | 480 | 36,15 |
+| Neubau, **Perez** | 501 | 36,32 |
+| Altbau, isotrop | 140 | 34,36 |
+| Altbau, **Perez** | 148 | 34,32 |
+
+Rund **4 bis 6 % mehr Übertemperaturstunden** — das isotrope Modell lag auf der
+optimistischen Seite, wie erwartet. Der Effekt ist moderat, weil der
+Sonnenschutz ohnehin 70 % der Einstrahlung wegnimmt und die hohe Sommersonne
+ungünstig auf senkrechte Südflächen trifft.
+
+Perez ist seit `building.simulate5R1C@1.2.0` der Standard. `skyModel: "isotrop"`
+schaltet zurück.
+
+### Was weiterhin fehlt
+
+Verschattung durch Umgebung, Horizont und Auskragungen. Beide Modelle
+unterstellen freie Sicht auf den ganzen Himmel — in einer Strassenschlucht ist
+das deutlich falsch.

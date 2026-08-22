@@ -44,6 +44,7 @@ function readState() {
     year: $("year").value,
     azimuth: Number($("azimuth").value),
     massClass: $("massClass").value,
+    skyModel: $("skyModel").value,
     windowFraction: Number($("windowFraction").value) / 100,
     shading: Number($("shading").value),
     gains: Number($("gains").value),
@@ -68,6 +69,7 @@ function writeUrl(s) {
     year: s.year,
     azimuth: String(s.azimuth),
     massClass: s.massClass,
+    skyModel: s.skyModel,
     windowFraction: String(Math.round(s.windowFraction * 100)),
     shading: String(s.shading),
     gains: String(s.gains),
@@ -119,6 +121,7 @@ function buildRoom(s) {
       },
     ],
     massClass: s.massClass,
+    skyModel: s.skyModel,
     airChangeRate: 0.3,
     internalGains: s.gains,
     occupancy: OCCUPANCY,
@@ -455,7 +458,7 @@ async function main() {
 
     loaded = await loadYear($("station").value, $("year").value);
 
-    for (const id of ["azimuth", "massClass", "windowFraction", "shading", "gains", "nightVent", "nightVentOn"]) {
+    for (const id of ["azimuth", "massClass", "skyModel", "windowFraction", "shading", "gains", "nightVent", "nightVentOn"]) {
       $(id).addEventListener("input", () => {
         syncLabels();
         schedule();

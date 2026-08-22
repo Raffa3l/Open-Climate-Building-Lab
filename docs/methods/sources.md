@@ -109,6 +109,18 @@ Solar Energy 28 (4), 293–302.
 → Zerlegung der Globalstrahlung in Direkt- und Diffusanteil über den
 Klarheitsindex. Rückfallebene, wo `ods000h0` nicht gemessen wird.
 
+### `perez1990`
+Perez, R.; Ineichen, P.; Seals, R.; Michalsky, J.; Stewart, R. (1990):
+*Modeling daylight availability and irradiance components from direct and
+global irradiance.* Solar Energy 44 (5), 271–289.
+→ Anisotropes Himmelsmodell, Koeffiziententabelle über die Himmelsklarheit ε.
+
+### `kasten-young-1989`
+Kasten, F.; Young, A. T. (1989): *Revised optical air mass tables and
+approximation formula.* Applied Optics 28 (22), 4735–4738.
+→ Relative optische Luftmasse; bleibt bei tiefem Sonnenstand endlich, anders
+als die Näherung 1/cos Z.
+
 ### `liu-jordan-1963`
 Liu, B. Y. H.; Jordan, R. C. (1963): *The long-term average performance of
 flat-plate solar energy collectors.* Solar Energy 7 (2), 53–74.

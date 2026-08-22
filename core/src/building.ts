@@ -12,7 +12,7 @@
 
 import type { Computation, DatasetRef, MethodRef } from "./provenance.ts";
 import { intervalMidpointUtcMs, localHour, localWeekday, type TimeAxis } from "./series.ts";
-import { diffuseFraction, solarPosition, tiltedIrradiance, type SurfaceOrientation } from "./solar.ts";
+import { diffuseFraction, irradianceOnSurface, solarPosition, type SkyModel, type SurfaceOrientation } from "./solar.ts";
 import { DELTA_SKY_DEFAULT_K, skyRadiationLoss, skyTemperature } from "./sky.ts";
 
 // --- Normkonstanten nach EN ISO 13790 ---------------------------------------
@@ -31,9 +31,10 @@ const F_W = 0.9;
 export const METHOD_ROOM_5R1C: MethodRef = {
   id: "building.simulate5R1C",
   // 1.1.0: langwellige Abstrahlung gegen den Himmel ergänzt (§11.3.5).
-  // Ergebnisse ändern sich gegenüber 1.0.0 — publizierte Werte bleiben über
-  // die Version zuordenbar.
-  version: "1.1.0",
+  // 1.2.0: Standard-Himmelsmodell von isotrop auf Perez (1990) umgestellt.
+  // Ergebnisse ändern sich jeweils; publizierte Werte bleiben über die
+  // Version zuordenbar.
+  version: "1.2.0",
   doc: "docs/methods/006-room-model-5r1c.md#stundenschritt",
   sources: ["en-iso-13790-2008"],
 };
@@ -98,6 +99,12 @@ export interface RoomSpec {
   nightVentilation?: NightVentilationControl;
   /** Bodenreflexionsgrad für die Einstrahlung. */
   groundAlbedo?: number;
+  /**
+   * Himmelsmodell für die kurzwellige Einstrahlung. Standard `"perez"` —
+   * anisotrop und deutlich näher an der Messung. `"isotrop"` reproduziert das
+   * einfachere Modell nach Liu & Jordan, siehe docs/methods/005-solar.md.
+   */
+  skyModel?: SkyModel;
   /**
    * Formfaktor der Aussenbauteile zum Himmel, 0…1. EN ISO 13790 §11.4.6:
    * 1.0 für ein unverschattetes Flachdach, **0.5 für eine senkrechte Fassade**
@@ -258,6 +265,7 @@ export function simulate5R1C(
 
   const albedo = room.groundAlbedo ?? 0.2;
   const skyViewFactor = room.skyViewFactor ?? 0.5;
+  const skyModel: SkyModel = room.skyModel ?? "perez";
   const hasLongwave = input.downwellingLongwave !== undefined;
 
   // Startwert des Massenknotens: erster gültiger Aussenwert. Der Einschwing-
@@ -295,7 +303,9 @@ export function simulate5R1C(
     let solarW = 0;
     let anyShaded = false;
     for (const window of room.windows) {
-      const irradiance = tiltedIrradiance(globalOk, diffuse, sun, window.orientation, albedo).total;
+      const irradiance = irradianceOnSurface(
+        skyModel, globalOk, diffuse, sun, window.orientation, dayOfYear, albedo,
+      ).total;
       const shadingActive = irradiance >= window.shading.activationIrradiance;
       if (shadingActive) anyShaded = true;
       const shadingFactor = shadingActive ? window.shading.factorClosed : 1;
@@ -434,6 +444,7 @@ export function simulate5R1C(
       airChangeRate: room.airChangeRate,
       internalGains: room.internalGains,
       groundAlbedo: albedo,
+      skyModel,
       skyViewFactor,
       longwaveSource: hasLongwave ? "gemessen" : `pauschal ${DELTA_SKY_DEFAULT_K} K`,
       windows: JSON.stringify(room.windows),

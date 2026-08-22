@@ -25,6 +25,13 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   [006](docs/methods/006-room-model-5r1c.md).
 
 ### Geändert
+- **`building.simulate5R1C` auf 1.2.0**, weil Perez das neue Standard-Modell
+  ist. Zuvor 1.1.0 wegen der Himmelsabstrahlung.
+- **`solar.tiltedIrradiance` auf 1.0.1:** Die Direktnormalstrahlung ist auf
+  1,035 · 1367 W/m² begrenzt — die extraterrestrische Bestrahlungsstärke im
+  Perihel. Ohne Grenze erzeugte die Zerlegung I_bn = I_b/sin(h) bei flachem
+  Sonnenstand Werte von mehreren tausend W/m². Betrifft 5 von 26 078
+  Sonnenstunden an Zürich/Fluntern (0,019 %).
 - **`building.simulate5R1C` auf 1.1.0**, weil die Himmelsabstrahlung die
   Ergebnisse für gleiche Eingaben ändert. Alle davon abhängigen
   Berechnungs-Hashes ändern sich mit. `skyViewFactor: 0` schaltet den Term ab,
@@ -37,6 +44,14 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Gemessen
+- **Jahressummen der Einstrahlung** als unabhängiger Anker, Zürich/Fluntern:
+  horizontal 1198–1253 kWh/m², Südfassade 979–1033 (Perez), 30° Südneigung
+  1403–1476. Die Grössenordnungen decken sich mit publizierten Werten für
+  Zürich. Horizontal liefern beide Modelle identische Summen — das muss so
+  sein und ist der schärfste Selbsttest.
+- **Perez gegen isotrop:** Süd +8 %, Ost/West +4 %, Nord −12 %. Auf die
+  Überhitzung wirkt das mit +4 bis +6 % Übertemperaturstunden — das isotrope
+  Modell lag auf der optimistischen Seite.
 - Wirkung der Himmelsabstrahlung, Südbüro Zürich 2023: beim **Neubau** −9 %
   Übertemperaturstunden und −0,15 K Spitzentemperatur, beim **ungedämmten
   Altbau** −26 %. Der Schritt von „gar nicht" zu „pauschal 11 K" wiegt dabei
@@ -65,11 +80,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 - `sky` — **langwellige Abstrahlung gegen den Himmel** nach EN ISO 13790
   §11.3.5. Himmelstemperatur aus der gemessenen Einstrahlung `oli000h0`, sonst
   Pauschalwert 11 K der Norm. Neuer Parameter `skyViewFactor` (0,5 senkrecht).
-- `core/scripts/sky-effect.ts` — beziffert die Wirkung an echten Daten;
-  Grundlage für [Methode 008](docs/methods/008-langwellige-abstrahlung.md).
+- `core/scripts/model-effects.ts` — beziffert die Wirkung der
+  Modellverfeinerungen an echten Daten; Grundlage für die Zahlen in
+  [Methode 005](docs/methods/005-solar.md) und
+  [008](docs/methods/008-langwellige-abstrahlung.md).
+- **Anisotropes Himmelsmodell nach Perez (1990)** als eigenes Verfahren
+  `solar.tiltedIrradiancePerez` — zirkumsolare Aufhellung und
+  Horizontaufhellung, Koeffizienten über die Himmelsklarheit ε, Luftmasse nach
+  Kasten & Young. Seit `building.simulate5R1C@1.2.0` der Standard;
+  `skyModel: "isotrop"` schaltet zurück. Im Frontend wählbar.
 
 ### Geplant
-- Perez statt isotropem Himmel, als eigenes Verfahren
+- Verschattung statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
   ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
@@ -168,7 +190,10 @@ Alle Verfahren starten bei `1.0.0`:
 Neu in Unveröffentlicht bei `1.0.0`: `solar.position`,
 `solar.diffuseFraction`, `solar.tiltedIrradiance`, `sky.temperature`.
 
-**`building.simulate5R1C` steht bei `1.1.0`.**
+Neu bei `1.0.0`: `solar.tiltedIrradiancePerez`.
+
+**`building.simulate5R1C` steht bei `1.2.0`, `solar.tiltedIrradiance` bei
+`1.0.1`.**
 
 Das Frontend führt keine eigenen Verfahren: Es ruft denselben Rechenkern auf
 und zeigt dessen `MethodRef` an. Ein Versionssprung dort schlägt unmittelbar
