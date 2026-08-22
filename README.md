@@ -2,7 +2,7 @@
 
 Eine frei zugängliche Plattform für Gebäude, Klima und Energie in der Schweiz.
 
-Nicht Artikel über Daten, sondern rechnende Modelle: Parameter verändern,
+Keine Studie über Daten, sondern rechnende Modelle: Parameter verändern,
 Wirkung sofort sehen — und zu jeder Zahl nachvollziehen können, aus welchen
 Daten, Annahmen und Gleichungen sie entstanden ist.
 
@@ -10,7 +10,7 @@ Daten, Annahmen und Gleichungen sie entstanden ist.
 
 ## Status
 
-Frühes Gerüst. Die Kette steht vollständig, aber schmal:
+Die Kette steht vollständig: **157 Stationen, 784 Stationsjahre, 138 MB**.
 
 - ✅ ETL von MeteoSchweiz-OGD (SwissMetNet, stündlich, seit 1980)
 - ✅ Rechenkern mit Psychrometrie, Hitzekennwerten, adaptivem Komfort
@@ -19,6 +19,8 @@ Frühes Gerüst. Die Kette steht vollständig, aber schmal:
 - ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung geneigter Flächen (isotrop und Perez)
 - ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil und Himmelsabstrahlung
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
+- ✅ Alle SwissMetNet-Stationen, 2020–2024
+- ⬜ Längere Historie (das ETL kann es, es ist nur eine Frage des Downloads)
 - ⬜ Zukunftsklima (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
 ## Schnellstart
@@ -34,6 +36,10 @@ cd data && python3 -m ocbl_data stations --canton ZH
 # Ein paar Stationsjahre bauen (lädt von data.geo.admin.ch, mit Cache)
 python3 -m ocbl_data build --station SMA --from 2019 --to 2024 --qa
 
+# Oder alles: 157 Stationen, rund 5 Minuten, ~1 GB Download
+python3 -m ocbl_data build --from 2020 --to 2024 --jobs 12 --quiet \
+  --cache-dir ~/.cache/ocbl
+
 # Prüfsummen nachrechnen
 python3 -m ocbl_data verify
 
@@ -42,6 +48,9 @@ cd .. && node core/scripts/report.ts SMA
 
 # Übertemperaturstunden für Parametervarianten eines Raums
 node core/scripts/overheating.ts SMA 2023
+
+# Derselbe Raum an allen Stationen, nach Überhitzung rangiert
+node core/scripts/stations.ts 2023
 
 # Frontend bauen und ansehen
 ./scripts/build-web.sh
@@ -62,7 +71,20 @@ Jahr     Ø °C  Sommertage  Hitzetage  Tropennächte  KGh 22 °C  NachtLüft Kh
 2023     11.4          64         13             8       3052         41839  ceecad96a7ad
 ```
 
-Und die Parametervarianten, die das Frontend später hinter Reglern zeigt —
+Und derselbe Referenzraum an allen Stationen — nur das Klima unterscheidet sich:
+
+```
+  # Station                          Höhe   Ø °C    ÜTS  θ_op max
+  1 Lugano (TI)                      273m   14.3    778      37.4
+  2 Locarno / Monti (TI)             367m   14.3    767      38.3
+  3 Vevey / Corseaux (VD)            405m   13.4    765      38.4
+  6 Genève / Cointrin (GE)           411m   12.7    653      38.6
+ 11 Basel / Binningen (BL)           316m   12.7    603      36.7
+    …
+129 Jungfraujoch (VS)               3571m   -5.8      0      22.7
+```
+
+Und die Parametervarianten, die das Frontend hinter Reglern zeigt —
 südorientiertes Büro in Zürich, 2023:
 
 ```
@@ -84,8 +106,11 @@ ohne Sonnenschutz — Kontrast, nicht baubar      2113   20106      50.0
 | [`docs/adr/`](docs/adr/) | Architekturentscheide mit Begründung und verworfenen Alternativen. |
 | [`web/`](web/) | Frontend. Regler, Jahresdiagramm, Nachweis. Kein Framework, kein Bundler. |
 
-Änderungen und Verfahrensversionen: [`CHANGELOG.md`](CHANGELOG.md).
-Hinweise für Claude Code: [`CLAUDE.md`](CLAUDE.md).
+Von 157 Stationen messen **149** Temperatur und Feuchte, **132** zusätzlich
+die Globalstrahlung — nur an diesen ist das Raummodell rechenbar. Die
+Diffusstrahlung liegt an 82, die langwellige Einstrahlung an 46 Stationen
+gemessen vor; sonst greifen die dokumentierten Rückfallebenen. Der Katalog
+führt das je Station unter `capabilities`.
 
 Rohdaten und Build-Artefakte werden nicht eingecheckt. Im Repo steht das
 Rezept, nicht das Ergebnis — `python3 -m ocbl_data build` stellt es jederzeit

@@ -18,10 +18,11 @@ if [ ! -f data/build/catalog.json ]; then
   echo "   Zuerst:  cd data && python3 -m ocbl_data build --station SMA --from 2019 --to 2024"
   exit 1
 fi
+# Symlink statt Kopie: der Datenstand ist mit 138 MB zu gross, um ihn bei
+# jedem Build zu duplizieren — erst recht in einem synchronisierten Ordner.
 rm -rf web/data
-mkdir -p web/data
-cp -R data/build/. web/data/
-echo "   web/data/  $(find web/data -name '*.ocbl' | wc -l | tr -d ' ') Stationsjahre, $(du -sh web/data | cut -f1)"
+ln -s ../data/build web/data
+echo "   web/data -> data/build  ($(find -L web/data -name '*.ocbl' | wc -l | tr -d ' ') Stationsjahre, $(du -shL web/data | cut -f1))"
 
 echo
 echo "Fertig. Lokal ansehen:"

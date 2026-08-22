@@ -133,9 +133,23 @@ function buildRoom(s) {
 
 // --- Daten laden -------------------------------------------------------------
 
+/** Detailindex einer Station, gecacht — der Hauptkatalog trägt ihn nicht mehr. */
+const stationIndexCache = new Map();
+
+async function stationIndex(stationAbbr) {
+  if (!stationIndexCache.has(stationAbbr)) {
+    const entry = catalog.stations[stationAbbr];
+    const res = await fetch(`data/${entry.index}`);
+    if (!res.ok) throw new Error(`Stationsindex data/${entry.index} nicht ladbar (${res.status})`);
+    stationIndexCache.set(stationAbbr, await res.json());
+  }
+  return stationIndexCache.get(stationAbbr);
+}
+
 async function loadYear(stationAbbr, year) {
   const entry = catalog.stations[stationAbbr];
-  const meta = entry.years[year];
+  const meta = (await stationIndex(stationAbbr))[year];
+  if (!meta) throw new Error(`${stationAbbr} ${year} nicht im Stationsindex`);
   const res = await fetch(`data/${meta.path}`);
   if (!res.ok) throw new Error(`${res.status} beim Laden von ${meta.path}`);
   const buffer = await res.arrayBuffer();
@@ -225,7 +239,8 @@ function render() {
   $("shadeNote").textContent = `Sonnenschutz ${simulation.value.shadedHours.toLocaleString("de-CH")} h`;
 
   $("chartSub").textContent =
-    `${entry.name} · ${s.year} · Tagesmaximum gegen die adaptive Komfortgrenze Kat. ${CATEGORY}` +
+    `${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m ü. M.) · ${s.year}` +
+    ` · Tagesmaximum gegen die adaptive Komfortgrenze Kat. ${CATEGORY}` +
     ` · erste ${skip} h als Einschwingphase verworfen`;
 
   const state = { dailyMax, limit: band.value.upper, year: lastResult.meta ? Number(s.year) : 2000 };
@@ -260,7 +275,7 @@ function renderTable() {
 }
 
 async function renderProof(elapsed) {
-  const { simulation, uts, meta, skip } = lastResult;
+  const { simulation, uts, meta, skip, entry } = lastResult;
   const [simHash, utsHash] = await Promise.all([shortHash(simulation), shortHash(uts)]);
 
   const paramRows = Object.entries(uts.params)
@@ -297,7 +312,8 @@ async function renderProof(elapsed) {
       <dt>H_tr,em Masse ↔ aussen</dt><dd>${d.externalMassConductance.toFixed(2)} W/K</dd>
       <dt>Einschwingphase</dt><dd>${skip} h verworfen</dd>
       <dt>Belegte Stunden</dt><dd>${simulation.value.occupiedHours}</dd>
-      <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource}</dd>
+      <dt>Diffusstrahlung</dt><dd>${entry.capabilities.measuredDiffuse ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}</dd>
+      <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource}${entry.capabilities.measuredSky ? "" : " (Pauschalwert der Norm)"}</dd>
       <dt>Ø Abstrahlungsverlust</dt><dd>${meanFinite(simulation.value.skyLoss).toFixed(1)} W</dd>
     </dl>
 
@@ -434,9 +450,22 @@ function fillSelect(select, values, current) {
 
 async function reloadData() {
   const station = $("station").value;
-  fillSelect($("year"), Object.keys(catalog.stations[station].years).sort(), $("year").value);
+  fillSelect($("year"), catalog.stations[station].years.map(String), $("year").value);
   loaded = await loadYear(station, $("year").value);
   schedule();
+}
+
+/**
+ * Nur Stationen, an denen das Raummodell überhaupt rechenbar ist.
+ *
+ * Von 157 SwissMetNet-Stationen messen 132 die Globalstrahlung; acht sind
+ * reine Wind- oder Strahlungsmessstellen. Sie anzubieten und dann ein leeres
+ * Diagramm zu zeigen wäre schlechter als sie wegzulassen.
+ */
+function usableStations() {
+  return Object.entries(catalog.stations)
+    .filter(([, e]) => e.capabilities.roomModel)
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name, "de-CH"));
 }
 
 async function main() {
@@ -446,14 +475,16 @@ async function main() {
       return r.json();
     });
 
-    const stations = Object.keys(catalog.stations).sort();
-    $("station").innerHTML = stations
-      .map((a) => `<option value="${a}">${a} — ${catalog.stations[a].name}</option>`)
+    const usable = usableStations();
+    const stations = usable.map(([abbr]) => abbr);
+    $("station").innerHTML = usable
+      .map(([abbr, e]) => `<option value="${abbr}">${e.name} (${e.canton}, ${Math.round(e.altitudeM)} m)</option>`)
       .join("");
+    $("station").value = stations.includes("SMA") ? "SMA" : stations[0];
 
     const fromUrl = readUrl();
     if (fromUrl?.station && stations.includes(fromUrl.station)) $("station").value = fromUrl.station;
-    fillSelect($("year"), Object.keys(catalog.stations[$("station").value].years).sort(), fromUrl?.year);
+    fillSelect($("year"), catalog.stations[$("station").value].years.map(String), fromUrl?.year);
     if (fromUrl) applyState(fromUrl);
 
     loaded = await loadYear($("station").value, $("year").value);
@@ -474,6 +505,7 @@ async function main() {
     syncLabels();
 
     $("footer").innerHTML =
+      `${usableStations().length} von ${Object.keys(catalog.stations).length} Stationen mit Globalstrahlung. ` +
       `Daten: ${catalog.attribution} · ${catalog.license} · Katalogstand ${catalog.generated}. ` +
       `Code unter Apache-2.0. Methoden in <code>docs/methods/</code>.`;
 

@@ -44,6 +44,17 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Gemessen
+- **Verfügbarkeit der Messgrössen** über alle 157 Stationen: Temperatur und
+  Feuchte an 149, Globalstrahlung an 132, Diffusstrahlung an 82, langwellige
+  Einstrahlung an nur 46. Die dokumentierten Rückfallebenen — Erbs für die
+  Diffusstrahlung, Pauschalwert für die Himmelstemperatur — sind damit der
+  Normalfall, nicht der Randfall.
+- **784 Stationsjahre belegen 138 MB**, im Mittel 172 kB je Stationsjahr.
+  Bestätigt die Annahme aus ADR 0003.
+- **Derselbe Raum an 130 Stationen, 2023:** Lugano 778 Übertemperaturstunden,
+  Zürich/Fluntern 501, Jungfraujoch 0. Der Jahresmittelwert allein erklärt die
+  Rangfolge nicht — Vevey (13,4 °C) liegt vor Magadino (13,3 °C) mit 765 zu
+  707 Stunden, der Unterschied kommt aus der Einstrahlung.
 - **Jahressummen der Einstrahlung** als unabhängiger Anker, Zürich/Fluntern:
   horizontal 1198–1253 kWh/m², Südfassade 979–1033 (Perez), 30° Südneigung
   1403–1476. Die Grössenordnungen decken sich mit publizierten Werten für
@@ -90,7 +101,28 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Kasten & Young. Seit `building.simulate5R1C@1.2.0` der Standard;
   `skyModel: "isotrop"` schaltet zurück. Im Frontend wählbar.
 
+- **Alle SwissMetNet-Stationen**: 157 Stationen, 784 Stationsjahre für
+  2020–2024, 138 MB. ETL um `--jobs` (parallele Downloads), `--cache-dir` und
+  `--quiet` erweitert.
+- **Katalog zweistufig**: leichter Index (70 kB statt 680 kB) plus
+  `smn/<slug>/index.json` je Station. Siehe
+  [ADR 0003, Nachtrag](docs/adr/0003-keine-datenbank.md).
+- **Stationsfähigkeiten** im Katalog: `climate`, `moisture`, `roomModel`,
+  `measuredDiffuse`, `measuredSky`, abgeleitet aus den vorhandenen Variablen.
+  Das Frontend zeigt nur Stationen, an denen das Raummodell rechenbar ist.
+- `core/scripts/stations.ts` — derselbe Referenzraum an allen Stationen,
+  nach Übertemperaturstunden rangiert.
+
+### Behoben
+- `catalog.load()` setzte fehlende Detaildateien still auf `{}` zurück und
+  überschrieb damit beim nächsten `save()` den gesamten Index. Passiert genau
+  einmal, beim Einführen der Trennung selbst. Fehlende Detaildateien brechen
+  jetzt laut ab.
+- `scripts/build-web.sh` kopierte den Datenstand; bei 138 MB in einem
+  synchronisierten Ordner ist das untragbar. Jetzt ein Symlink.
+
 ### Geplant
+- Längere Historie — das ETL kann es, es ist eine Frage des Downloads
 - Verschattung statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
   ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))

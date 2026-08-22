@@ -10,11 +10,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from . import catalog as catalog_mod
 from .pack import pack_year
 from .qa import check_dew_point
+from .http import fetch
 from .smn import available_years, load_year
 from .stations import load_stations
 
@@ -35,8 +37,45 @@ def cmd_stations(args: argparse.Namespace) -> int:
     return 0
 
 
+def _prefetch(targets: list[str], years_by_station: dict, cache_dir: Path, refresh: bool, jobs: int) -> None:
+    """Laedt die Dekadendateien nebenlaeufig vor.
+
+    Die Downloads sind der langsame Teil und haengen am Netz, nicht an der CPU
+    — Threads reichen. Das Packen bleibt seriell und damit nachvollziehbar.
+    """
+    from .smn import decade_url, recent_url
+
+    urls: set[str] = set()
+    for abbr in targets:
+        slug = abbr.lower()
+        for year in years_by_station.get(abbr, []):
+            urls.add(decade_url(slug, year))
+        urls.add(recent_url(slug))
+
+    todo = [u for u in sorted(urls) if not (cache_dir / u.rsplit("/", 1)[-1]).exists() or refresh]
+    if not todo:
+        return
+
+    print(f"Lade {len(todo)} Dateien mit {jobs} parallelen Verbindungen …")
+    done = 0
+
+    def grab(url: str) -> None:
+        nonlocal done
+        try:
+            fetch(url, cache_dir=cache_dir, refresh=refresh)
+        except RuntimeError:
+            pass  # nicht jede Station hat jede Dekade
+        done += 1
+        if done % 25 == 0 or done == len(todo):
+            print(f"  {done}/{len(todo)}")
+
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        list(pool.map(grab, todo))
+
+
 def cmd_build(args: argparse.Namespace) -> int:
-    stations = load_stations(cache_dir=CACHE_DIR)
+    cache_dir = Path(args.cache_dir).expanduser() if args.cache_dir else CACHE_DIR
+    stations = load_stations(cache_dir=cache_dir)
 
     targets = [s.upper() for s in args.station] if args.station else sorted(stations)
     unknown = [s for s in targets if s not in stations]
@@ -48,25 +87,41 @@ def cmd_build(args: argparse.Namespace) -> int:
     built = 0
     failed = 0
 
+    years_by_station = {}
+    for abbr in targets:
+        years = [y for y in available_years(abbr, cache_dir=cache_dir) if args.year_from <= y <= args.year_to]
+        if years:
+            years_by_station[abbr] = years
+
+    if args.jobs > 1:
+        _prefetch(targets, years_by_station, cache_dir, args.refresh, args.jobs)
+
     for abbr in targets:
         station = stations[abbr]
-        years = available_years(abbr, cache_dir=CACHE_DIR)
-        years = [y for y in years if args.year_from <= y <= args.year_to]
+        years = years_by_station.get(abbr, [])
         if not years:
             print(f"{abbr}: keine Jahre im Bereich {args.year_from}-{args.year_to}")
             continue
 
-        print(f"\n{abbr} — {station.name} ({station.altitude_m:.0f} m ue. M.)")
+        if not args.quiet:
+            print(f"\n{abbr} — {station.name} ({station.altitude_m:.0f} m ue. M.)")
         for year in years:
             try:
-                data = load_year(abbr, year, cache_dir=CACHE_DIR, refresh=args.refresh)
+                data = load_year(abbr, year, cache_dir=cache_dir, refresh=args.refresh)
             except RuntimeError as exc:
-                print(f"  {year}  uebersprungen: {exc}")
+                if not args.quiet:
+                    print(f"  {year}  uebersprungen: {exc}")
                 failed += 1
                 continue
 
             out_path = BUILD_DIR / "smn" / station.slug / f"{year}.ocbl"
-            report = pack_year(data, station, out_path)
+            try:
+                report = pack_year(data, station, out_path)
+            except RuntimeError as exc:
+                if not args.quiet:
+                    print(f"  {year}  uebersprungen: {exc}")
+                failed += 1
+                continue
             catalog_mod.upsert(cat, station, year, report, BUILD_DIR)
             built += 1
 
@@ -76,11 +131,12 @@ def cmd_build(args: argparse.Namespace) -> int:
                 check = check_dew_point(data)
                 if check:
                     note = f"  Taupunkt-Bias {check.mean_bias_k:+.3f} K"
-            print(
-                f"  {year}  {report.bytes_written / 1024:6.1f} kB  "
-                f"{len(report.variables):2d} Var  T {temp_complete * 100:5.1f} %"
-                f"  {report.sha256[:12]}{note}"
-            )
+            if not args.quiet:
+                print(
+                    f"  {year}  {report.bytes_written / 1024:6.1f} kB  "
+                    f"{len(report.variables):2d} Var  T {temp_complete * 100:5.1f} %"
+                    f"  {report.sha256[:12]}{note}"
+                )
 
     path = catalog_mod.save(cat, BUILD_DIR)
     print(f"\n{built} Stationsjahre gebaut, {failed} uebersprungen")
@@ -122,6 +178,13 @@ def main(argv: list[str] | None = None) -> int:
     p_build.add_argument("--to", dest="year_to", type=int, default=2025)
     p_build.add_argument("--refresh", action="store_true", help="Cache umgehen")
     p_build.add_argument("--qa", action="store_true", help="Taupunkt-Kreuzvergleich mitlaufen lassen")
+    p_build.add_argument("--quiet", action="store_true", help="nur die Zusammenfassung ausgeben")
+    p_build.add_argument("--jobs", type=int, default=8, help="parallele Downloads (Standard 8, 1 = seriell)")
+    p_build.add_argument(
+        "--cache-dir",
+        help="Ablage der Rohdaten. Sinnvoll ausserhalb synchronisierter Ordner, "
+        "wenn viele Stationen gebaut werden.",
+    )
     p_build.set_defaults(func=cmd_build)
 
     p_verify = sub.add_parser("verify", help="Pruefsummen des Katalogs nachrechnen")

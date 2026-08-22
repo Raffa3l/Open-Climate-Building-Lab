@@ -110,10 +110,31 @@ async function loadCatalog(): Promise<any | null> {
   }
 }
 
+// Die Struktur des Katalogs wird mitgeprüft: Beim Wechsel auf den
+// zweistufigen Katalog hat sich dieser Test still übersprungen, statt zu
+// scheitern — ein Skip, der wie "Build fehlt" aussah, aber ein Bruch war.
+test("Katalogstruktur: Index nennt Jahre und verweist auf die Detaildatei", async (t) => {
+  const catalog = await loadCatalog();
+  if (!catalog) return t.skip("data/build/ nicht vorhanden");
+
+  const station = catalog.stations.SMA;
+  assert.ok(Array.isArray(station.years), "years ist eine Jahresliste");
+  assert.ok(station.years.includes(2023));
+  assert.match(station.index, /^smn\/sma\/index\.json$/);
+  assert.equal(typeof station.capabilities.roomModel, "boolean");
+  assert.ok(station.capabilities.roomModel, "an SMA ist das Raummodell rechenbar");
+});
+
 test("echtes Stationsjahr aus dem ETL lesen und rechnen", async (t) => {
   const catalog = await loadCatalog();
-  const entry = catalog?.stations?.SMA?.years?.["2023"];
-  if (!entry) return t.skip("data/build/ nicht vorhanden — python -m ocbl_data build ausführen");
+  const station = catalog?.stations?.SMA;
+  if (!station) return t.skip("data/build/ nicht vorhanden — python -m ocbl_data build ausführen");
+
+  // Zweistufiger Katalog: der Index nennt nur die Jahre, die Prüfsummen
+  // stehen in der Detaildatei je Station.
+  const index = JSON.parse(await readFile(path.join(BUILD_DIR, station.index), "utf-8"));
+  const entry = index["2023"];
+  assert.ok(entry, "SMA 2023 fehlt in smn/sma/index.json");
 
   const bytes = await readFile(path.join(BUILD_DIR, entry.path));
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
