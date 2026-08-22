@@ -71,6 +71,15 @@ export function localDayIndex(axis: TimeAxis, index: number): number {
 }
 
 /**
+ * Lokaler Wochentag: 0 = Sonntag, 1 = Montag … 6 = Samstag.
+ * Für Belegungsprofile, die am Wochenende aussetzen.
+ */
+export function localWeekday(axis: TimeAxis, index: number): number {
+  const local = intervalMidpointUtcMs(axis, index) + axis.localOffsetMin * 60_000;
+  return new Date(local).getUTCDay();
+}
+
+/**
  * Eine Variable als Stundenreihe. Fehlwerte sind NaN — nicht -999, nicht null.
  * Damit propagieren sie in jeder Rechnung sichtbar, statt sich als plausible
  * Zahl zu tarnen.

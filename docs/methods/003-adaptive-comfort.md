@@ -54,7 +54,7 @@ ersatzweise die Aussentemperatur einsetzen, käme eine plausibel aussehende und
 vollständig falsche Zahl heraus.
 
 Die Funktion ist bereits vorhanden und geprüft. Sie ist die Schnittstelle, an
-der das 5R1C-Raummodell nach ISO 52016-1 andocken wird.
+der das 5R1C-Raummodell nach EN ISO 13790 andocken wird.
 
 $$\text{ÜTS} = \left|\{i \in \text{Belegung} : \Theta_{o,i} > \Theta_{o,max}(d_i)\}\right|$$
 

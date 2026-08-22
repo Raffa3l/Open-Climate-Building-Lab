@@ -83,6 +83,37 @@ Teil 1: Eingangsparameter für das Innenraumklima*, Anhang B.
 → Gleitendes Aussentemperaturmittel Θrm, adaptives Komfortmodell,
 Kategorien I bis III. Nachfolger von EN 15251.
 
+### `en-iso-13790-2008`
+SN EN ISO 13790:2008: *Energieeffizienz von Gebäuden – Berechnung des
+Energiebedarfs für Heizung und Kühlung*, Anhang C, Simple Hourly Method.
+→ Raummodell 5R1C, Normkonstanten h_is, h_ms, Λ_at, Bauartklassen Tabelle 12.
+
+**Abgelöst durch ISO 52016-1**, die ein anderes, knotenbasiertes
+Stundenverfahren verwendet. 5R1C ist hier bewusst gewählt: breit dokumentiert,
+in vielen Werkzeugen umgesetzt, und mit den Kennwerten einer frühen
+Planungsphase rechenbar. Siehe [006](006-room-model-5r1c.md#zur-normenlage).
+
+### `michalsky1988`
+Michalsky, J. J. (1988): *The Astronomical Almanac's algorithm for approximate
+solar position (1950–2050).* Solar Energy 40 (3), 227–235.
+→ Sonnenstand, Genauigkeit rund 0,01°.
+
+### `noaa-solar`
+NOAA Global Monitoring Laboratory, Solar Calculation Details.
+→ Gebräuchliche Fassung des Michalsky-Verfahrens, Sternzeitformulierung.
+
+### `erbs1982`
+Erbs, D. G.; Klein, S. A.; Duffie, J. A. (1982): *Estimation of the diffuse
+radiation fraction for hourly, daily and monthly-average global radiation.*
+Solar Energy 28 (4), 293–302.
+→ Zerlegung der Globalstrahlung in Direkt- und Diffusanteil über den
+Klarheitsindex. Rückfallebene, wo `ods000h0` nicht gemessen wird.
+
+### `liu-jordan-1963`
+Liu, B. Y. H.; Jordan, R. C. (1963): *The long-term average performance of
+flat-plate solar energy collectors.* Solar Energy 7 (2), 53–74.
+→ Isotropes Himmelsmodell für die Einstrahlung auf geneigte Flächen.
+
 ### `sia180-2014`
 SN 520 180 / SIA 180:2014: *Wärmeschutz, Feuchteschutz und Raumklima in
 Gebäuden.*

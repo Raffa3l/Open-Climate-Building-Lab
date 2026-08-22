@@ -12,3 +12,5 @@ export * from "./psychro.ts";
 export * from "./series.ts";
 export * from "./indicators.ts";
 export * from "./pack.ts";
+export * from "./solar.ts";
+export * from "./building.ts";

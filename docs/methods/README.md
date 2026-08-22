@@ -11,6 +11,8 @@ später genau hierher.
 | [002 Hitzekennwerte](002-heat-indicators.md) | Tropennächte, Hitzetage, Kühlgradstunden, Nachtlüftung |
 | [003 Adaptiver Komfort](003-adaptive-comfort.md) | EN 16798-1, gleitendes Mittel, Übertemperaturstunden |
 | [004 Binärformat](004-binary-format.md) | .ocbl, Quantisierung, Prüfsummen |
+| [005 Sonne](005-solar.md) | Sonnenstand, Erbs-Zerlegung, geneigte Flächen |
+| [006 Raummodell 5R1C](006-room-model-5r1c.md) | EN ISO 13790, Knotenbild, Energiebilanzprüfung |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

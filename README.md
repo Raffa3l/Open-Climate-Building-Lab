@@ -16,8 +16,9 @@ Frühes Gerüst. Die Kette steht vollständig, aber schmal:
 - ✅ Rechenkern mit Psychrometrie, Hitzekennwerten, adaptivem Komfort
 - ✅ Provenance und Berechnungs-Hashes
 - ✅ Binärformat mit Prüfsummen, Python schreibt, TypeScript liest
+- ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung auf geneigte Flächen
+- ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil
 - ⬜ Frontend
-- ⬜ Raummodell (5R1C nach ISO 52016-1)
 - ⬜ Zukunftsklima (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
 ## Schnellstart
@@ -39,6 +40,9 @@ python3 -m ocbl_data verify
 # Kennwerte rechnen und mit Berechnungs-Hash ausgeben
 cd .. && node core/scripts/report.ts SMA
 
+# Übertemperaturstunden für Parametervarianten eines Raums
+node core/scripts/overheating.ts SMA 2023
+
 # Tests und Verweisprüfung
 node --test "core/test/*.test.ts"
 ./scripts/check-references.sh
@@ -52,6 +56,18 @@ Jahr     Ø °C  Sommertage  Hitzetage  Tropennächte  KGh 22 °C  NachtLüft Kh
 2019     10.6          48         13             8       2615         44766  2cf9dbbb79ec
 2021      9.6          31          3             2       1270         47028  2eb5f39f707d
 2023     11.4          64         13             8       3052         41839  ceecad96a7ad
+```
+
+Und die Parametervarianten, die das Frontend später hinter Reglern zeigt —
+südorientiertes Büro in Zürich, 2023:
+
+```
+Variante                                         ÜTS      Kh  θ_op max
+Basis: 40 % Fenster, Sonnenschutz g_tot 0.15    1667    6520      40.4
++ Nachtlüftung 3 1/h                             348     477      35.2
++ Nachtlüftung, schwere Bauart                   196     240      33.9
+Fensteranteil 60 %, Sonnenschutz + Nachtlüftung   468     736      36.0
+ohne Sonnenschutz — Kontrast, nicht baubar      2113   20106      50.0
 ```
 
 ## Aufbau
