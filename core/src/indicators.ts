@@ -22,7 +22,7 @@ const M_TROPICAL_NIGHTS: MethodRef = {
 const M_THRESHOLD_DAYS: MethodRef = {
   id: "indicator.thresholdDays",
   version: "1.0.0",
-  doc: "docs/methods/002-heat-indicators.md#hitze--und-sommertage",
+  doc: "docs/methods/002-heat-indicators.md#sommer--und-hitzetage",
   sources: ["meteoschweiz-klimaindikatoren"],
 };
 

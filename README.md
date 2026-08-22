@@ -39,8 +39,9 @@ python3 -m ocbl_data verify
 # Kennwerte rechnen und mit Berechnungs-Hash ausgeben
 cd .. && node core/scripts/report.ts SMA
 
-# Tests
+# Tests und Verweisprüfung
 node --test "core/test/*.test.ts"
+./scripts/check-references.sh
 ```
 
 Beispielausgabe für Zürich/Fluntern:
@@ -62,6 +63,9 @@ Jahr     Ø °C  Sommertage  Hitzetage  Tropennächte  KGh 22 °C  NachtLüft Kh
 | [`docs/methods/`](docs/methods/) | Herleitung jedes Verfahrens. Ziel des Knopfs «Berechnung anzeigen». |
 | [`docs/adr/`](docs/adr/) | Architekturentscheide mit Begründung und verworfenen Alternativen. |
 | `web/` | Frontend. Noch leer. |
+
+Änderungen und Verfahrensversionen: [`CHANGELOG.md`](CHANGELOG.md).
+Hinweise für Claude Code: [`CLAUDE.md`](CLAUDE.md).
 
 Rohdaten und Build-Artefakte werden nicht eingecheckt. Im Repo steht das
 Rezept, nicht das Ergebnis — `python3 -m ocbl_data build` stellt es jederzeit

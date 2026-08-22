@@ -20,6 +20,8 @@ jobs:
         run: cd core && npx tsc --noEmit
       - name: Tests
         run: node --test "core/test/*.test.ts"
+      - name: Verweise Code -> Dokumentation
+        run: ./scripts/check-references.sh
 
   data:
     name: ETL

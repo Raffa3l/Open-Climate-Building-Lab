@@ -27,7 +27,8 @@ Werkzeuge, publizierte Kennwerte, Messreihen.
 1. **Kein publizierbarer Zahlenwert ohne `Computation<T>`.** Nackte `number`
    sind für Zwischenschritte da.
 2. **Kein Verfahren ohne Seite in `docs/methods/`.** Der `doc`-Eintrag im
-   `MethodRef` muss auf eine existierende Überschrift zeigen.
+   `MethodRef` muss auf eine existierende Überschrift zeigen;
+   `./scripts/check-references.sh` prüft das, ebenso die `sources`-Schlüssel.
 3. **`MethodRef.version` erhöhen, sobald sich Ergebnisse für gleiche Eingaben
    ändern** — auch bei einer Fehlerkorrektur.
 4. **Annahmen gehören in `params`**, nicht in eine Konstante im Funktionsrumpf.

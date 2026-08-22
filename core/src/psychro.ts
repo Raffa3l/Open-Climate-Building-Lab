@@ -49,7 +49,7 @@ export const METHOD_WET_BULB: MethodRef = {
 export const METHOD_ENTHALPY: MethodRef = {
   id: "psychro.specificEnthalpy",
   version: "1.0.0",
-  doc: "docs/methods/001-psychrometrics.md#spezifische-enthalpie",
+  doc: "docs/methods/001-psychrometrics.md#feuchtegehalt-und-enthalpie",
   sources: ["ashrae-fundamentals-2021"],
 };
 
