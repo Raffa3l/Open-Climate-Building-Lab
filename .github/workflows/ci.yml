@@ -58,3 +58,9 @@ jobs:
         run: node --test core/test/pack.test.ts
       - name: Report
         run: node core/scripts/report.ts SMA
+      - name: Raummodell auf echten Daten
+        run: node core/scripts/overheating.ts SMA 2023
+      # Prüft den Emit-Pfad aus ADR 0006: bricht tsc die Browser-Ausgabe,
+      # fällt es hier auf und nicht erst beim Aufruf der Seite.
+      - name: Web bauen
+        run: cd core && npm ci && cd .. && ./scripts/build-web.sh

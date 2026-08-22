@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Übertemperaturstunden — Open Climate Building Lab</title>
+<meta name="description" content="Wie stark überhitzt ein Raum? Parameter verändern, Wirkung sofort sehen, jede Zahl nachvollziehen.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <button id="theme" type="button" class="theme-toggle" title="Darstellung umschalten">Auto</button>
+  <h1>Wie stark überhitzt dieser Raum?</h1>
+  <p>Stündliche Simulation nach EN ISO 13790 mit gemessenen Wetterdaten von MeteoSchweiz.
+     Jede Zahl ist bis zur Rohmessung nachvollziehbar.</p>
+</header>
+
+<div id="status" class="status">Daten werden geladen …</div>
+
+<main id="app" hidden>
+
+  <div class="card">
+    <div class="filters">
+      <label>Station
+        <select id="station"></select>
+      </label>
+      <label>Jahr
+        <select id="year"></select>
+      </label>
+      <label>Ausrichtung
+        <select id="azimuth">
+          <option value="180">Süd</option>
+          <option value="135">Südost</option>
+          <option value="225">Südwest</option>
+          <option value="90">Ost</option>
+          <option value="270">West</option>
+          <option value="0">Nord</option>
+        </select>
+      </label>
+      <label>Bauart
+        <select id="massClass">
+          <option value="sehr leicht">sehr leicht</option>
+          <option value="leicht">leicht</option>
+          <option value="mittel" selected>mittel</option>
+          <option value="schwer">schwer</option>
+          <option value="sehr schwer">sehr schwer</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <div class="control">
+        <div class="control-head">
+          <span>Fensterflächenanteil der Fassade</span>
+          <span class="control-value" id="windowFractionValue">40 %</span>
+        </div>
+        <input type="range" id="windowFraction" min="10" max="90" step="5" value="40">
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span>Sonnenschutz g<sub>tot</sub></span>
+          <span class="control-value" id="shadingValue">0.15</span>
+        </div>
+        <input type="range" id="shading" min="0.05" max="1.0" step="0.05" value="0.15">
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span>Interne Lasten bei Belegung</span>
+          <span class="control-value" id="gainsValue">20 W/m²</span>
+        </div>
+        <input type="range" id="gains" min="0" max="45" step="1" value="20">
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span>Nachtlüftung</span>
+          <span class="control-value" id="nightVentValue">3.0 1/h</span>
+        </div>
+        <input type="range" id="nightVent" min="0" max="8" step="0.5" value="3">
+        <label class="toggle">
+          <input type="checkbox" id="nightVentOn" checked>
+          <span>aktiv 22–06 Uhr, ab 22 °C innen und 2 K Gefälle</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-label">Übertemperaturstunden</div>
+        <div class="tile-value" id="utsValue">–</div>
+        <div class="tile-note" id="utsNote">EN 16798-1 Kat. II</div>
+      </div>
+      <div class="tile">
+        <div class="tile-label">Überschreitung</div>
+        <div class="tile-value" id="khValue">–<span class="tile-unit">Kh</span></div>
+        <div class="tile-note">Summe über der Grenze</div>
+      </div>
+      <div class="tile">
+        <div class="tile-label">Spitzentemperatur</div>
+        <div class="tile-value" id="peakValue">–<span class="tile-unit">°C</span></div>
+        <div class="tile-note">operativ</div>
+      </div>
+      <div class="tile">
+        <div class="tile-label">Nachtlüftung aktiv</div>
+        <div class="tile-value" id="nvValue">–<span class="tile-unit">h</span></div>
+        <div class="tile-note" id="shadeNote">Sonnenschutz – h</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <figure>
+      <figcaption id="chartTitle">Operative Raumtemperatur im Jahresverlauf</figcaption>
+      <div class="subcaption" id="chartSub">Tagesmaximum gegen die adaptive Komfortgrenze</div>
+      <div class="chart-holder">
+        <canvas id="chart" height="340"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background: var(--series-1)"></span>Operative Raumtemperatur, Tagesmaximum</span>
+        <span class="legend-item"><span class="swatch dashed"></span>Komfortgrenze EN 16798-1 Kat. II</span>
+        <span class="legend-item"><span class="swatch area" style="background: var(--status-serious)"></span>Überschreitung</span>
+      </div>
+    </figure>
+
+    <details id="tableDetails">
+      <summary>Tabelle der überschrittenen Tage</summary>
+      <div class="scroll" style="margin-top: 12px">
+        <table id="dayTable">
+          <thead>
+            <tr>
+              <th>Datum</th><th>θ_op max</th><th>Grenze</th><th>Δ</th><th>Stunden über Grenze</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+
+    <details id="proofDetails">
+      <summary>Berechnung anzeigen</summary>
+      <div class="proof" id="proof"></div>
+    </details>
+  </div>
+
+  <footer id="footer"></footer>
+
+</main>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

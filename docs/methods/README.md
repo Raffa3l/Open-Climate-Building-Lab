@@ -13,6 +13,7 @@ später genau hierher.
 | [004 Binärformat](004-binary-format.md) | .ocbl, Quantisierung, Prüfsummen |
 | [005 Sonne](005-solar.md) | Sonnenstand, Erbs-Zerlegung, geneigte Flächen |
 | [006 Raummodell 5R1C](006-room-model-5r1c.md) | EN ISO 13790, Knotenbild, Energiebilanzprüfung |
+| [007 Visualisierung](007-visualisierung.md) | Form, Farbrollen, Hell/Dunkel, Interaktion |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

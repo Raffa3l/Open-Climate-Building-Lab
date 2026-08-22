@@ -37,8 +37,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Mittagshöhe 66,06° / 19,18° an den Wendepunkten, Tageslänge 15,9 h / 8,5 h,
   Kulmination im Süden am wahren Ortsmittag.
 
+- **Frontend** (`web/`) — Regler für Fensterflächenanteil, Sonnenschutz,
+  interne Lasten, Nachtlüftung, Bauart und Ausrichtung; Jahresdiagramm mit
+  Fadenkreuz und Tooltip; Kennzahlen; Tabelle der überschrittenen Tage;
+  «Berechnung anzeigen» mit Verfahren, Version, Parametern, Prüfsumme der
+  Eingangsdaten und Berechnungs-Hash. Der Zustand steht im Permalink.
+  Kein Framework, keine Diagrammbibliothek.
+- `scripts/build-web.sh` — übersetzt `core/src` per `tsc` nach nativem ESM und
+  legt die Stationsjahre daneben.
+- [ADR 0006](docs/adr/0006-browser-emit.md) und
+  [Methode 007](docs/methods/007-visualisierung.md).
+
 ### Geplant
-- Frontend mit Reglern und «Berechnung anzeigen»
 - Langwellige Abstrahlung gegen den Himmel (Φ_r) — `oli000h0` liegt vor
 - Perez statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
@@ -138,5 +148,9 @@ Alle Verfahren starten bei `1.0.0`:
 
 Neu in Unveröffentlicht, ebenfalls bei `1.0.0`: `solar.position`,
 `solar.diffuseFraction`, `solar.tiltedIrradiance`, `building.simulate5R1C`.
+
+Das Frontend führt keine eigenen Verfahren: Es ruft denselben Rechenkern auf
+und zeigt dessen `MethodRef` an. Ein Versionssprung dort schlägt unmittelbar
+auf die angezeigten Hashes durch.
 
 `.ocbl`-Formatversion: **1**.

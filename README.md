@@ -18,7 +18,7 @@ Frühes Gerüst. Die Kette steht vollständig, aber schmal:
 - ✅ Binärformat mit Prüfsummen, Python schreibt, TypeScript liest
 - ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung auf geneigte Flächen
 - ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil
-- ⬜ Frontend
+- ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
 - ⬜ Zukunftsklima (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
 ## Schnellstart
@@ -42,6 +42,10 @@ cd .. && node core/scripts/report.ts SMA
 
 # Übertemperaturstunden für Parametervarianten eines Raums
 node core/scripts/overheating.ts SMA 2023
+
+# Frontend bauen und ansehen
+./scripts/build-web.sh
+cd web && python3 -m http.server 8000     # http://localhost:8000
 
 # Tests und Verweisprüfung
 node --test "core/test/*.test.ts"
@@ -78,7 +82,7 @@ ohne Sonnenschutz — Kontrast, nicht baubar      2113   20106      50.0
 | [`data/`](data/) | ETL in Python. Lädt MeteoSchweiz-OGD, prüft, packt nach `.ocbl`. |
 | [`docs/methods/`](docs/methods/) | Herleitung jedes Verfahrens. Ziel des Knopfs «Berechnung anzeigen». |
 | [`docs/adr/`](docs/adr/) | Architekturentscheide mit Begründung und verworfenen Alternativen. |
-| `web/` | Frontend. Noch leer. |
+| [`web/`](web/) | Frontend. Regler, Jahresdiagramm, Nachweis. Kein Framework, kein Bundler. |
 
 Änderungen und Verfahrensversionen: [`CHANGELOG.md`](CHANGELOG.md).
 Hinweise für Claude Code: [`CLAUDE.md`](CLAUDE.md).
