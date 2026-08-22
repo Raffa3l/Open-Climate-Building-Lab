@@ -11,7 +11,7 @@ Bundesamt für Meteorologie und Klimatologie MeteoSchweiz:
 *Automatische Wetterstationen – Messwerte* (SwissMetNet).
 STAC-Collection `ch.meteoschweiz.ogd-smn`, <https://data.geo.admin.ch>.
 **Lizenz: CC BY 4.0.** 157 Stationen, Stundenwerte seit 1980 in
-Zehnjahresdateien. Quellenangabe ist Pflicht.
+Zehnjahresdateien.
 
 ### `meteoschweiz-ogd-ch2025`
 MeteoSchweiz / ETH Zürich / C2SM unter dem Dach des NCCS:
@@ -24,28 +24,57 @@ STAC-Collection `ch.meteoschweiz.ogd-climate-scenarios-ch2025`.
 MeteoSchweiz, Definitionen der Klimaindikatoren (Hitzetag, Sommertag,
 Tropennacht, Frosttag).
 
-## Offene Lizenzfragen
+## Was eine vollständige Quellenangabe enthalten muss
 
-### `meteoschweiz-raumklima` — **ungeklärt, nicht verwenden**
+Sowohl CC BY 4.0 als auch die opendata.swiss-Stufe `terms_by` verlangen mehr
+als einen Namen. Nach den Nutzungsbedingungen sind es **Autor, Titel und Link
+zum Datensatz**; CC BY 4.0 verlangt zusätzlich die Nennung der Lizenz.
+
+Der Rechenkern führt diese Angaben deshalb als eigene Felder im `DatasetRef`
+(`attribution`, `title`, `url`, `license`) mit, statt sie als freien Text zu
+behandeln. Wer abgeleitete Werte publiziert, kann sie damit vollständig
+ausweisen — im Frontend steht das unter «Berechnung anzeigen».
+
+## Weitere Datensätze
+
+### `meteoschweiz-raumklima` — geklärt, nutzbar
 *Klimaszenarien fürs zukünftige Innenraumklima (SIA 2028)*,
 Collection `ch.meteoschweiz.klimaszenarien-raumklima`. 45 Stationen, stündlich,
-Design Reference Years und warme Sommer für 2020–2049 und 2045–2074, auf
-CH2018 basierend.
+Design Reference Years und warme Sommer für die Perioden 2020–2049 und
+2045–2074, auf CH2018 basierend. Erstellt von MeteoSchweiz, Baudirektion
+Kanton Zürich, BAFU, SIA und HSLU.
 
-Die Katalogangaben widersprechen sich:
+**Nutzungsbedingung: „Freie Nutzung. Quellenangabe ist Pflicht."**
+([opendata.swiss](https://opendata.swiss/de/dataset/klimaszenarien-furs-zukunftige-innenraumklima-sia-2028),
+Stufe `terms_by`)
 
-| Katalog | Angabe |
-|---|---|
-| STAC `data.geo.admin.ch` | `proprietary`, Link auf die admin.ch-Nutzungsbedingungen |
-| `opendata.swiss` | `terms_by` — „Freie Nutzung. Quellenangabe ist Pflicht." |
+Der Wortlaut der Stufe nach den
+[Nutzungsbedingungen von opendata.swiss](https://opendata.swiss/de/terms-of-use):
 
-`proprietary` bedeutet im STAC-Vokabular lediglich „keine SPDX-Standardlizenz"
-und nicht zwingend „nicht weitergebbar". Bis die Frage bei MeteoSchweiz
-schriftlich geklärt ist, wird dieser Datensatz nicht ausgeliefert.
+> Sie dürfen diesen Datensatz für nicht kommerzielle Zwecke nutzen.
+> Sie dürfen diesen Datensatz für kommerzielle Zwecke nutzen.
+> Eine Quellenangabe ist Pflicht (Autor, Titel und Link zum Datensatz).
 
-Falls die Klärung einschränkend ausfällt, bleibt der Ausweg, ausschliesslich
-**abgeleitete Kennwerte** zu publizieren statt der Zeitreihen selbst — aus
-Übertemperaturstunden lässt sich der Originaldatensatz nicht rekonstruieren.
+Damit ist der Datensatz **auch kommerziell nutzbar und weitergebbar**, sofern
+die Quelle vollständig genannt wird. Es ist ausdrücklich **nicht** eine der
+beiden eingeschränkten Stufen, die für kommerzielle Nutzung eine Bewilligung
+des Datenlieferanten verlangen.
+
+#### Zum früheren Widerspruch
+
+Der STAC-Katalog auf `data.geo.admin.ch` führt die Collection als
+`proprietary`. Das ist **kein Widerspruch**, sondern eine Eigenheit des
+STAC-Vokabulars: `proprietary` bedeutet dort lediglich „keine
+SPDX-Standardkennung", und der hinterlegte Lizenzlink zeigt auf die
+allgemeinen Nutzungsbedingungen des Bundes. Die Angabe ist uninformativ, nicht
+einschränkend.
+
+Massgeblich ist der OGD-Eintrag auf opendata.swiss: Dort tragen alle sieben
+Ressourcen — einschliesslich „Daten aller 45 Stationen" — die Stufe
+`terms_by`, und die Datensatzseite zeigt sie als sichtbares Abzeichen.
+
+Geprüft am 22. August 2026 über die CKAN-API (`package_show`) und die
+gerenderte Datensatzseite.
 
 ### `sia-4028` — **Status zu prüfen**
 SIA: *Klimadaten für bauphysikalische, energetische und gebäudetechnische

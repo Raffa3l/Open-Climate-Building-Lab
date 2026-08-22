@@ -9,16 +9,13 @@
  * sich — die Unterschiede sind damit rein standortbedingt.
  */
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { readPacked } from "../src/pack.ts";
 import { getVariable } from "../src/series.ts";
+import { loadCatalog, loadSeries, loadStationIndex } from "./catalog.ts";
 import { adaptiveComfortBand, dailyMean, exceedanceHours, runningMeanOutdoorTemperature } from "../src/indicators.ts";
 import { simulate5R1C, warmupHours, type RoomSpec } from "../src/building.ts";
 
-const BUILD = path.resolve(import.meta.dirname, "../../data/build");
 const year = process.argv[2] ?? "2023";
-const catalog = JSON.parse(await readFile(path.join(BUILD, "catalog.json"), "utf-8"));
+const catalog = await loadCatalog();
 
 const FACADE = 9.8;
 const round6 = (v: number) => Math.round(v * 1e6) / 1e6;
@@ -50,18 +47,14 @@ let skipped = 0;
 for (const [abbr, entry] of Object.entries(catalog.stations) as [string, any][]) {
   if (!entry.capabilities.roomModel || !entry.years.includes(Number(year))) continue;
 
-  const index = JSON.parse(await readFile(path.join(BUILD, entry.index), "utf-8"));
+  const index = await loadStationIndex(entry);
   const meta = index[year];
   if (!meta || (meta.completeness?.tre200h0 ?? 0) < 0.95) {
     skipped++;
     continue;
   }
 
-  const bytes = await readFile(path.join(BUILD, meta.path));
-  const series = readPacked(
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-    meta.sha256,
-  );
+  const series = await loadSeries(meta);
   const outdoor = getVariable(series, "tre200h0");
   const inputs = [series.source];
   const band = adaptiveComfortBand(

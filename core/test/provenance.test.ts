@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   attributions,
+  citations,
   canonicalForm,
   computationHash,
   shortHash,
@@ -103,4 +104,32 @@ test("Quellenangaben werden dedupliziert und sortiert", () => {
   const c = base();
   c.inputs = [ds("SMA", "a".repeat(64)), ds("BER", "b".repeat(64))];
   assert.deepEqual(attributions(c), ["© MeteoSchweiz"]);
+});
+
+test("vollständige Quellenangabe nennt Autor, Titel, Link und Lizenz", () => {
+  const c = base();
+  c.inputs = [{
+    ...ds("SMA", "a".repeat(64)),
+    title: "Automatische Wetterstationen - Messwerte (SwissMetNet)",
+    url: "https://opendata.swiss/de/dataset/automatische-wetterstationen-messwerte",
+  }];
+  const [text] = citations(c);
+  assert.match(text, /MeteoSchweiz/);
+  assert.match(text, /SwissMetNet/);
+  assert.match(text, /opendata\.swiss/);
+  assert.match(text, /CC-BY-4\.0/);
+});
+
+test("fehlende Titel- und Linkangabe bricht die Zitation nicht", () => {
+  // Ältere Datenstände tragen die Felder noch nicht.
+  const [text] = citations(base());
+  assert.equal(text, "© MeteoSchweiz · CC-BY-4.0");
+});
+
+test("Titel und Link ändern den Berechnungs-Hash nicht", async () => {
+  // Sie gehören zur Quellenangabe, nicht zur Identität der Rechnung — eine
+  // nachgetragene Angabe darf publizierte Permalinks nicht brechen.
+  const withMeta = base();
+  withMeta.inputs = [{ ...ds("SMA", "a".repeat(64)), title: "T", url: "U" }];
+  assert.equal(await computationHash(base()), await computationHash(withMeta));
 });

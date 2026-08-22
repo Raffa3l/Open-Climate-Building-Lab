@@ -113,7 +113,36 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 - `core/scripts/stations.ts` — derselbe Referenzraum an allen Stationen,
   nach Übertemperaturstunden rangiert.
 
+- **Vollständige Quellenangabe**: `DatasetRef` trägt jetzt `title` und `url`;
+  `citations()` baut daraus Autor · Titel · Link · Lizenz. Sowohl CC BY 4.0 als
+  auch die opendata.swiss-Stufe `terms_by` verlangen das — ein blosser Name
+  genügt beiden nicht. Sichtbar unter «Berechnung anzeigen».
+- `core/scripts/catalog.ts` — gemeinsamer Katalogzugriff für alle Skripte.
+
+### Geklärt
+- **Die Lizenzfrage zu `ch.meteoschweiz.klimaszenarien-raumklima` ist
+  beantwortet.** Der Datensatz steht unter *„Freie Nutzung. Quellenangabe ist
+  Pflicht."* — nicht kommerzielle **und** kommerzielle Nutzung erlaubt, Quelle
+  verpflichtend. Alle sieben Ressourcen auf opendata.swiss tragen `terms_by`,
+  die Datensatzseite zeigt es als Abzeichen.
+
+  Das `proprietary` im STAC-Katalog war **kein Widerspruch**: Im
+  STAC-Vokabular bedeutet es nur „keine SPDX-Standardkennung", und der
+  Lizenzlink zeigt auf die allgemeinen Bundesbedingungen. Uninformativ, nicht
+  einschränkend.
+
+  Damit ist das Zukunftsklima nicht mehr durch eine Lizenzfrage blockiert;
+  offen bleibt allein der Publikationsstand von SIA 4028. Siehe
+  [ADR 0004, Nachtrag](docs/adr/0004-v0-nur-vergangenheit.md).
+
 ### Behoben
+- **Alle Prüfsummen haben sich geändert**, weil Titel und Link in den
+  `.ocbl`-Header wandern. Damit ändern sich auch alle Berechnungs-Hashes.
+  Vor der ersten Publikation ist das folgenlos — später wäre es das nicht.
+- Drei Skripte hingen nach der Katalogtrennung noch an der alten Struktur.
+  `report.ts` und `overheating.ts` scheiterten, `stations.ts` war bereits
+  angepasst. Der Zugriff liegt jetzt in `core/scripts/catalog.ts`, damit es
+  beim nächsten Formatwechsel eine Stelle statt vier sind.
 - `catalog.load()` setzte fehlende Detaildateien still auf `{}` zurück und
   überschrieb damit beim nächsten `save()` den gesamten Index. Passiert genau
   einmal, beim Einführen der Trennung selbst. Fehlende Detaildateien brechen

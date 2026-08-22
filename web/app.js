@@ -15,6 +15,7 @@ import {
   localDayIndex,
   readPacked,
   runningMeanOutdoorTemperature,
+  citations,
   shortHash,
   simulate5R1C,
   warmupHours,
@@ -330,11 +331,17 @@ async function renderProof(elapsed) {
       <dt>Variablen</dt><dd>${simulation.inputs[0].variables.join(", ")}</dd>
       <dt>SHA-256</dt><dd>${meta.sha256}</dd>
       <dt>Lizenz</dt><dd>${simulation.inputs[0].license}</dd>
-      <dt>Quellenangabe</dt><dd>${simulation.inputs[0].attribution}</dd>
+    </dl>
+
+    <h3>Quellenangabe</h3>
+    <p style="margin: 0 0 4px">Bei Weiterverwendung vollständig mitführen:</p>
+    <dl class="kv">
+      ${citations(simulation).map((c) => `<dt>Datensatz</dt><dd>${escapeHtml(c)}</dd>`).join("")}
     </dl>
 
     <p style="color: var(--ink-muted); margin-top: 16px">
-      Gerechnet im Browser in ${elapsed.toFixed(0)} ms — derselbe Rechenkern wie im CLI und in den Tests.
+      ${simulation.value.operativeTemperature.length} Stunden im Browser gerechnet in
+      ${elapsed < 1 ? elapsed.toFixed(2) : elapsed.toFixed(0)} ms — derselbe Rechenkern wie im CLI und in den Tests.
     </p>`;
 }
 

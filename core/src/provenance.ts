@@ -33,9 +33,14 @@ export interface DatasetRef {
   variables: string[];
   /** SHA-256 der gepackten Binärdatei. Macht den Datenstand fälschungssicher. */
   sha256: string;
-  /** SPDX-Kennung, z. B. "CC-BY-4.0". */
+  /** SPDX-Kennung oder Bezeichnung der Nutzungsbedingung. */
   license: string;
+  /** Urheber des Datensatzes. */
   attribution: string;
+  /** Titel des Datensatzes. Teil der geforderten Quellenangabe. */
+  title?: string;
+  /** Link auf den Datensatz. Teil der geforderten Quellenangabe. */
+  url?: string;
 }
 
 export type ParamValue = number | string | boolean;
@@ -103,4 +108,24 @@ export async function shortHash<T>(c: Computation<T>): Promise<string> {
 /** Sammelt die Quellenangaben aller Eingangsdatensätze, dedupliziert. */
 export function attributions<T>(c: Computation<T>): string[] {
   return [...new Set(c.inputs.map((i) => i.attribution))].sort();
+}
+
+/**
+ * Vollständige Quellenangabe, wie CC BY 4.0 und die opendata.swiss-Stufe
+ * `terms_by` sie verlangen: **Autor, Titel, Link und Lizenz**.
+ *
+ * Ein blosser Name genügt beiden nicht. Siehe
+ * docs/methods/sources.md#was-eine-vollständige-quellenangabe-enthalten-muss
+ */
+export function citations<T>(c: Computation<T>): string[] {
+  const seen = new Map<string, string>();
+  for (const i of c.inputs) {
+    const parts = [i.attribution];
+    if (i.title) parts.push(i.title);
+    if (i.url) parts.push(i.url);
+    parts.push(i.license);
+    const text = parts.join(" · ");
+    seen.set(text, text);
+  }
+  return [...seen.values()].sort();
 }

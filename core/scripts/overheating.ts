@@ -8,28 +8,16 @@
  * Variante trägt ihren eigenen Berechnungs-Hash.
  */
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { readPacked } from "../src/pack.ts";
 import { getVariable } from "../src/series.ts";
+import { station } from "./catalog.ts";
 import { shortHash } from "../src/provenance.ts";
 import { adaptiveComfortBand, dailyMean, exceedanceHours, runningMeanOutdoorTemperature } from "../src/indicators.ts";
 import { NO_SHADING, simulate5R1C, warmupHours, type RoomSpec } from "../src/building.ts";
 
-const BUILD_DIR = path.resolve(import.meta.dirname, "../../data/build");
-const station = (process.argv[2] ?? "SMA").toUpperCase();
+const stationAbbr = (process.argv[2] ?? "SMA").toUpperCase();
 const year = process.argv[3] ?? "2023";
 
-const catalog = JSON.parse(await readFile(path.join(BUILD_DIR, "catalog.json"), "utf-8"));
-const entry = catalog.stations[station];
-const meta = entry?.years?.[year];
-if (!meta) throw new Error(`${station} ${year} nicht im Katalog`);
-
-const bytes = await readFile(path.join(BUILD_DIR, meta.path));
-const series = readPacked(
-  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-  meta.sha256,
-);
+const { catalog, entry, meta, series } = await station(stationAbbr, year);
 
 const outdoor = getVariable(series, "tre200h0");
 const global = getVariable(series, "gre000h0");
@@ -112,7 +100,7 @@ const scenarios: Array<{ label: string; spec: RoomSpec }> = [
   { label: "ohne Sonnenschutz, 60 % Fenster — Kontrast", spec: room({ windowFraction: 0.6 }) },
 ];
 
-console.log(`\n${station} — ${entry.name}, ${year}`);
+console.log(`\n${stationAbbr} — ${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m), ${year}`);
 console.log(`Südorientiertes Büro, 20 m², U_opak 0.2, U_Fenster 1.0, g 0.5`);
 console.log(`Belegung Mo–Fr 07–19 Uhr, 20 W/m² belegt / 2 W/m² unbelegt, n 1.5 / 0.3 1/h`);
 console.log(`Bewertung: EN 16798-1 Kat. II, Belegung 07–19 Uhr`);

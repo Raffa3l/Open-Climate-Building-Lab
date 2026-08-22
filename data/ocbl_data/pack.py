@@ -22,7 +22,7 @@ import struct
 from dataclasses import dataclass
 from pathlib import Path
 
-from .smn import ATTRIBUTION, COLLECTION, LICENSE
+from .smn import ATTRIBUTION, COLLECTION, DATASET_URL, LICENSE, TITLE
 from .stations import Station
 from .smn import YearData
 from .variables import MISSING_I16, VariableSpec, BY_CODE
@@ -105,6 +105,8 @@ def pack_year(data: YearData, station: Station, out_path: Path) -> PackReport:
             "variables": [spec.code for spec, _ in columns],
             "license": LICENSE,
             "attribution": ATTRIBUTION,
+            "title": TITLE,
+            "url": DATASET_URL,
         },
     }
     header_bytes = json.dumps(header, ensure_ascii=False, sort_keys=True).encode("utf-8")
