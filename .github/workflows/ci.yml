@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: Rechenkern
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      - name: Abhängigkeiten
+        run: cd core && npm ci
+      - name: Typprüfung
+        run: cd core && npx tsc --noEmit
+      - name: Tests
+        run: node --test "core/test/*.test.ts"
+
+  data:
+    name: ETL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Selbsttest der Variablenskalierung
+        run: python -c "import sys; sys.path.insert(0,'data'); import ocbl_data.variables"
+      - name: CLI erreichbar
+        run: cd data && python -m ocbl_data --help
+
+  integration:
+    name: Kette Ende zu Ende
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Lädt echte Daten von data.geo.admin.ch. Schlägt fehl, wenn sich
+      # Format, Kodierung oder Spaltennamen der Quelle ändern — genau das
+      # soll dieser Job merken.
+      - name: Ein Stationsjahr bauen
+        run: cd data && python -m ocbl_data build --station SMA --from 2023 --to 2023 --qa
+      - name: Prüfsummen
+        run: cd data && python -m ocbl_data verify
+      - name: Vom Rechenkern lesen und rechnen
+        run: node --test core/test/pack.test.ts
+      - name: Report
+        run: node core/scripts/report.ts SMA
