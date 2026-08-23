@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { MISSING_I16, readPacked, type PackHeader } from "../src/pack.ts";
-import { getVariable } from "../src/series.ts";
+import { getVariable, intervalMidpointUtcMs } from "../src/series.ts";
 import { coolingDegreeHours, dailyMean, thresholdDays, tropicalNights } from "../src/indicators.ts";
 
 /** Baut einen .ocbl-Puffer wie data/ocbl_data/pack.py — für den Formattest. */
@@ -72,6 +72,23 @@ test("Rundlauf durch das Binärformat inklusive Offset und Fehlwert", () => {
   assert.equal(series.altitudeM, 500);
   assert.equal(series.source.sha256, "f".repeat(64));
   assert.equal(series.axis.label, "end");
+});
+
+test("der Stichzeitpunkt überlebt den Rundlauf durch das Binärformat", () => {
+  // Ohne Feld gilt die Intervallmitte …
+  const plain = readPacked(buildPacked(HEADER, [[1, 2, 3, 4], [1, 2, 3, 4]]), "x");
+  assert.equal(plain.axis.sampleOffsetMin, undefined);
+  assert.equal(intervalMidpointUtcMs(plain.axis, 0), HEADER.startUtcMs - 30 * 60_000);
+
+  // … mit Feld gilt der ausdrückliche Wert. So tragen die Klimaszenarien
+  // ihre eigene Konvention mit, ohne dass der Rechenkern sie kennen muss.
+  const scenario = readPacked(
+    buildPacked({ ...HEADER, label: "start", sampleOffsetMin: 10 }, [[1, 2, 3, 4], [1, 2, 3, 4]]),
+    "x",
+  );
+  assert.equal(scenario.axis.sampleOffsetMin, 10);
+  assert.equal(intervalMidpointUtcMs(scenario.axis, 0), HEADER.startUtcMs + 10 * 60_000);
+  assert.equal(intervalMidpointUtcMs(scenario.axis, 3), HEADER.startUtcMs + (3 * 60 + 10) * 60_000);
 });
 
 test("beschädigte Dateien werden erkannt, nicht stillschweigend gelesen", () => {
@@ -164,4 +181,43 @@ test("echtes Stationsjahr aus dem ETL lesen und rechnen", async (t) => {
 
   const cdh = coolingDegreeHours(temperature, inputs, { baseC: 22 }).value.kelvinHours;
   assert.ok(cdh > 0 && cdh < 30000, `Kühlgradstunden ${cdh.toFixed(0)} plausibel`);
+});
+
+
+test("echtes Szenariojahr aus dem ETL lesen", async (t) => {
+  let scenarios: any;
+  try {
+    scenarios = JSON.parse(await readFile(path.join(BUILD_DIR, "scenarios.json"), "utf-8"));
+  } catch {
+    return t.skip("scenarios.json fehlt — python -m ocbl_data scenarios ausführen");
+  }
+
+  const station = scenarios.stations.SMA;
+  assert.ok(station, "SMA hat Szenariodaten");
+  const index = JSON.parse(await readFile(path.join(BUILD_DIR, station.index), "utf-8"));
+  const variant = index["2060_RCP85_dry"];
+  assert.ok(variant, "2060 RCP8.5 Referenzjahr vorhanden");
+
+  const bytes = await readFile(path.join(BUILD_DIR, variant.path));
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  assert.equal(createHash("sha256").update(bytes).digest("hex"), variant.sha256);
+
+  const series = readPacked(buffer, variant.sha256);
+  assert.equal(series.axis.length, 8760, "ein Design Reference Year hat 365 Tage");
+  assert.equal(series.axis.label, "start", "Szenarien stempeln den Intervallbeginn");
+  assert.equal(series.axis.sampleOffsetMin, 10, "Stichzeitpunkt aus docs/methods/009");
+  assert.equal(series.source.collection, "ch.meteoschweiz.klimaszenarien-raumklima");
+  assert.match(series.source.license, /terms_by/);
+
+  // Das Referenzjahr liegt auf einem Nicht-Schaltjahr, damit die Datumsangaben
+  // nicht ab dem 1. März verrutschen — 2060 selbst ist ein Schaltjahr.
+  const startYear = new Date(series.axis.startUtcMs).getUTCFullYear();
+  assert.equal(startYear, 2061);
+  assert.equal(series.source.year, 2060, "die Periode bleibt 2060");
+
+  const t2 = getVariable(series, "tre200h0");
+  const finite = [...t2].filter(Number.isFinite);
+  assert.equal(finite.length, 8760, "vollständig");
+  const mean = finite.reduce((a, b) => a + b, 0) / finite.length;
+  assert.ok(mean > 8 && mean < 16, `Jahresmittel ${mean.toFixed(2)} °C plausibel`);
 });

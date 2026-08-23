@@ -119,6 +119,33 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   genügt beiden nicht. Sichtbar unter «Berechnung anzeigen».
 - `core/scripts/catalog.ts` — gemeinsamer Katalogzugriff für alle Skripte.
 
+- **Klimaszenarien** (`data/ocbl_data/dry.py`): die DRY-Datensätze der
+  Collection `ch.meteoschweiz.klimaszenarien-raumklima` — 45 Stationen,
+  Perioden 2035 und 2060, RCP 2.6 und 8.5, je als Referenzjahr und als
+  „1 in 10 warmer Sommer". 270 Szenariojahre, eigener Katalog
+  `scenarios.json`, neuer Befehl `python3 -m ocbl_data scenarios`.
+- `core/scripts/climate-change.ts` — derselbe Raum gegen die gemessene
+  Vergangenheit und gegen beide Zukunftsperioden.
+- `TimeAxis.sampleOffsetMin` — ein ausdrücklicher Stichzeitpunkt im Intervall,
+  wo die Intervallmitte nicht gemeint ist. Wird im `.ocbl`-Header mitgeführt.
+- QA: `check_radiation_decomposition()` prüft `gls = diffus + direkt · sin(h)`
+  bei jedem Szenarienbau. Eine zweite, unabhängig getippte Sonnenhöhe in
+  Python validiert dabei `core/src/solar.ts` mit.
+
+### Erschlossen
+Zwei Konventionen des Szenariendatensatzes stehen in **keiner Metadatendatei**
+und mussten empirisch bestimmt werden — Herleitung in
+[Methode 009](docs/methods/009-klimaszenarien.md):
+
+- **Der Zeitstempel bezeichnet den Intervallbeginn**, der repräsentative
+  Zeitpunkt liegt bei `hh:10`. Das ist die **umgekehrte** Konvention der
+  SwissMetNet-Messreihen. Bestimmt über das Minimum des Fehlers von
+  `gls − diffus − direkt · sin(h)` über Versätze von −120 bis +120 min:
+  scharfes Minimum bei +10 min, an sechs Dateien ausnahmslos, Restfehler
+  bis hinunter zu 1,03 W/m².
+- **`str.direkt` ist die Direktnormalstrahlung**, nicht die horizontale:
+  13,65 gegen 105,17 W/m² mittlerer Fehler.
+
 ### Geklärt
 - **Die Lizenzfrage zu `ch.meteoschweiz.klimaszenarien-raumklima` ist
   beantwortet.** Der Datensatz steht unter *„Freie Nutzung. Quellenangabe ist
@@ -150,8 +177,29 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 - `scripts/build-web.sh` kopierte den Datenstand; bei 138 MB in einem
   synchronisierten Ordner ist das untragbar. Jetzt ein Symlink.
 
+- **Messreihe ab 1991** für die 41 Stationen mit Szenariodaten: 1972
+  Stationsjahre, 2242 Dateien insgesamt, 353 MB. Damit steht als
+  Vergleichsbasis eine echte Normalperiode 1991–2020 statt einer Handvoll
+  aktueller Jahre.
+
+### Zu beachten
+- **Ein Design Reference Year ist kein Mittel gemessener Jahre.** Der erste
+  Vergleich lief gegen 2020–2024 — fünf Jahre mit zwei Rekordsommern — und sah
+  dadurch aus wie ein Rechenfehler. Mit der Normalperiode 1991–2020 als Basis
+  wird das Bild kohärent.
+- **Die beobachtete Erwärmung ist der Projektion vorausgeeilt.** Zürich/
+  Fluntern liegt 2021–2024 mit 10,9 °C bereits über dem, was CH2018 für 2035
+  unter RCP 8.5 als typisches Jahr ausweist (10,6 °C). Die Referenzjahre sind
+  deshalb eher als untere Schranke zu lesen.
+- Die Stationshöhen der Szenariometadaten weichen von SwissMetNet ab
+  (Zürich/Fluntern 556 m gegen 604 m). Für das Raummodell folgenlos, aber
+  notiert.
+- Die DRY-Dateien haben 365 Tage; 2060 ist ein Schaltjahr. Die Reihe wird
+  deshalb auf das nächste Nicht-Schaltjahr gelegt (2061), damit die
+  Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
+
 ### Geplant
-- Längere Historie — das ETL kann es, es ist eine Frage des Downloads
+- Längere Historie für alle Stationen
 - Verschattung statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
   ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))

@@ -68,47 +68,26 @@ def _quantize_column(
     return raw, rejected
 
 
-def pack_year(data: YearData, station: Station, out_path: Path) -> PackReport:
-    codes = data.present_codes()
-    if not codes:
-        raise RuntimeError(f"{data.station} {data.year}: keine einzige Variable enthaelt Werte")
-
+def _quantize_all(
+    values: dict[str, list[float | None]], codes: list[str]
+) -> tuple[list[tuple[VariableSpec, list[int]]], dict[str, int], dict[str, float]]:
     columns: list[tuple[VariableSpec, list[int]]] = []
     out_of_range: dict[str, int] = {}
     completeness: dict[str, float] = {}
 
     for code in codes:
         spec = BY_CODE[code]
-        raw, rejected = _quantize_column(spec, data.values[code])
+        raw, rejected = _quantize_column(spec, values[code])
         columns.append((spec, raw))
         if rejected:
             out_of_range[code] = rejected
         completeness[code] = sum(1 for v in raw if v != MISSING_I16) / len(raw)
 
-    start_ms = int(data.start.timestamp() * 1000)
-    header = {
-        "station": data.station,
-        "altitudeM": station.altitude_m,
-        "startUtcMs": start_ms,
-        "stepMs": STEP_MS,
-        "length": data.length,
-        "label": INTERVAL_LABEL,
-        "localOffsetMin": LOCAL_OFFSET_MIN,
-        "variables": [
-            {"code": spec.code, "unit": spec.unit, "scale": spec.scale, "offset": spec.offset}
-            for spec, _ in columns
-        ],
-        "source": {
-            "collection": COLLECTION,
-            "station": data.station,
-            "year": data.year,
-            "variables": [spec.code for spec, _ in columns],
-            "license": LICENSE,
-            "attribution": ATTRIBUTION,
-            "title": TITLE,
-            "url": DATASET_URL,
-        },
-    }
+    return columns, out_of_range, completeness
+
+
+def _write(header: dict, columns: list[tuple[VariableSpec, list[int]]], out_path: Path) -> PackReport:
+    """Gemeinsamer Rumpf fuer Mess- und Szenariodaten — ein Format, ein Schreiber."""
     header_bytes = json.dumps(header, ensure_ascii=False, sort_keys=True).encode("utf-8")
 
     body = bytearray()
@@ -127,6 +106,88 @@ def pack_year(data: YearData, station: Station, out_path: Path) -> PackReport:
         sha256=hashlib.sha256(body).hexdigest(),
         bytes_written=len(body),
         variables=[spec.code for spec, _ in columns],
-        completeness=completeness,
-        out_of_range=out_of_range,
+        completeness={},
+        out_of_range={},
     )
+
+
+def _variable_block(columns: list[tuple[VariableSpec, list[int]]]) -> list[dict]:
+    return [
+        {"code": spec.code, "unit": spec.unit, "scale": spec.scale, "offset": spec.offset}
+        for spec, _ in columns
+    ]
+
+
+def pack_year(data: YearData, station: Station, out_path: Path) -> PackReport:
+    codes = data.present_codes()
+    if not codes:
+        raise RuntimeError(f"{data.station} {data.year}: keine einzige Variable enthaelt Werte")
+
+    columns, out_of_range, completeness = _quantize_all(data.values, codes)
+
+    header = {
+        "station": data.station,
+        "altitudeM": station.altitude_m,
+        "startUtcMs": int(data.start.timestamp() * 1000),
+        "stepMs": STEP_MS,
+        "length": data.length,
+        "label": INTERVAL_LABEL,
+        "localOffsetMin": LOCAL_OFFSET_MIN,
+        "variables": _variable_block(columns),
+        "source": {
+            "collection": COLLECTION,
+            "station": data.station,
+            "year": data.year,
+            "variables": [spec.code for spec, _ in columns],
+            "license": LICENSE,
+            "attribution": ATTRIBUTION,
+            "title": TITLE,
+            "url": DATASET_URL,
+        },
+    }
+    report = _write(header, columns, out_path)
+    report.completeness = completeness
+    report.out_of_range = out_of_range
+    return report
+
+
+def pack_scenario(data, station, out_path: Path) -> PackReport:
+    """Packt ein Szenariojahr aus den Klimaszenarien-DRY-Datensaetzen.
+
+    Unterschied zur Messreihe: andere Collection, anderer Zeitstempelbezug
+    (Intervallbeginn statt -ende) und ein ausdruecklicher Stichzeitpunkt von
+    +10 min. Siehe data/ocbl_data/dry.py und docs/methods/009-klimaszenarien.md.
+    """
+    from . import dry
+
+    codes = data.present_codes()
+    if not codes:
+        raise RuntimeError(f"{data.key.station} {data.key.slug}: keine Variable enthaelt Werte")
+
+    columns, out_of_range, completeness = _quantize_all(data.values, codes)
+
+    header = {
+        "station": data.key.station,
+        "altitudeM": station.altitude_m,
+        "startUtcMs": int(data.start.timestamp() * 1000),
+        "stepMs": STEP_MS,
+        "length": data.length,
+        "label": dry.INTERVAL_LABEL,
+        "localOffsetMin": dry.LOCAL_OFFSET_MIN,
+        "sampleOffsetMin": dry.SAMPLE_OFFSET_MIN,
+        "variables": _variable_block(columns),
+        "source": {
+            "collection": dry.COLLECTION,
+            "station": data.key.station,
+            "year": data.key.period,
+            "variables": [spec.code for spec, _ in columns],
+            "license": dry.LICENSE,
+            "attribution": dry.ATTRIBUTION,
+            "title": f"{dry.TITLE} — {data.key.label}",
+            "url": dry.DATASET_URL,
+        },
+    }
+    report = _write(header, columns, out_path)
+    report.completeness = completeness
+    report.out_of_range = out_of_range
+    return report

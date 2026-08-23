@@ -73,3 +73,49 @@ export async function station(abbr: string, year: string | number) {
   }
   return { catalog, entry, meta, index, series: await loadSeries(meta) };
 }
+
+
+// ---------------------------------------------------------------------------
+// Klimaszenarien
+// ---------------------------------------------------------------------------
+
+export interface ScenarioVariant {
+  period: number;
+  scenario: string;
+  kind: "DRY" | "1in10-warmsummer";
+  label: string;
+  path: string;
+  sha256: string;
+  bytes: number;
+  variables: string[];
+  completeness: Record<string, number>;
+}
+
+export interface ScenarioStation {
+  name: string;
+  canton: string;
+  altitudeM: number;
+  lat: number;
+  lon: number;
+  variants: string[];
+  index: string;
+}
+
+export interface ScenarioCatalog {
+  generated: string;
+  collection: string;
+  license: string;
+  licenseLabel: string;
+  attribution: string;
+  title: string;
+  url: string;
+  stations: Record<string, ScenarioStation>;
+}
+
+export async function loadScenarioCatalog(): Promise<ScenarioCatalog> {
+  return JSON.parse(await readFile(path.join(BUILD_DIR, "scenarios.json"), "utf-8"));
+}
+
+export async function loadScenarioIndex(entry: ScenarioStation): Promise<Record<string, ScenarioVariant>> {
+  return JSON.parse(await readFile(path.join(BUILD_DIR, entry.index), "utf-8"));
+}

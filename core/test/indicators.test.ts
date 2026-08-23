@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hourlyAxis, localDayIndex, localHour } from "../src/series.ts";
+import { hourlyAxis, intervalMidpointUtcMs, localDayIndex, localHour } from "../src/series.ts";
 import type { DatasetRef } from "../src/provenance.ts";
 import {
   adaptiveComfortBand,
@@ -194,4 +194,19 @@ test("Fehlwerte propagieren als NaN und senken die Vollständigkeit", () => {
   const r = tropicalNights(s, axis, [SOURCE]);
   assert.ok(Math.abs(r.value.completeness - 0.9) < 0.01);
   assert.ok(r.value.count < 364, "unvollständige Nächte werden nicht gezählt");
+});
+
+test("ein ausdrücklicher Stichzeitpunkt schlägt die Intervallmitte", () => {
+  // Manche Quellen meinen nicht die Mitte: Für die DRY-Datensätze der
+  // Klimaszenarien liegt der repräsentative Zeitpunkt bei +10 min.
+  const stampAxis = hourlyAxis(YEAR_2021_START, 24, { label: "start" });
+  const dryAxis = hourlyAxis(YEAR_2021_START, 24, { label: "start", sampleOffsetMin: 10 });
+
+  const stamp = YEAR_2021_START;
+  assert.equal(intervalMidpointUtcMs(stampAxis, 0), stamp + 30 * 60_000, "ohne Angabe die Mitte");
+  assert.equal(intervalMidpointUtcMs(dryAxis, 0), stamp + 10 * 60_000, "mit Angabe der Stichzeitpunkt");
+  assert.equal(intervalMidpointUtcMs(dryAxis, 5), stamp + (5 * 60 + 10) * 60_000);
+
+  // Die Konvention "end" bleibt für die Messreihen unverändert.
+  assert.equal(intervalMidpointUtcMs(axis, 0), stamp - 30 * 60_000);
 });

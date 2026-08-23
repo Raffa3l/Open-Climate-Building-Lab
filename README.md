@@ -20,8 +20,8 @@ Die Kette steht vollständig: **157 Stationen, 784 Stationsjahre, 138 MB**.
 - ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil und Himmelsabstrahlung
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
 - ✅ Alle SwissMetNet-Stationen, 2020–2024
-- ⬜ Längere Historie (das ETL kann es, es ist nur eine Frage des Downloads)
-- ⬜ Zukunftsklima (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
+- ✅ Zukunftsklima: DRY-Szenarien 2035 und 2060, RCP 2.6 und 8.5, 45 Stationen
+- ⬜ Längere Historie für alle Stationen (läuft für die 41 Szenariostationen) (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
 ## Schnellstart
 
@@ -51,6 +51,10 @@ node core/scripts/overheating.ts SMA 2023
 
 # Derselbe Raum an allen Stationen, nach Überhitzung rangiert
 node core/scripts/stations.ts 2023
+
+# Klimaszenarien bauen und Gegenwart gegen 2035/2060 stellen
+cd data && python3 -m ocbl_data scenarios --qa && cd ..
+node core/scripts/climate-change.ts SMA
 
 # Frontend bauen und ansehen
 ./scripts/build-web.sh

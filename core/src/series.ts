@@ -35,25 +35,43 @@ export interface TimeAxis {
    * Artefakte in der Statistik.
    */
   localOffsetMin: number;
+  /**
+   * Repräsentativer Zeitpunkt innerhalb des Intervalls, in Minuten relativ
+   * zum Zeitstempel. Ohne Angabe gilt die Intervallmitte, abgeleitet aus
+   * `label`.
+   *
+   * Nötig, weil nicht jede Quelle die Mitte meint: Für die DRY-Datensätze der
+   * Klimaszenarien liegt der repräsentative Zeitpunkt empirisch bei +10 min,
+   * nicht bei +30 — siehe docs/methods/009-klimaszenarien.md.
+   */
+  sampleOffsetMin?: number;
 }
 
 export function hourlyAxis(
   startUtcMs: number,
   length: number,
-  opts: Partial<Pick<TimeAxis, "label" | "localOffsetMin">> = {},
+  opts: Partial<Pick<TimeAxis, "label" | "localOffsetMin" | "sampleOffsetMin">> = {},
 ): TimeAxis {
-  return {
+  const axis: TimeAxis = {
     startUtcMs,
     stepMs: 3_600_000,
     length,
     label: opts.label ?? "end",
     localOffsetMin: opts.localOffsetMin ?? 60,
   };
+  if (opts.sampleOffsetMin !== undefined) axis.sampleOffsetMin = opts.sampleOffsetMin;
+  return axis;
 }
 
-/** Mitte des Messintervalls als Unix-ms — die richtige Zeit für Sonnenstände. */
+/**
+ * Der Zeitpunkt, der ein Intervall für Sonnenstandsrechnungen vertritt.
+ *
+ * Standardmässig die Intervallmitte. Führt die Achse einen ausdrücklichen
+ * `sampleOffsetMin`, gilt dieser — manche Quellen meinen nicht die Mitte.
+ */
 export function intervalMidpointUtcMs(axis: TimeAxis, index: number): number {
   const stamp = axis.startUtcMs + index * axis.stepMs;
+  if (axis.sampleOffsetMin !== undefined) return stamp + axis.sampleOffsetMin * 60_000;
   return axis.label === "end" ? stamp - axis.stepMs / 2 : stamp + axis.stepMs / 2;
 }
 

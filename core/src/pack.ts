@@ -37,6 +37,8 @@ export interface PackHeader {
   length: number;
   label: IntervalLabel;
   localOffsetMin: number;
+  /** Optional: repräsentativer Zeitpunkt im Intervall, Minuten zum Stempel. */
+  sampleOffsetMin?: number;
   variables: PackedVariable[];
   source: Omit<DatasetRef, "sha256">;
 }
@@ -84,6 +86,7 @@ export function readPacked(buffer: ArrayBuffer, sha256: string): StationSeries {
   const axis = hourlyAxis(header.startUtcMs, header.length, {
     label: header.label,
     localOffsetMin: header.localOffsetMin,
+    ...(header.sampleOffsetMin !== undefined ? { sampleOffsetMin: header.sampleOffsetMin } : {}),
   });
   if (header.stepMs !== axis.stepMs) {
     throw new Error(`Nur Stundenwerte unterstützt, stepMs=${header.stepMs}`);

@@ -144,22 +144,90 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 1 if failed and not built else 0
 
 
+def cmd_scenarios(args: argparse.Namespace) -> int:
+    """Baut die DRY-Szenariodatensaetze."""
+    from . import dry
+    from . import scenario_catalog
+    from .pack import pack_scenario
+    from .qa import check_radiation_decomposition
+
+    cache_dir = Path(args.cache_dir).expanduser() if args.cache_dir else CACHE_DIR
+    print("Lade Archiv (33 MB, einmalig) …")
+    archive = dry.open_archive(cache_dir=cache_dir, refresh=args.refresh)
+    stations = dry.load_stations(archive)
+    keys = dry.available(archive)
+
+    if args.station:
+        wanted = {s.upper() for s in args.station}
+        keys = [k for k in keys if k.station in wanted]
+    if args.kind:
+        keys = [k for k in keys if k.kind == args.kind]
+
+    cat = scenario_catalog.empty()
+    built = 0
+    current = None
+
+    for key in keys:
+        station = stations.get(key.station)
+        if station is None:
+            print(f"  {key.station}: nicht in den Metadaten, uebersprungen")
+            continue
+
+        data = dry.load(archive, key)
+        out_path = BUILD_DIR / "dry" / station.slug / f"{key.slug}.ocbl"
+        report = pack_scenario(data, station, out_path)
+        scenario_catalog.upsert(cat, station, key, report, BUILD_DIR)
+        built += 1
+
+        if not args.quiet:
+            if current != key.station:
+                current = key.station
+                print(f"\n{station.abbr} — {station.name} ({station.altitude_m:.0f} m ue. M.)")
+            note = ""
+            if args.qa:
+                check = check_radiation_decomposition(data, station.lat, station.lon)
+                if check:
+                    note = f"  Strahlungsbilanz {check.mean_abs_error:5.2f} W/m²"
+            print(
+                f"  {key.slug:22s} {report.bytes_written / 1024:6.1f} kB  "
+                f"{len(report.variables)} Var  {report.sha256[:12]}{note}"
+            )
+
+    path = scenario_catalog.save(cat, BUILD_DIR)
+    print(f"\n{built} Szenariojahre gebaut")
+    print(f"Katalog: {path}")
+    return 0
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
-    cat = catalog_mod.load(BUILD_DIR)
+    from . import scenario_catalog
+
     bad = 0
     checked = 0
+
+    def check(label: str, meta: dict) -> None:
+        nonlocal bad, checked
+        path = BUILD_DIR / meta["path"]
+        checked += 1
+        if not path.exists():
+            print(f"FEHLT   {label}  {meta['path']}")
+            bad += 1
+            return
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != meta["sha256"]:
+            print(f"ABWEICH {label}  {actual[:12]} statt {meta['sha256'][:12]}")
+            bad += 1
+
+    cat = catalog_mod.load(BUILD_DIR)
     for abbr, entry in cat["stations"].items():
         for year, meta in entry["years"].items():
-            path = BUILD_DIR / meta["path"]
-            checked += 1
-            if not path.exists():
-                print(f"FEHLT   {abbr} {year}  {meta['path']}")
-                bad += 1
-                continue
-            actual = hashlib.sha256(path.read_bytes()).hexdigest()
-            if actual != meta["sha256"]:
-                print(f"ABWEICH {abbr} {year}  {actual[:12]} statt {meta['sha256'][:12]}")
-                bad += 1
+            check(f"{abbr} {year}", meta)
+
+    scen = scenario_catalog.load(BUILD_DIR)
+    for abbr, entry in scen["stations"].items():
+        for slug, meta in entry["variants"].items():
+            check(f"{abbr} {slug}", meta)
+
     print(f"{checked} Dateien geprueft, {bad} beanstandet")
     return 1 if bad else 0
 
@@ -187,7 +255,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_build.set_defaults(func=cmd_build)
 
-    p_verify = sub.add_parser("verify", help="Pruefsummen des Katalogs nachrechnen")
+    p_scen = sub.add_parser("scenarios", help="DRY-Klimaszenarien nach .ocbl packen")
+    p_scen.add_argument("--station", action="append", help="Stationskuerzel; mehrfach moeglich")
+    p_scen.add_argument("--kind", choices=["DRY", "1in10-warmsummer"], help="nur einen Typ bauen")
+    p_scen.add_argument("--refresh", action="store_true", help="Archiv neu laden")
+    p_scen.add_argument("--qa", action="store_true", help="Strahlungsbilanz kreuzpruefen")
+    p_scen.add_argument("--quiet", action="store_true", help="nur die Zusammenfassung")
+    p_scen.add_argument("--cache-dir", help="Ablage des Archivs")
+    p_scen.set_defaults(func=cmd_scenarios)
+
+    p_verify = sub.add_parser("verify", help="Pruefsummen beider Kataloge nachrechnen")
     p_verify.set_defaults(func=cmd_verify)
 
     args = parser.parse_args(argv)

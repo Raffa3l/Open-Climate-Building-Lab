@@ -32,7 +32,8 @@ const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
 
 let catalog = null;
-let loaded = null;    // { series, band, runningMean, station, year }
+let scenarios = null;
+let loaded = null;    // { series, band, runningMean, entry, meta }
 let geometry = null;
 let lastResult = null;
 let pending = false;
@@ -134,23 +135,56 @@ function buildRoom(s) {
 
 // --- Daten laden -------------------------------------------------------------
 
-/** Detailindex einer Station, gecacht — der Hauptkatalog trägt ihn nicht mehr. */
-const stationIndexCache = new Map();
+/** Detailindizes, gecacht — die Hauptkataloge tragen sie nicht mehr. */
+const indexCache = new Map();
 
-async function stationIndex(stationAbbr) {
-  if (!stationIndexCache.has(stationAbbr)) {
-    const entry = catalog.stations[stationAbbr];
-    const res = await fetch(`data/${entry.index}`);
-    if (!res.ok) throw new Error(`Stationsindex data/${entry.index} nicht ladbar (${res.status})`);
-    stationIndexCache.set(stationAbbr, await res.json());
+async function detailIndex(path) {
+  if (!indexCache.has(path)) {
+    const res = await fetch(`data/${path}`);
+    if (!res.ok) throw new Error(`Index data/${path} nicht ladbar (${res.status})`);
+    indexCache.set(path, await res.json());
   }
-  return stationIndexCache.get(stationAbbr);
+  return indexCache.get(path);
 }
 
-async function loadYear(stationAbbr, year) {
-  const entry = catalog.stations[stationAbbr];
-  const meta = (await stationIndex(stationAbbr))[year];
-  if (!meta) throw new Error(`${stationAbbr} ${year} nicht im Stationsindex`);
+/**
+ * Alle wählbaren Klimastände einer Station: gemessene Jahre und, wo
+ * vorhanden, die DRY-Szenarien. Der Wert trägt ein Präfix, damit beide
+ * Quellen in einem Auswahlfeld nebeneinander stehen können.
+ */
+function climateOptions(stationAbbr) {
+  const options = [];
+  const measured = catalog.stations[stationAbbr];
+  for (const year of [...measured.years].sort((a, b) => b - a)) {
+    options.push({ value: `y${year}`, label: `gemessen ${year}` });
+  }
+  const scen = scenarios?.stations?.[stationAbbr];
+  if (scen) {
+    for (const slug of scen.variants) options.push({ value: `s${slug}`, label: scenarioLabel(slug) });
+  }
+  return options;
+}
+
+/**
+ * "2060_RCP85_dry" → "Szenario 2060 · RCP 8.5 · Referenzjahr".
+ *
+ * Aus dem Kürzel gebaut statt aus dem Detailindex geholt: Der Katalog trägt
+ * nur die Kürzel, und ein Ladevorgang nur für Beschriftungen wäre Verschwendung.
+ */
+function scenarioLabel(slug) {
+  const [period, rcp, kind] = slug.split("_");
+  const scenario = rcp.replace(/^RCP(\d)(\d)$/, "RCP $1.$2");
+  const type = kind === "dry" ? "Referenzjahr" : "warmer Sommer (1 in 10)";
+  return `Szenario ${period} · ${scenario} · ${type}`;
+}
+
+async function loadClimate(stationAbbr, key) {
+  const isScenario = key.startsWith("s");
+  const entry = isScenario ? scenarios.stations[stationAbbr] : catalog.stations[stationAbbr];
+  if (!entry) throw new Error(`${stationAbbr} hat keinen Datensatz für ${key}`);
+
+  const meta = (await detailIndex(entry.index))[key.slice(1)];
+  if (!meta) throw new Error(`${stationAbbr} ${key.slice(1)} nicht im Index`);
   const res = await fetch(`data/${meta.path}`);
   if (!res.ok) throw new Error(`${res.status} beim Laden von ${meta.path}`);
   const buffer = await res.arrayBuffer();
@@ -169,7 +203,15 @@ async function loadYear(stationAbbr, year) {
   const runningMean = runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs);
   const band = adaptiveComfortBand(runningMean.value, inputs, { category: CATEGORY });
 
-  return { series, band, runningMean, entry, meta, station: stationAbbr, year: Number(year) };
+  return {
+    series, band, runningMean, meta, station: stationAbbr, isScenario,
+    // Für die Anzeige immer die Messstation: Name, Kanton und Höhe stammen
+    // aus dem SwissMetNet-Verzeichnis, die Szenariometadaten weichen ab.
+    entry: catalog.stations[stationAbbr] ?? entry,
+    label: isScenario ? meta.label : `gemessen ${key.slice(1)}`,
+    // Das Referenzjahr der Szenarien liegt auf einem Nicht-Schaltjahr.
+    calendarYear: new Date(series.axis.startUtcMs).getUTCFullYear(),
+  };
 }
 
 // --- Rechnen und Zeichnen ----------------------------------------------------
@@ -222,7 +264,10 @@ async function recompute() {
     }
   }
 
-  lastResult = { s, simulation, uts, dailyMax, hoursOver, skip, elapsed, band, meta, entry };
+  lastResult = {
+    s, simulation, uts, dailyMax, hoursOver, skip, elapsed, band, meta, entry,
+    label: loaded.label, calendarYear: loaded.calendarYear, isScenario: loaded.isScenario,
+  };
   render();
 }
 
@@ -240,11 +285,11 @@ function render() {
   $("shadeNote").textContent = `Sonnenschutz ${simulation.value.shadedHours.toLocaleString("de-CH")} h`;
 
   $("chartSub").textContent =
-    `${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m ü. M.) · ${s.year}` +
+    `${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m ü. M.) · ${lastResult.label}` +
     ` · Tagesmaximum gegen die adaptive Komfortgrenze Kat. ${CATEGORY}` +
     ` · erste ${skip} h als Einschwingphase verworfen`;
 
-  const state = { dailyMax, limit: band.value.upper, year: lastResult.meta ? Number(s.year) : 2000 };
+  const state = { dailyMax, limit: band.value.upper, year: lastResult.calendarYear };
   geometry = drawChart($("chart"), state);
   renderTable();
   renderProof(elapsed);
@@ -254,7 +299,7 @@ function renderTable() {
   const { dailyMax, hoursOver, band, s } = lastResult;
   const body = $("dayTable").querySelector("tbody");
   const rows = [];
-  const yearNum = Number(s.year);
+  const yearNum = lastResult.calendarYear;
 
   for (let d = 0; d < dailyMax.length; d++) {
     const limit = band.value.upper[d];
@@ -288,6 +333,13 @@ async function renderProof(elapsed) {
   const d = simulation.value.derived;
 
   $("proof").innerHTML = `
+    ${lastResult.isScenario ? `<p style="margin:0 0 12px; color: var(--ink-secondary)">
+      <strong>Szenariodaten.</strong> Ein Design Reference Year ist ein synthetisches
+      typisches Jahr, kein Mittel gemessener Jahre. Gegen einzelne warme Messjahre
+      verglichen kann es kühler ausfallen — belastbar sind vor allem Vergleiche
+      innerhalb des Szenariensatzes.
+    </p>` : ""}
+
     <h3>Verfahren</h3>
     <dl class="kv">
       <dt>Raummodell</dt><dd>${simulation.method.id}@${simulation.method.version}</dd>
@@ -370,15 +422,15 @@ function setupHover() {
     if (x < plot.x || x > plot.x + plot.w) return hideTip();
 
     const day = Math.round(((x - plot.x) / plot.w) * (n - 1));
-    const { dailyMax, band, hoursOver, s } = lastResult;
+    const { dailyMax, band, hoursOver } = lastResult;
     const value = dailyMax[day];
     const limit = band.value.upper[day];
     if (!Number.isFinite(value)) return hideTip();
 
-    drawChart(canvas, { dailyMax, limit: band.value.upper, year: Number(s.year) });
+    drawChart(canvas, { dailyMax, limit: band.value.upper, year: lastResult.calendarYear });
     drawCrosshair(canvas, geometry, { dailyMax, limit: band.value.upper }, day);
 
-    const date = new Date(Date.UTC(Number(s.year), 0, 1) + day * 86_400_000);
+    const date = new Date(Date.UTC(lastResult.calendarYear, 0, 1) + day * 86_400_000);
     const over = Number.isFinite(limit) && value > limit;
     tip.innerHTML =
       `<b>${date.toLocaleDateString("de-CH", { day: "2-digit", month: "long", timeZone: "UTC" })}</b>` +
@@ -455,10 +507,16 @@ function fillSelect(select, values, current) {
   if (current && values.includes(current)) select.value = current;
 }
 
+function fillClimateSelect(stationAbbr, keep) {
+  const options = climateOptions(stationAbbr);
+  $("year").innerHTML = options.map((o) => `<option value="${o.value}">${o.label}</option>`).join("");
+  if (keep && options.some((o) => o.value === keep)) $("year").value = keep;
+}
+
 async function reloadData() {
   const station = $("station").value;
-  fillSelect($("year"), catalog.stations[station].years.map(String), $("year").value);
-  loaded = await loadYear(station, $("year").value);
+  fillClimateSelect(station, $("year").value);
+  loaded = await loadClimate(station, $("year").value);
   schedule();
 }
 
@@ -481,6 +539,8 @@ async function main() {
       if (!r.ok) throw new Error("data/catalog.json nicht gefunden — scripts/build-web.sh ausführen");
       return r.json();
     });
+    // Szenarien sind optional: ohne sie funktioniert alles ausser der Zukunft.
+    scenarios = await fetch("data/scenarios.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
     const usable = usableStations();
     const stations = usable.map(([abbr]) => abbr);
@@ -491,10 +551,10 @@ async function main() {
 
     const fromUrl = readUrl();
     if (fromUrl?.station && stations.includes(fromUrl.station)) $("station").value = fromUrl.station;
-    fillSelect($("year"), catalog.stations[$("station").value].years.map(String), fromUrl?.year);
+    fillClimateSelect($("station").value, fromUrl?.year);
     if (fromUrl) applyState(fromUrl);
 
-    loaded = await loadYear($("station").value, $("year").value);
+    loaded = await loadClimate($("station").value, $("year").value);
 
     for (const id of ["azimuth", "massClass", "skyModel", "windowFraction", "shading", "gains", "nightVent", "nightVentOn"]) {
       $(id).addEventListener("input", () => {
@@ -512,7 +572,8 @@ async function main() {
     syncLabels();
 
     $("footer").innerHTML =
-      `${usableStations().length} von ${Object.keys(catalog.stations).length} Stationen mit Globalstrahlung. ` +
+      `${usableStations().length} von ${Object.keys(catalog.stations).length} Stationen mit Globalstrahlung` +
+      (scenarios ? `, ${Object.keys(scenarios.stations).length} mit Klimaszenarien` : "") + ". " +
       `Daten: ${catalog.attribution} · ${catalog.license} · Katalogstand ${catalog.generated}. ` +
       `Code unter Apache-2.0. Methoden in <code>docs/methods/</code>.`;
 
