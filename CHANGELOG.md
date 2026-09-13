@@ -13,6 +13,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- **Download** (`core/src/export.ts`, [010](docs/methods/010-export.md)): je
+  Klimastand eine Stundenreihe als CSV und ein Manifest als JSON, im Frontend
+  unter «Daten herunterladen». Das Manifest führt für Simulation,
+  Übertemperaturstunden, Komfortband und gleitendes Mittel je Hash, kanonische
+  Form, Verfahren, Parameter und Eingangsdaten, dazu die SHA-256 der CSV und die
+  vollständigen Quellenangaben. Die Prüfanleitung in 010 braucht nur die
+  Python-Standardbibliothek.
+- Der Serialisierer liegt im Kern, damit ein Aufruf aus der Kommandozeile
+  dieselben Bytes erzeugen kann wie der Browser. Das Manifest hat keinen
+  Erstellungszeitpunkt: Zwei Exporte desselben Sachverhalts sind byte-gleich.
+  Acht Tests, darunter die Summenprobe gegen die Kennzahl für beide
+  Zeitkonventionen.
 - **Vergleichsmodus im Frontend:** Ein zweiter Klimastand liegt über demselben
   Verlauf, gemessenes Jahr gegen Szenario oder Szenario gegen Szenario. Beide
   Reihen rechnen denselben Raum mit denselben Parametern; verschieden ist
@@ -94,6 +106,17 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
 
 ### Gemessen
+- **Export Zürich/Fluntern, Voreinstellung:** gemessen 2024 ergibt 8'784
+  Zeilen, 647 kB CSV und 11.4 kB Manifest, Szenario 2060 RCP 8.5 ergibt 8'760
+  Zeilen und 648 kB. In beiden Dateien summieren die Zeilen mit Überschreitung
+  genau auf die Kennzahl (403 und 465 h). Das Python-Beispiel aus 010, wörtlich
+  aus der Doku extrahiert, besteht gegen beide Dateien alle drei Prüfungen.
+- **Der Hash der Übertemperaturstunden kennt den Raum nicht.** Fensteranteil
+  40 % und 70 % ergeben 403 und 662 h unter demselben ÜTS-Hash
+  `5e2124ea304d`; nur der Simulations-Hash ändert sich (`a2fc5ec2f2ac`,
+  `824705722358`). Eindeutig ist erst das Paar. Nicht behoben, weil jede
+  Reparatur alle Berechnungs-Hashes bricht. Der Export benennt seine Dateien
+  deshalb nach dem Simulations-Hash, siehe [010](docs/methods/010-export.md).
 - **Warum der Vergleichsmodus einen Hinweis braucht.** Derselbe Raum in der
   Voreinstellung des Frontends, Zürich/Fluntern, Übertemperaturstunden:
 

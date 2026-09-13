@@ -16,6 +16,7 @@ später genau hierher.
 | [007 Visualisierung](007-visualisierung.md) | Form, Farbrollen, Hell/Dunkel, Interaktion |
 | [008 Langwellige Abstrahlung](008-langwellige-abstrahlung.md) | Himmelstemperatur, Φ_r, gemessene Wirkung |
 | [009 Klimaszenarien](009-klimaszenarien.md) | DRY-Datensätze, erschlossene Konventionen, wie der Vergleich zu lesen ist |
+| [010 Export](010-export.md) | CSV und Manifest, Schreibweise, Nachprüfen, bekannte Hash-Lücke |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

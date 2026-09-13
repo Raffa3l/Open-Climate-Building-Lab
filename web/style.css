@@ -185,6 +185,21 @@ details[open] summary::before { transform: rotate(90deg); }
 .proof { margin-top: 14px; font-size: 13px; }
 .proof h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); margin: 16px 0 6px; font-weight: 600; }
 .proof h3:first-child { margin-top: 0; }
+
+/* --- Download --- */
+.downloads { margin-top: 14px; font-size: 13px; display: flex; flex-direction: column; gap: 10px; }
+.download-note { margin: 0; color: var(--ink-secondary); }
+.download-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.download-label { flex: 1 1 220px; }
+.download {
+  font: inherit; font-size: 13px;
+  padding: 5px 12px; border-radius: 6px;
+  border: 1px solid var(--axis);
+  background: var(--surface); color: var(--ink);
+  cursor: pointer;
+}
+.download:hover { border-color: var(--ink-muted); }
+.download:disabled { opacity: 0.5; cursor: progress; }
 .kv { display: grid; grid-template-columns: minmax(140px, auto) 1fr; gap: 2px 16px; }
 .kv dt { color: var(--ink-secondary); }
 .kv dd { margin: 0; font-family: var(--mono); font-size: 12px; word-break: break-all; }

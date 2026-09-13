@@ -12,7 +12,9 @@ import {
   alignDailyToCalendarYear,
   dailyMean,
   exceedanceHours,
+  exportManifest,
   getVariable,
+  hourlyCsv,
   localDayIndex,
   readPacked,
   runningMeanOutdoorTemperature,
@@ -340,6 +342,7 @@ function render() {
 
   renderTable();
   renderProof(elapsed);
+  renderDownloads();
 }
 
 /** Vorzeichenbehaftete Differenz, deutsch gesetzt. */
@@ -577,6 +580,141 @@ async function renderProof(elapsed) {
     </p>`;
 }
 
+// --- Download ----------------------------------------------------------------
+
+/**
+ * Baut CSV und Manifest für einen Klimastand.
+ *
+ * Getrennt vom Speichern, damit dieselben Bytes auch ohne Browser prüfbar
+ * sind. Die Serialisierung liegt im Kern, siehe docs/methods/010-export.md;
+ * hier wird nur zusammengestellt, was hineingehört.
+ */
+async function buildExport(result, s) {
+  const { climate, simulation, uts, skip } = result;
+  const { series, band, runningMean, entry } = climate;
+
+  const csv = hourlyCsv({
+    axis: series.axis,
+    outdoorTemperature: getVariable(series, "tre200h0"),
+    simulation: simulation.value,
+    warmupHours: skip,
+    dailyUpperLimit: band.value.upper,
+    exceedance: uts,
+  });
+
+  // Benannt nach dem Simulations-Hash: Der Hash der Übertemperaturstunden
+  // kennt die Raumparameter nicht (docs/methods/010-export.md, bekannte Lücke).
+  const stem = `ocbl_${climate.station}_${climate.key}_${await shortHash(simulation)}`;
+
+  const manifest = await exportManifest({
+    csv,
+    csvFileName: `${stem}.csv`,
+    subject: {
+      station: climate.station,
+      stationName: entry.name,
+      canton: entry.canton,
+      altitudeM: entry.altitudeM,
+      latitude: entry.lat,
+      longitude: entry.lon,
+      climate: climate.key,
+      climateLabel: climate.label,
+      isScenario: climate.isScenario,
+      calendarYear: climate.calendarYear,
+      comfortCategory: CATEGORY,
+      azimuthDeg: s.azimuth,
+      massClass: s.massClass,
+      skyModel: s.skyModel,
+      windowFraction: round6(s.windowFraction),
+      shadingGtot: s.shading,
+      internalGainsWm2: s.gains,
+      nightVentilationAch: s.nightVentOn ? s.nightVent : 0,
+    },
+    axis: series.axis,
+    warmupHours: skip,
+    computations: [
+      {
+        role: "simulation",
+        computation: simulation,
+        value: {
+          peakOperativeC: round6(result.peak),
+          shadedHours: simulation.value.shadedHours,
+          nightVentilationHours: simulation.value.nightVentilationHours,
+          occupiedHours: simulation.value.occupiedHours,
+          longwaveSource: simulation.value.longwaveSource,
+        },
+      },
+      {
+        role: "exceedance",
+        computation: uts,
+        value: {
+          hours: uts.value.hours,
+          kelvinHours: round6(uts.value.kelvinHours),
+          evaluatedHours: uts.value.evaluatedHours,
+        },
+      },
+      { role: "comfortBand", computation: band },
+      { role: "runningMean", computation: runningMean },
+    ],
+  });
+
+  return {
+    csvName: `${stem}.csv`,
+    csv,
+    jsonName: `${stem}.json`,
+    json: `${JSON.stringify(manifest, null, 2)}\n`,
+  };
+}
+
+function saveFile(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Sofort freigegeben, bricht der Download in manchen Browsern ab.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function renderDownloads() {
+  const { base, other } = lastResult;
+  const row = (which, result) => `
+    <div class="download-row">
+      <span class="download-label">${escapeHtml(result.climate.label)}</span>
+      <button type="button" class="download" data-which="${which}" data-kind="csv">Stundenreihe (CSV)</button>
+      <button type="button" class="download" data-which="${which}" data-kind="json">Nachweis (JSON)</button>
+    </div>`;
+  $("downloads").innerHTML =
+    `<p class="download-note">Jede Stunde des Jahres mit Raum- und Aussentemperatur, Komfortgrenze ` +
+    `und Überschreitung. Dazu ein Manifest mit Hashes, kanonischer Form und Quellenangaben, ` +
+    `mit dem sich die Zahlen ohne dieses Projekt nachprüfen lassen. ` +
+    `Format und Prüfanleitung: <code>docs/methods/010-export.md</code>.</p>` +
+    row("base", base) +
+    (other ? row("other", other) : "");
+}
+
+function setupDownloads() {
+  // Ein Listener am Container: renderDownloads() ersetzt die Knöpfe bei jedem
+  // Neurechnen, einzelne Listener gingen dabei verloren.
+  $("downloads").addEventListener("click", async (event) => {
+    const button = event.target.closest?.("button[data-kind]");
+    if (!button || !lastResult) return;
+    const result = button.dataset.which === "other" ? lastResult.other : lastResult.base;
+    if (!result) return;
+    button.disabled = true;
+    try {
+      const files = await buildExport(result, lastResult.s);
+      if (button.dataset.kind === "csv") saveFile(files.csvName, files.csv, "text/csv;charset=utf-8");
+      else saveFile(files.jsonName, files.json, "application/json");
+    } catch (error) {
+      showError(error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 function meanFinite(values) {
   let sum = 0;
   let n = 0;
@@ -786,6 +924,7 @@ async function main() {
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => lastResult && render());
 
     setupHover();
+    setupDownloads();
     setupTheme();
     syncLabels();
 
