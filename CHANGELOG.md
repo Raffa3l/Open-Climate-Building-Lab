@@ -43,6 +43,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   anderes, knotenbasiertes Stundenverfahren. Die früheren Verweise waren
   falsch und sind in allen Dokumenten berichtigt.
 
+### Behoben
+- **Das Diagramm verdoppelte auf Bildschirmen mit `devicePixelRatio > 1` bei
+  jedem Neuzeichnen seine Höhe.** `drawChart()` las die Sollhöhe aus dem
+  `height`-Attribut des Canvas und schrieb in derselben Funktion
+  `canvas.height = cssHeight · dpr`, also in genau dieses Attribut. Beim
+  ersten Laden fiel das nicht auf, beim ersten Reglerzug wuchs das Bild auf das
+  Doppelte, nach acht Zügen auf 21'760 px. Die Sollhöhe steht jetzt in
+  `data-height`, das der Code nie beschreibt. Gefunden beim Browsertest des
+  Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
+
 ### Gemessen
 - **Verfügbarkeit der Messgrössen** über alle 157 Stationen: Temperatur und
   Feuchte an 149, Globalstrahlung an 132, Diffusstrahlung an 82, langwellige

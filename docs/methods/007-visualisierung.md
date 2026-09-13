@@ -73,6 +73,9 @@ Farbtabelle.
 - Linien **2 px**, Marker 5 px mit 2 px Ring in Oberflächenfarbe, damit sie
   sich vom Verlauf lösen
 - Raster und Achsen zurückhaltend, ein Haarstrich
+- Die Sollhöhe des Canvas steht in `data-height`. Nicht im `height`-Attribut:
+  Dort schreibt `drawChart()` die Pixelhöhe `cssHeight · dpr` hinein, und von
+  dort wieder gelesen verdoppelte sich das Diagramm bei jedem Neuzeichnen
 - Legende immer vorhanden, sobald mehr als eine Marke im Bild ist
 - Keine Zahl an jedem Punkt — die Werte stehen im Tooltip und in der Tabelle
 

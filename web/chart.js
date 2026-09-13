@@ -29,7 +29,11 @@ export function drawChart(canvas, state) {
   const { dailyMax, limit, year } = state;
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth;
-  const cssHeight = Number(canvas.getAttribute("height"));
+  // Sollhöhe aus `data-height`, nicht aus dem `height`-Attribut: Letzteres
+  // schreibt die Zeile weiter unten selbst auf cssHeight · dpr. Von dort
+  // wieder gelesen verdoppelte sich das Diagramm bei jedem Neuzeichnen —
+  // auf einem Bildschirm mit dpr 2 schon beim ersten Reglerzug.
+  const cssHeight = Number(canvas.dataset.height);
 
   canvas.width = Math.round(cssWidth * dpr);
   canvas.height = Math.round(cssHeight * dpr);
