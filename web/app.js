@@ -267,21 +267,19 @@ function evaluate(climate, s) {
     occupiedToHour: OCCUPIED_TO,
   });
 
-  // Tagesmaxima der operativen Temperatur für die Darstellung
+  // Tagesmaxima der operativen Temperatur für die Darstellung. Die Stunden
+  // über der Grenze je Tag kommen aus exceedanceHours() selbst: Hier
+  // nachgezählt, stimmten sie bei den Szenarien nicht mit der Kennzahl überein,
+  // weil die Lokalstunde aus dem Stempel statt aus dem Stichzeitpunkt kam.
   const days = band.value.upper.length;
   const dailyMax = new Float64Array(days).fill(NaN);
-  const hoursOver = new Float64Array(days);
   for (let i = 0; i < series.axis.length; i++) {
     const v = operative[i];
     if (!Number.isFinite(v)) continue;
     const d = localDayIndex(series.axis, i);
     if (!(v <= dailyMax[d])) dailyMax[d] = v;
-    const hour = new Date(series.axis.startUtcMs + i * 3_600_000).getUTCHours();
-    if (Number.isFinite(band.value.upper[d]) && v > band.value.upper[d]) {
-      const local = (hour + series.axis.localOffsetMin / 60 + 23) % 24;
-      if (local >= OCCUPIED_FROM && local < OCCUPIED_TO) hoursOver[d]++;
-    }
   }
+  const hoursOver = uts.value.dailyHours;
 
   const finite = [...dailyMax].filter(Number.isFinite);
   return {
@@ -439,6 +437,8 @@ function renderTable() {
     : `<tr><th>Datum</th><th>θ_op max</th><th>Grenze</th><th>Δ</th><th>Stunden über Grenze</th></tr>`;
 
   const num = (v, digits = 1) => (Number.isFinite(v) ? v.toFixed(digits) : "—");
+  // Tagesstunden sind NaN, wo an diesem Tag keine Stunde bewertet wurde.
+  const hrs = (v) => (Number.isFinite(v) ? String(v) : "–");
   const rows = [];
 
   for (let d = 0; d < base.dailyMax.length; d++) {
@@ -455,13 +455,13 @@ function renderTable() {
     rows.push(other
       ? `<tr><td>${day}</td>` +
         `<td${baseOver ? ' class="over"' : ""}>${num(base.dailyMax[d])}</td>` +
-        `<td>${num(base.limit[d])}</td><td>${baseOver ? base.hoursOver[d] : "–"}</td>` +
+        `<td>${num(base.limit[d])}</td><td>${baseOver ? hrs(base.hoursOver[d]) : "–"}</td>` +
         `<td class="split${otherOver ? " over" : ""}">${num(aligned.dailyMax[d])}</td>` +
-        `<td>${num(aligned.limit[d])}</td><td>${otherOver ? aligned.hoursOver[d] : "–"}</td></tr>`
+        `<td>${num(aligned.limit[d])}</td><td>${otherOver ? hrs(aligned.hoursOver[d]) : "–"}</td></tr>`
       : `<tr><td>${day}</td><td class="over">${num(base.dailyMax[d])}</td>` +
         `<td>${num(base.limit[d])}</td>` +
         `<td>+${(base.dailyMax[d] - base.limit[d]).toFixed(1)}</td>` +
-        `<td>${base.hoursOver[d]}</td></tr>`);
+        `<td>${hrs(base.hoursOver[d])}</td></tr>`);
   }
 
   const columns = other ? 7 : 5;
@@ -623,7 +623,8 @@ function setupHover() {
     if (other) html += head(base.climate.short);
     html += row("θ_op max", `${value.toFixed(1)} °C`);
     html += Number.isFinite(limit) ? row("Grenze", `${limit.toFixed(1)} °C`) : row("Grenze", "nicht definiert");
-    if (over) html += row("Überschreitung", `+${(value - limit).toFixed(1)} K, ${base.hoursOver[day]} h`);
+    const hoursText = (v) => (Number.isFinite(v) ? `, ${v} h` : "");
+    if (over) html += row("Überschreitung", `+${(value - limit).toFixed(1)} K${hoursText(base.hoursOver[day])}`);
 
     if (other) {
       const v2 = aligned.dailyMax[day];
@@ -633,7 +634,7 @@ function setupHover() {
       if (Number.isFinite(v2)) {
         html += row("Grenze", Number.isFinite(l2) ? `${l2.toFixed(1)} °C` : "nicht definiert");
         if (Number.isFinite(l2) && v2 > l2) {
-          html += row("Überschreitung", `+${(v2 - l2).toFixed(1)} K, ${aligned.hoursOver[day]} h`);
+          html += row("Überschreitung", `+${(v2 - l2).toFixed(1)} K${hoursText(aligned.hoursOver[day])}`);
         }
         html += row("Δ θ_op max", `${signed(v2 - value, 1)} K`);
       }

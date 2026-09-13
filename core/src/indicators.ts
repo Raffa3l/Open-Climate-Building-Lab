@@ -364,18 +364,44 @@ export function adaptiveComfortBand(
  * Übertemperaturstunden: Stunden, in denen die operative Raumtemperatur die
  * adaptive Obergrenze des jeweiligen Tages überschreitet.
  *
+ * Neben den Jahressummen liefert die Funktion dieselben Grössen **je Tag**.
+ * Eine Tabelle oder ein Export, der die Tagesstunden selbst nachzählt, braucht
+ * dafür eine eigene Stundenzuordnung und driftet ab, sobald eine Quelle eine
+ * andere Zeitkonvention hat: Das Frontend hat bei den DRY-Szenarien genau so
+ * 54 bis 64 Stunden zu viel ausgewiesen. Aus derselben Schleife gezählt, summieren
+ * die Tageswerte immer auf die Kennzahl.
+ *
+ * `dailyHours` und `dailyKelvinHours` sind `NaN` an Tagen ohne eine einzige
+ * bewertete Stunde. Damit bleibt «nicht bewertet» von «keine Überschreitung»
+ * unterscheidbar.
+ *
+ * Die Tageswerte kamen ohne Versionssprung hinzu: Für gleiche Eingaben ändert
+ * sich keine bestehende Zahl, und die Version geht in den Berechnungs-Hash
+ * ein. Ein Sprung hätte jeden Permalink gebrochen, ohne dass sich ein
+ * publizierter Wert verändert hätte.
+ *
  * Verlangt eine Raumtemperaturreihe. Solange kein Raummodell existiert, ist
  * das die Schnittstelle, an der es andocken wird — bewusst getrennt, damit
  * niemand versehentlich Aussentemperaturen einsetzt und das Ergebnis
  * trotzdem plausibel aussieht.
  */
+export interface ExceedanceResult {
+  hours: number;
+  kelvinHours: number;
+  evaluatedHours: number;
+  /** Übertemperaturstunden je lokalem Tag; `NaN`, wo keine Stunde bewertet wurde. */
+  dailyHours: Float64Array;
+  /** Kelvinstunden je lokalem Tag; `NaN`, wo keine Stunde bewertet wurde. */
+  dailyKelvinHours: Float64Array;
+}
+
 export function exceedanceHours(
   operativeTemperatureC: Float64Array,
   axis: TimeAxis,
   dailyUpperLimitC: Float64Array,
   inputs: DatasetRef[],
   params: { category?: ComfortCategory; occupiedFromHour?: number; occupiedToHour?: number } = {},
-): Computation<{ hours: number; kelvinHours: number; evaluatedHours: number }> {
+): Computation<ExceedanceResult> {
   const category = params.category ?? "II";
   const occupiedFromHour = params.occupiedFromHour ?? 0;
   const occupiedToHour = params.occupiedToHour ?? 24;
@@ -383,22 +409,33 @@ export function exceedanceHours(
   let hours = 0;
   let kelvinHours = 0;
   let evaluatedHours = 0;
+  const days = dailyUpperLimitC.length;
+  const dailyHours = new Float64Array(days).fill(NaN);
+  const dailyKelvinHours = new Float64Array(days).fill(NaN);
 
   for (let i = 0; i < axis.length; i++) {
     const h = localHour(axis, i);
     if (h < occupiedFromHour || h >= occupiedToHour) continue;
-    const limit = dailyUpperLimitC[localDayIndex(axis, i)];
+    const d = localDayIndex(axis, i);
+    const limit = dailyUpperLimitC[d];
     const t = operativeTemperatureC[i];
     if (!Number.isFinite(limit) || !Number.isFinite(t)) continue;
     evaluatedHours++;
+    // Erste bewertete Stunde des Tages: ab hier gilt 0 statt «nicht bewertet».
+    if (Number.isNaN(dailyHours[d])) {
+      dailyHours[d] = 0;
+      dailyKelvinHours[d] = 0;
+    }
     if (t > limit) {
       hours++;
       kelvinHours += t - limit;
+      dailyHours[d]++;
+      dailyKelvinHours[d] += t - limit;
     }
   }
 
   return {
-    value: { hours, kelvinHours, evaluatedHours },
+    value: { hours, kelvinHours, evaluatedHours, dailyHours, dailyKelvinHours },
     unit: "h",
     method: {
       id: "comfort.exceedanceHours",

@@ -178,6 +178,44 @@ test("Übertemperaturstunden zählen nicht, wo das Komfortband undefiniert ist",
   assert.equal(r.value.evaluatedHours, 0, "undefinierte Tage werden gar nicht erst bewertet");
 });
 
+test("Tagesstunden summieren auf die Übertemperaturstunden", () => {
+  const limits = new Float64Array(365).fill(28.4);
+  const r = exceedanceHours(constantSeries(30), axis, limits, [SOURCE], { occupiedFromHour: 8, occupiedToHour: 18 });
+  const sum = [...r.value.dailyHours].reduce((a, b) => a + b, 0);
+  assert.equal(sum, r.value.hours);
+  assert.equal(r.value.dailyHours[100], 10);
+  assert.ok(Math.abs(r.value.dailyKelvinHours[100] - 16) < 1e-9);
+});
+
+test("Tage ohne bewertete Stunde sind NaN, nicht null", () => {
+  const limits = new Float64Array(365).fill(28.4);
+  limits[200] = NaN; // Komfortband an diesem Tag undefiniert
+  const r = exceedanceHours(constantSeries(20), axis, limits, [SOURCE], { occupiedFromHour: 8, occupiedToHour: 18 });
+  assert.equal(r.value.dailyHours[199], 0, "bewertet, aber keine Überschreitung");
+  assert.ok(Number.isNaN(r.value.dailyHours[200]), "nicht bewertet");
+  assert.ok(Number.isNaN(r.value.dailyKelvinHours[200]));
+});
+
+test("Tagesstunden folgen der Zeitkonvention der Szenarien, nicht dem Stempel", () => {
+  // DRY-Konvention nach docs/methods/009: Stempel am Intervallbeginn,
+  // Stichzeitpunkt hh:10 UTC, also hh+1:10 Lokalzeit. Heiss sind die Stempel
+  // 06:00 bis 17:00 UTC; das ergibt Lokalzeit 07:10 bis 18:10 und liegt damit
+  // vollständig im Belegungsfenster 07 bis 19 Uhr: 12 Stunden je Tag.
+  //
+  // Wer die Lokalstunde aus dem Stempel ableitet statt aus dem Stichzeitpunkt,
+  // erhält 06 bis 17 Uhr und damit 11 Stunden. Genau diesen Fehler hatte das
+  // Frontend, bei den Szenarien 54 bis 64 Stunden zu viel im Jahr.
+  const dryAxis = hourlyAxis(YEAR_2021_START, HOURS, { label: "start", sampleOffsetMin: 10 });
+  const indoor = new Float64Array(HOURS);
+  for (let i = 0; i < HOURS; i++) indoor[i] = i % 24 >= 6 && i % 24 <= 17 ? 30 : 20;
+  const limits = new Float64Array(365).fill(28.4);
+
+  const r = exceedanceHours(indoor, dryAxis, limits, [SOURCE], { occupiedFromHour: 7, occupiedToHour: 19 });
+  for (const d of [0, 1, 180, 364]) assert.equal(r.value.dailyHours[d], 12, `Tag ${d}`);
+  assert.equal(r.value.hours, 12 * 365);
+  assert.equal([...r.value.dailyHours].reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0), r.value.hours);
+});
+
 test("synthetischer Jahresgang liefert plausible Kennwerte", () => {
   const s = syntheticSeries(10, 9, 5); // Mittel 10 °C, Sommer bis ~24 °C
   const hot = thresholdDays(s, axis, [SOURCE], { thresholdC: 30 }).value.count;

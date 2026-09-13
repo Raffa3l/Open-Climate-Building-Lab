@@ -68,6 +68,22 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **Die Tagestabelle wies bei Szenarien zu viele Übertemperaturstunden aus.**
+  Das Frontend zählte die Stunden je Tag selbst und leitete die Lokalstunde aus
+  dem Zeitstempel ab. Für Messreihen (Stempel am Intervallende) war das
+  zufällig richtig, für die DRY-Szenarien (Intervallbeginn, Stichzeitpunkt
+  hh:10) lag das Belegungsfenster eine Stunde zu früh. Zürich/Fluntern: 423
+  statt 369 Stunden (2035 RCP 8.5), 529 statt 465 (2060 RCP 8.5). Die Kennzahl
+  in der Kachel war nie betroffen, sie kam immer aus dem Kern. Die Zählung
+  steht seit `ea05b7f` im Frontend, wirksam wurde der Fehler mit `c74e6a1`:
+  Die Szenarien sind die erste Quelle mit Stempel am Intervallbeginn.
+- `comfort.exceedanceHours` liefert dafür neu `dailyHours` und
+  `dailyKelvinHours` aus derselben Schleife wie die Jahressummen. Tabelle und
+  Tooltip lesen nur noch diese Werte; das Frontend hat keine eigene
+  Stundenzuordnung mehr. **Ohne Versionssprung:** Keine bestehende Zahl ändert
+  sich für gleiche Eingaben, und ein Sprung hätte über den Berechnungs-Hash
+  jeden Permalink gebrochen. Drei neue Tests, einer davon mit der
+  Zeitkonvention der Szenarien.
 - **Das Diagramm verdoppelte auf Bildschirmen mit `devicePixelRatio > 1` bei
   jedem Neuzeichnen seine Höhe.** `drawChart()` las die Sollhöhe aus dem
   `height`-Attribut des Canvas und schrieb in derselben Funktion

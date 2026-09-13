@@ -62,6 +62,31 @@ Mitgeführt werden zusätzlich die Kelvinstunden der Überschreitung — eine
 Überschreitung um 0,2 K ist etwas anderes als eine um 5 K — und die Zahl der
 überhaupt bewerteten Stunden.
 
+### Tageswerte
+
+Dieselben Grössen gibt die Funktion auch **je lokalem Tag** zurück:
+`dailyHours` und `dailyKelvinHours`. Sie entstehen in derselben Schleife wie
+die Jahressummen und summieren deshalb immer auf die Kennzahl.
+
+Wer Tagesstunden ausserhalb nachzählt, braucht eine eigene Zuordnung von
+Stunde zu Lokalzeit und driftet ab, sobald eine Quelle eine andere
+Zeitkonvention hat. Das Frontend hat die Tagesstunden bis 13.09.2026 selbst
+aus dem Zeitstempel abgeleitet. Für Messreihen (Stempel am Intervallende) war
+das zufällig richtig. Für die DRY-Szenarien (Intervallbeginn, Stichzeitpunkt
+hh:10, siehe [009](009-klimaszenarien.md)) lag das Belegungsfenster eine Stunde
+zu früh: In Zürich/Fluntern wies die Tabelle 423 statt 369 Stunden aus (2035
+RCP 8.5) und 529 statt 465 (2060 RCP 8.5). Die Kennzahl selbst war nie
+betroffen.
+
+An Tagen ohne eine einzige bewertete Stunde, etwa weil das Komfortband
+undefiniert ist, stehen beide Werte auf `NaN`. «Nicht bewertet» ist etwas
+anderes als «keine Überschreitung».
+
+Die Tageswerte kamen **ohne Versionssprung** hinzu. Für gleiche Eingaben ändert
+sich keine bestehende Zahl, und die Version geht in den Berechnungs-Hash ein:
+Ein Sprung hätte jeden Permalink gebrochen, ohne dass sich ein publizierter
+Wert verändert hätte.
+
 ## Verhältnis zu SIA 180
 
 SIA 180 kennt einen eigenen Nachweis des sommerlichen Wärmeschutzes mit eigenen
