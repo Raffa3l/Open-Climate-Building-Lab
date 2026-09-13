@@ -18,11 +18,40 @@ eine **Linie** über den Jahresverlauf, keine Balken:
 
 **Eine Achse.** Temperatur in °C, nichts sonst. Keine zweite Skala.
 
+## Zwei Klimastände nebeneinander
+
+Der Vergleichsmodus legt einen zweiten Klimastand über denselben Verlauf:
+gemessenes Jahr gegen Szenario oder Szenario gegen Szenario. Dabei gilt:
+
+- **Die Vergleichsreihe ist eine gleichrangige Serie**, also Serie 2, nicht
+  eine gedämpfte Variante von Serie 1.
+- **Jede Reihe bringt ihre eigene Komfortgrenze mit.** Das adaptive Band folgt
+  dem gleitenden Mittel der Aussentemperatur und liegt im wärmeren Klimastand
+  höher. Nur eine Grenze zu zeichnen läse die Überschreitung des zweiten
+  Klimastands an der falschen Schwelle ab. Die zweite Grenze ist deshalb
+  gepunktet in der Serienfarbe, nicht gestrichelt in gedämpfter Tinte. Sonst
+  wären die beiden Referenzen nicht auseinanderzuhalten.
+- **Die Überschreitungsfläche bleibt der Basisreihe vorbehalten.** Zwei
+  überlagerte Flächen ergeben eine dritte Farbe, die nichts bedeutet. Die
+  Vergleichsreihe wird **vor** der Fläche gezeichnet, nicht danach: Eine Linie
+  quer durch die Fläche zerschneidet sie in Fetzen und nimmt ihr die Aussage.
+- **Die Differenz steht als Zahl**, unter jeder Kennzahl, mit Vorzeichen. Die
+  Fläche zeigt das Ausmass, die Kachel den Unterschied.
+- **Die Tagesachse wird über (Monat, Tag) abgeglichen**, nicht über den
+  Laufindex: Ein DRY hat 365 Tage, ein Messjahr möglicherweise 366. Ein 29.
+  Februar ohne Gegenstück bleibt undefiniert (`alignDailyToCalendarYear` in
+  [`core/src/series.ts`](../../core/src/series.ts)).
+
+Beim Vergleich eines Messjahres mit einem Szenario steht ein Hinweis über dem
+Diagramm: Die Differenz ist dort **kein Klimasignal**, siehe
+[009](009-klimaszenarien.md).
+
 ## Farbrollen
 
 | Rolle | Hell | Dunkel |
 |---|---|---|
 | Serie 1 — Raumtemperatur | `#2a78d6` | `#3987e5` |
+| Serie 2: zweiter Klimastand | `#008300` | `#008300` |
 | Status „serious" — Überschreitung | `#ec835a` | `#ec835a` |
 | Referenzlinie, Achsenbeschriftung | `#898781` | `#898781` |
 | Raster | `#e1e0d9` | `#2c2c2a` |
@@ -31,15 +60,30 @@ eine **Linie** über den Jahresverlauf, keine Balken:
 Überschreitung ist ein **Zustand**, keine weitere Serie — deshalb eine
 Statusfarbe. Sie wird nie für eine Datenreihe wiederverwendet.
 
+Serie 2 ist **nicht** der zweite Slot der kategorialen Ordnung. Der wäre
+Orange und läge damit auf der Statusfarbe der Überschreitung; unter Protanopie
+sind beide nicht mehr zu trennen. Aus demselben Grund durchgefallen sind Aqua
+(ΔE 2.9 gegen Orange im Dunkelmodus), Gelb, Rot und Magenta. Violett scheitert
+zusätzlich an Serie 1 (ΔE 9.8 bei normalem Sehen im Dunkelmodus). Grün ist
+der erste Slot, der in **beiden** Modi jede harte Prüfung besteht.
+
+Damit ist `--status-good` (`#0ca30c`) im Diagramm **gesperrt**, weil es zu
+nah an Serie 2 liegt. Es bleibt für Zustandsanzeigen ausserhalb der Grafik.
+
 ### Validierung
 
 Geprüft mit dem Validator der Visualisierungsrichtlinie:
 
 | Prüfung | Hell | Dunkel |
 |---|---|---|
-| CVD-Trennung Serie ↔ Überschreitung | ΔE 23,3 | ΔE 22,5 |
-| Normalsicht | ΔE 32,3 | ΔE 30,4 |
-| Kontrast zur Oberfläche | `#ec835a` 2,57 ⚠ | alle ≥ 3:1 |
+| CVD-Trennung Serie 1 ↔ Überschreitung | ΔE 23.3 | ΔE 22.5 |
+| Normalsicht Serie 1 ↔ Überschreitung | ΔE 32.3 | ΔE 30.4 |
+| CVD-Trennung, schlechtestes Paar aus Serie 1, Serie 2, Überschreitung | ΔE 10.1 | ΔE 10.1 |
+| Normalsicht, schlechtestes Paar derselben drei | ΔE 29.0 | ΔE 29.9 |
+| Kontrast zur Oberfläche | `#ec835a` 2.57 ⚠ | alle ≥ 3:1 |
+
+Geprüft wurden alle Paare, nicht nur benachbarte: Die drei Marken liegen
+gleichzeitig im Bild und können einander überall begegnen.
 
 Der Warnwert im Hellmodus löst die **Relief-Regel** aus: Die Statusfarbe darf
 die Aussage nicht allein tragen. Erfüllt durch beides zugleich — die
@@ -76,7 +120,9 @@ Farbtabelle.
 - Die Sollhöhe des Canvas steht in `data-height`. Nicht im `height`-Attribut:
   Dort schreibt `drawChart()` die Pixelhöhe `cssHeight · dpr` hinein, und von
   dort wieder gelesen verdoppelte sich das Diagramm bei jedem Neuzeichnen
-- Legende immer vorhanden, sobald mehr als eine Marke im Bild ist
+- Legende immer vorhanden, sobald mehr als eine Marke im Bild ist; im
+  Vergleich trägt sie die Bezeichnung des jeweiligen Klimastands, damit die
+  Zuordnung nicht allein an der Farbe hängt
 - Keine Zahl an jedem Punkt — die Werte stehen im Tooltip und in der Tabelle
 
 ## Interaktion
@@ -84,7 +130,8 @@ Farbtabelle.
 Fadenkreuz und Tooltip beim Zeigen sind **Grundausstattung**, nicht Zugabe: Ein
 Diagramm im Browser ist interaktiv, sonst wäre ein Bild ausreichend. Der
 Tooltip nennt Datum, Tagesmaximum, Grenze und — bei Überschreitung — die
-Differenz in Kelvin und die Zahl der Stunden.
+Differenz in Kelvin und die Zahl der Stunden. Im Vergleich stehen beide
+Klimastände untereinander, benannt, mit der Differenz der Tagesmaxima.
 
 Die Filter stehen in einer Zeile über den Reglern, die Regler über dem
 Diagramm.

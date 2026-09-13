@@ -19,6 +19,7 @@ Die Kette steht vollständig: **157 Stationen, 784 Stationsjahre, 138 MB**.
 - ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung geneigter Flächen (isotrop und Perez)
 - ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil und Himmelsabstrahlung
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
+- ✅ Vergleichsmodus: zwei Klimastände in einem Diagramm, mit Differenz je Kennzahl
 - ✅ Alle SwissMetNet-Stationen, 2020–2024
 - ✅ Zukunftsklima: DRY-Szenarien 2035 und 2060, RCP 2.6 und 8.5, 45 Stationen
 - ⬜ Längere Historie für alle Stationen (läuft für die 41 Szenariostationen) (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))

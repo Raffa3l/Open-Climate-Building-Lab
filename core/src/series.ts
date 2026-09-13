@@ -89,6 +89,41 @@ export function localDayIndex(axis: TimeAxis, index: number): number {
 }
 
 /**
+ * Bildet eine Tagesreihe auf die Tagesachse eines anderen Kalenderjahres ab.
+ *
+ * Nötig, sobald zwei Klimastände nebeneinander gestellt werden: Ein DRY der
+ * Klimaszenarien liegt immer auf einem Nicht-Schaltjahr, ein Messjahr kann
+ * 366 Tage haben. Über den Laufindex gezeichnet verschöbe sich die zweite
+ * Reihe ab dem 1. März um einen Tag — sichtbar wäre das nicht, falsch schon.
+ *
+ * Abgebildet wird deshalb über (Monat, Tag). Ein 29. Februar ohne Gegenstück
+ * bleibt `NaN` statt interpoliert: eine erfundene Stützstelle sähe plausibel
+ * aus und wäre keine Messung.
+ *
+ * Reine Darstellungshilfe — sie ordnet fertige Tageswerte um und rechnet
+ * nichts. Ein Ergebniswert entsteht hier nicht, deshalb keine `Computation`.
+ */
+export function alignDailyToCalendarYear(
+  values: ArrayLike<number>,
+  fromYear: number,
+  toYear: number,
+  toLength: number,
+): Float64Array {
+  const out = new Float64Array(toLength).fill(NaN);
+  const source = new Map<number, number>();
+  for (let d = 0; d < values.length; d++) {
+    const date = new Date(Date.UTC(fromYear, 0, 1) + d * 86_400_000);
+    source.set(date.getUTCMonth() * 100 + date.getUTCDate(), d);
+  }
+  for (let d = 0; d < toLength; d++) {
+    const date = new Date(Date.UTC(toYear, 0, 1) + d * 86_400_000);
+    const from = source.get(date.getUTCMonth() * 100 + date.getUTCDate());
+    if (from !== undefined) out[d] = values[from];
+  }
+  return out;
+}
+
+/**
  * Lokaler Wochentag: 0 = Sonntag, 1 = Montag … 6 = Samstag.
  * Für Belegungsprofile, die am Wochenende aussetzen.
  */

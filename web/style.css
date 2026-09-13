@@ -14,8 +14,9 @@
   --border:           rgba(11, 11, 11, 0.10);
 
   --series-1:         #2a78d6;   /* operative Raumtemperatur */
+  --series-2:         #008300;   /* zweiter Klimastand im Vergleich */
   --status-serious:   #ec835a;   /* Überschreitung */
-  --status-good:      #0ca30c;
+  --status-good:      #0ca30c;   /* reserviert; im Diagramm gesperrt, siehe 007 */
 
   --radius: 8px;
   --font: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -119,6 +120,11 @@ input[type="range"] { width: 100%; accent-color: var(--series-1); }
 .tile-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
 .tile-unit { font-size: 13px; font-weight: 400; color: var(--ink-secondary); margin-left: 3px; }
 .tile-note { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+/* Der Vergleichswert steht unter der Kennzahl, nicht daneben: die Kachel
+   zeigt die Basis, das Delta ordnet sie ein. */
+.tile-delta { font-size: 12px; margin-top: 6px; display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
+.tile-delta .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--series-2); flex: none; align-self: center; }
+.tile-delta .diff { color: var(--ink-secondary); }
 
 /* --- Diagramm --- */
 figure { margin: 0; }
@@ -133,6 +139,19 @@ canvas { display: block; width: 100%; touch-action: none; }
 .swatch { width: 14px; height: 3px; border-radius: 2px; flex: none; }
 .swatch.area { height: 12px; border-radius: 3px; }
 .swatch.dashed { height: 0; border-top: 2px dashed var(--ink-muted); }
+.swatch.dotted { height: 0; border-top: 2px dotted var(--series-2); }
+
+/* Hinweis unter der Bildunterschrift, etwa zur Vergleichbarkeit von DRY und
+   Messjahr — keine Warnfarbe, aber deutlich abgesetzt. */
+.note {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  background: var(--plane);
+  border-left: 3px solid var(--axis);
+  border-radius: 0 4px 4px 0;
+}
 
 .tooltip {
   position: absolute;
@@ -152,6 +171,9 @@ canvas { display: block; width: 100%; touch-action: none; }
 .tooltip.on { opacity: 1; }
 .tooltip b { font-weight: 600; }
 .tooltip .row { display: flex; justify-content: space-between; gap: 14px; font-variant-numeric: tabular-nums; }
+/* Im Vergleich trennt eine Zwischenüberschrift die beiden Klimastände. */
+.tooltip .head { font-weight: 600; margin-top: 6px; color: var(--ink-secondary); }
+.tooltip b + .head { margin-top: 2px; }
 
 /* --- Nachweis --- */
 details { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
@@ -172,6 +194,11 @@ th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--bor
 th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
 th { color: var(--ink-secondary); font-weight: 600; font-size: 12px; }
 td.over { color: var(--ink); font-weight: 600; }
+
+/* Vergleichstabelle: Gruppenkopf über seiner Gruppe, nicht am rechten Rand,
+   und eine Kante zwischen den beiden Klimaständen. */
+th[colspan] { text-align: center; }
+th.split, td.split { border-left: 1px solid var(--border); }
 .scroll { overflow-x: auto; max-height: 340px; overflow-y: auto; }
 
 code { font-family: var(--mono); font-size: 12px; }

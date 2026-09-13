@@ -13,6 +13,26 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- **Vergleichsmodus im Frontend:** Ein zweiter Klimastand liegt über demselben
+  Verlauf, gemessenes Jahr gegen Szenario oder Szenario gegen Szenario. Beide
+  Reihen rechnen denselben Raum mit denselben Parametern; verschieden ist
+  allein das Aussenklima. Jede Kennzahl trägt den Vergleichswert und die
+  Differenz, «Berechnung anzeigen» führt beide Berechnungs-Hashes und beide
+  Eingangsdatensätze, die Tabelle stellt die überschrittenen Tage beider
+  Reihen nebeneinander. Der Zustand steht im Permalink (`compare=`); ohne
+  Vergleich bleibt die Adresse unverändert wie zuvor.
+- **Jede Reihe bringt ihre eigene Komfortgrenze mit.** Das adaptive Band folgt
+  dem gleitenden Mittel der Aussentemperatur und liegt im wärmeren Klimastand
+  höher. Mit nur einer Grenze läse man die Überschreitung des zweiten
+  Klimastands an der falschen Schwelle ab.
+- `series.alignDailyToCalendarYear()` bildet eine Tagesreihe über (Monat,
+  Tag) auf ein anderes Kalenderjahr ab. Ein DRY hat 365 Tage, ein Messjahr
+  möglicherweise 366; über den Laufindex gezeichnet verschöbe sich die zweite
+  Kurve ab dem 1. März um einen Tag. Ein 29. Februar ohne Gegenstück bleibt
+  `NaN` statt interpoliert. Im Kern, nicht im Frontend: Zeitkonventionen
+  gehören zum Rechenkern.
+- **Farbrolle `--series-2`** (`#008300`) und ein Abschnitt zum Vergleich in
+  [007](docs/methods/007-visualisierung.md).
 - `solar` — Sonnenstand nach Michalsky/NOAA, Diffusanteil nach Erbs (1982),
   Einstrahlung auf geneigte Flächen im isotropen Himmelsmodell (Liu & Jordan).
 - `building` — Raummodell **5R1C nach EN ISO 13790:2008**, Simple Hourly
@@ -25,6 +45,10 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   [006](docs/methods/006-room-model-5r1c.md).
 
 ### Geändert
+- Die Bezeichnung eines Szenarios kommt jetzt überall aus derselben Funktion.
+  Der Untertitel las zuvor `meta.label` aus dem Detailindex („RCP85"), das
+  Auswahlfeld dagegen „RCP 8.5"; nebeneinander gestellt fiel die
+  Doppelschreibweise auf.
 - **`building.simulate5R1C` auf 1.2.0**, weil Perez das neue Standard-Modell
   ist. Zuvor 1.1.0 wegen der Himmelsabstrahlung.
 - **`solar.tiltedIrradiance` auf 1.0.1:** Die Direktnormalstrahlung ist auf
@@ -54,6 +78,25 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
 
 ### Gemessen
+- **Warum der Vergleichsmodus einen Hinweis braucht.** Derselbe Raum in der
+  Voreinstellung des Frontends, Zürich/Fluntern, Übertemperaturstunden:
+
+  | Klimastand | UTS | Kh | Spitze |
+  |---|---:|---:|---:|
+  | gemessen 2003 | 526 | 1'066 | 36.7 °C |
+  | gemessen 2023 | 501 | 801 | 36.3 °C |
+  | gemessen 2024 | 403 | 596 | 33.7 °C |
+  | Szenario 2060 RCP 2.6 | 336 | 504 | 35.0 °C |
+  | Szenario 2035 RCP 8.5 | 369 | 599 | 35.6 °C |
+  | Szenario 2060 RCP 8.5 | 465 | 825 | 37.5 °C |
+  | Szenario 2060 RCP 8.5, warmer Sommer | 624 | 1'329 | 38.9 °C |
+
+  **Innerhalb** des Szenariensatzes ist die Reihenfolge monoton und lesbar.
+  **Gegen einzelne Messjahre** kippt sie: 2003 und 2023 liegen über dem
+  Szenario 2060 RCP 8.5, weil ein DRY ein typisches Jahr abbildet und kein
+  Extremjahr. Die Spitzentemperatur zeigt die Erwärmung trotzdem: Sie steigt
+  auch dort, wo die Stundenzahl fällt. Genau deshalb erscheint der Hinweis nur
+  beim Vergleich Messjahr ↔ Szenario, nicht zwischen zwei Szenarien.
 - **Verfügbarkeit der Messgrössen** über alle 157 Stationen: Temperatur und
   Feuchte an 149, Globalstrahlung an 132, Diffusstrahlung an 82, langwellige
   Einstrahlung an nur 46. Die dokumentierten Rückfallebenen — Erbs für die

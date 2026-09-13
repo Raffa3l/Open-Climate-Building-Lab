@@ -25,8 +25,19 @@ function monthStarts(year) {
   return out;
 }
 
+/**
+ * Zeichnet den Jahresverlauf.
+ *
+ * `compare` ist optional und trägt einen zweiten Klimastand — dieselbe
+ * Tagesachse, dieselbe Temperaturskala. Die Überschreitungsfläche bleibt der
+ * Basisreihe vorbehalten: zwei überlagerte Flächen ergeben eine dritte,
+ * bedeutungslose Farbe, und die Fläche ist ein Zustand, keine Serie. Die
+ * Vergleichsreihe bringt ihre eigene Komfortgrenze mit — das adaptive Band
+ * verschiebt sich mit dem Aussenklima, und ohne sie läse man die
+ * Überschreitung des Szenarios an der falschen Schwelle ab.
+ */
 export function drawChart(canvas, state) {
-  const { dailyMax, limit, year } = state;
+  const { dailyMax, limit, year, compare } = state;
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth;
   // Sollhöhe aus `data-height`, nicht aus dem `height`-Attribut: Letzteres
@@ -48,6 +59,7 @@ export function drawChart(canvas, state) {
     axis: role("--axis"),
     muted: role("--ink-muted"),
     series: role("--series-1"),
+    compare: role("--series-2"),
     exceed: role("--status-serious"),
     surface: role("--surface"),
   };
@@ -62,6 +74,7 @@ export function drawChart(canvas, state) {
   // --- Skalen -------------------------------------------------------------
   const finite = (a) => [...a].filter(Number.isFinite);
   const values = [...finite(dailyMax), ...finite(limit)];
+  if (compare) values.push(...finite(compare.dailyMax), ...finite(compare.limit));
   if (values.length === 0) return null;
 
   const rawMin = Math.min(...values);
@@ -102,6 +115,23 @@ export function drawChart(canvas, state) {
     ctx.stroke();
     ctx.fillStyle = colors.muted;
     ctx.fillText(label, x + plot.w / 24, plot.y + plot.h + 8);
+  }
+
+  // --- Vergleichsreihe, ganz unten ----------------------------------------
+  // Vor der Überschreitungsfläche gezeichnet, nicht danach: Die Fläche ist die
+  // Aussage der Basisreihe und muss zusammenhängend lesbar bleiben. Eine
+  // Linie quer hindurch zerschneidet sie in Fetzen.
+  if (compare) {
+    ctx.strokeStyle = colors.compare;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([2, 3]);
+    ctx.globalAlpha = 0.75;
+    strokeSeries(ctx, compare.limit, xOf, yOf);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    strokeSeries(ctx, compare.dailyMax, xOf, yOf);
   }
 
   // --- Überschreitungsfläche ---------------------------------------------
@@ -178,7 +208,7 @@ function strokeSeries(ctx, values, xOf, yOf) {
 export function drawCrosshair(canvas, geometry, state, day) {
   const ctx = canvas.getContext("2d");
   const { xOf, yOf, plot, colors } = geometry;
-  const { dailyMax, limit } = state;
+  const { dailyMax, limit, compare } = state;
 
   const x = Math.round(xOf(day)) + 0.5;
   ctx.save();
@@ -189,7 +219,10 @@ export function drawCrosshair(canvas, geometry, state, day) {
   ctx.lineTo(x, plot.y + plot.h);
   ctx.stroke();
 
-  for (const [values, color] of [[limit, colors.muted], [dailyMax, colors.series]]) {
+  const marks = [[limit, colors.muted], [dailyMax, colors.series]];
+  if (compare) marks.unshift([compare.dailyMax, colors.compare]);
+
+  for (const [values, color] of marks) {
     const v = values[day];
     if (!Number.isFinite(v)) continue;
     // 2px Ring in Oberflächenfarbe, damit der Marker sich vom Verlauf löst
