@@ -18,7 +18,7 @@
 import { getVariable } from "../src/series.ts";
 import { citations, shortHash } from "../src/provenance.ts";
 import { adaptiveComfortBand, dailyMean, exceedanceHours, runningMeanOutdoorTemperature, thresholdDays, tropicalNights } from "../src/indicators.ts";
-import { simulate5R1C, warmupHours, type RoomSpec } from "../src/building.ts";
+import { simulate5R1C, type RoomSpec } from "../src/building.ts";
 import type { StationSeries } from "../src/series.ts";
 import {
   loadCatalog, loadScenarioCatalog, loadScenarioIndex, loadSeries, loadStationIndex,
@@ -51,7 +51,7 @@ function evaluate(series: StationSeries, lat: number, lon: number) {
   const outdoor = getVariable(series, "tre200h0");
   const inputs = [series.source];
   const band = adaptiveComfortBand(
-    runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs).value, inputs, { category: "II" },
+    runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs), { category: "II" },
   );
 
   const spec = room();
@@ -63,10 +63,9 @@ function evaluate(series: StationSeries, lat: number, lon: number) {
     axis: series.axis, latitude: lat, longitude: lon,
   }, inputs);
 
+  const uts = exceedanceHours(sim, band, series.axis, { occupiedFromHour: 7, occupiedToHour: 19 });
   const op = sim.value.operativeTemperature.slice();
-  op.fill(NaN, 0, warmupHours(spec));
-  const uts = exceedanceHours(op, series.axis, band.value.upper, inputs,
-    { category: "II", occupiedFromHour: 7, occupiedToHour: 19 });
+  op.fill(NaN, 0, Number(uts.params.warmupHours));
 
   const daily = [...dailyMean(outdoor, series.axis)].filter(Number.isFinite);
   return {

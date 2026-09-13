@@ -37,7 +37,7 @@ const simInput = {
 
 // Komfortband aus dem Aussenklima — für alle Varianten dasselbe.
 const runningMean = runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs);
-const band = adaptiveComfortBand(runningMean.value, inputs, { category: "II" });
+const band = adaptiveComfortBand(runningMean, { category: "II" });
 
 const FACADE = 9.8;
 
@@ -115,18 +115,12 @@ console.log("-".repeat(header.length + 4));
 
 for (const { label, spec } of scenarios) {
   const sim = simulate5R1C(spec, simInput, inputs);
-  const skip = warmupHours(spec);
 
-  // Die Einschwingphase wird verworfen: der Massenknoten startet auf der
-  // Aussentemperatur der ersten Stunde und erinnert sich daran tagelang.
+  // Die Einschwingphase verwirft exceedanceHours() selbst (ADR 0007). Für die
+  // Spitzentemperatur wird dieselbe Stundenzahl hier ausgeblendet.
+  const uts = exceedanceHours(sim, band, series.axis, { occupiedFromHour: 7, occupiedToHour: 19 });
   const evaluated = sim.value.operativeTemperature.slice();
-  evaluated.fill(NaN, 0, skip);
-
-  const uts = exceedanceHours(evaluated, series.axis, band.value.upper, inputs, {
-    category: "II",
-    occupiedFromHour: 7,
-    occupiedToHour: 19,
-  });
+  evaluated.fill(NaN, 0, Number(uts.params.warmupHours));
 
   const peak = Math.max(...[...evaluated].filter(Number.isFinite));
 
@@ -137,7 +131,7 @@ for (const { label, spec } of scenarios) {
       peak.toFixed(1).padStart(10) +
       String(sim.value.shadedHours).padStart(8) +
       String(sim.value.nightVentilationHours).padStart(8) +
-      "  " + (await shortHash(sim)),
+      "  " + (await shortHash(uts)),
   );
 }
 

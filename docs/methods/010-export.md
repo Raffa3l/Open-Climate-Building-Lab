@@ -21,8 +21,9 @@ Je Klimastand zwei Dateien:
 | `ocbl_<station>_<klimastand>_<hash>.csv` | Stundenreihe, eine Zeile je Stunde |
 | `ocbl_<station>_<klimastand>_<hash>.json` | Manifest: Nachweis, Spaltenbeschreibung, Quellen |
 
-`<hash>` ist die Kurzform des **Simulations**-Hashes. Warum nicht der Hash der
-Übertemperaturstunden, steht unter [Bekannte Lücke](#bekannte-lücke-der-hash-der-übertemperaturstunden-kennt-den-raum-nicht).
+`<hash>` ist die Kurzform des Hashes der **Übertemperaturstunden**. Über seine
+Vorgänger umfasst er Simulation, Komfortband und Datensatz, siehe
+[Verkettete Hashes](#verkettete-hashes).
 
 ## CSV
 
@@ -111,7 +112,7 @@ Drei Prüfungen, alle ohne dieses Projekt und nur mit der Python-Standardbibliot
 ```python
 import csv, hashlib, json
 
-m = json.load(open("ocbl_SMA_y2024_a2fc5ec2f2ac.json", encoding="utf-8"))
+m = json.load(open("ocbl_SMA_y2024_1239df88adda.json", encoding="utf-8"))
 raw = open(m["file"]["name"], "rb").read()
 
 # 1. Die CSV ist die, auf die sich das Manifest bezieht
@@ -130,22 +131,22 @@ assert over == exceedance["value"]["hours"]
 
 Prüfung 3 ist auch als Test im Kern verankert, für beide Zeitkonventionen.
 
-## Bekannte Lücke: Der Hash der Übertemperaturstunden kennt den Raum nicht
+## Verkettete Hashes
 
-`exceedanceHours()` erhält die Raumtemperaturreihe als nackte Zahlen. Ihre
-`inputs` sind die Wetterdatensätze, ihre `params` Kategorie und
-Belegungsfenster. Die Raumparameter stehen nur in der Simulation. Gemessen an
-Zürich/Fluntern 2024:
+Die Übertemperaturstunden bauen auf der Simulation und dem Komfortband auf, das
+Komfortband auf dem gleitenden Mittel. Jede abgeleitete Berechnung führt ihre
+Vorgänger mit, und deren kanonische Form steht verschachtelt in der eigenen
+([ADR 0007](../adr/0007-verkettete-berechnungs-hashes.md)). Die Prüfung ist
+trotzdem dieselbe wie oben: SHA-256 über `canonicalForm` ergibt `hash`.
 
-| Fensteranteil | Übertemperaturstunden | Simulations-Hash | ÜTS-Hash |
+Bis 13.09.2026 war das nicht so. Die Raumparameter standen nur im Hash der
+Simulation, und zwei verschiedene Ergebnisse trugen denselben ÜTS-Hash.
+Gemessen an Zürich/Fluntern 2024:
+
+| Fensteranteil | Übertemperaturstunden | ÜTS-Hash vorher | ÜTS-Hash jetzt |
 |---|---:|---|---|
-| 40 % | 403 | `a2fc5ec2f2ac` | `5e2124ea304d` |
-| 70 % | 662 | `824705722358` | `5e2124ea304d` |
+| 40 % | 403 | `5e2124ea304d` | `1239df88adda` |
+| 70 % | 662 | `5e2124ea304d` | `81f396dc6568` |
 
-Zwei verschiedene Ergebnisse tragen denselben ÜTS-Hash. **Eindeutig ist erst
-das Paar aus beiden Hashes.** Der Export benennt die Dateien deshalb nach dem
-Simulations-Hash und führt beide im Manifest.
-
-Behoben ist das nicht. Jede Reparatur ändert die Hash-Bildung, etwa indem eine
-Berechnung vorgelagerte Berechnungen als Eingang führt, und bricht damit alle
-bestehenden Berechnungs-Hashes. Das braucht einen Entscheid und einen ADR.
+Berechnungen ohne Vorgänger behielten ihren Hash, etwa die Simulation
+(`a2fc5ec2f2ac`) und das gleitende Mittel (`5911973a7211`).

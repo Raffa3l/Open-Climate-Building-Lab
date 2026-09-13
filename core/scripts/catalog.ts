@@ -52,7 +52,8 @@ export async function loadStationIndex(entry: StationEntry): Promise<Record<stri
 }
 
 /** Lädt ein Stationsjahr und prüft dabei die Katalogprüfsumme mit. */
-export async function loadSeries(meta: YearMeta): Promise<StationSeries> {
+/** Braucht nur Pfad und Prüfsumme; so passen Messjahre und Szenarien gleichermassen. */
+export async function loadSeries(meta: Pick<YearMeta, "path" | "sha256">): Promise<StationSeries> {
   const bytes = await readFile(path.join(BUILD_DIR, meta.path));
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   return readPacked(buffer, meta.sha256);

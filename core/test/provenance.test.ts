@@ -5,8 +5,10 @@ import {
   citations,
   canonicalForm,
   computationHash,
+  mergeInputs,
   shortHash,
   stableStringify,
+  upstreamOf,
   type Computation,
   type DatasetRef,
 } from "../src/provenance.ts";
@@ -132,4 +134,61 @@ test("Titel und Link ändern den Berechnungs-Hash nicht", async () => {
   const withMeta = base();
   withMeta.inputs = [{ ...ds("SMA", "a".repeat(64)), title: "T", url: "U" }];
   assert.equal(await computationHash(base()), await computationHash(withMeta));
+});
+
+test("Berechnung ohne Vorgänger behält den Hash von vor ADR 0007", async () => {
+  // Fester Anker, vor der Einführung von `upstream` mit dem damaligen Code
+  // gerechnet. Bricht er, sind alle bestehenden Permalinks gebrochen.
+  const c: Computation<number> = {
+    value: 1,
+    unit: "h",
+    method: { id: "anchor.test", version: "1.0.0", doc: "x", sources: [] },
+    params: { category: "II", occupiedFromHour: 7 },
+    inputs: [{
+      collection: "test", station: "TST", year: 2021, variables: ["tre200h0"],
+      sha256: "0".repeat(64), license: "CC-BY-4.0", attribution: "Testdaten",
+    }],
+  };
+  assert.equal(await computationHash(c), "a34dbce68a33dd906a02f476b80295bd91131e35678bcfbd64c6efd323467326");
+  assert.equal(await computationHash({ ...c, upstream: [] }), await computationHash(c), "eine leere Liste zählt wie keine");
+});
+
+const derived = (upstream: Computation<unknown>): Computation<number> => ({
+  ...base(),
+  method: { ...base().method, id: "derived.test" },
+  upstream: [{ role: "quelle", computation: upstream }],
+});
+
+test("ein geänderter Vorgänger ändert den Hash der abgeleiteten Berechnung", async () => {
+  const changed = base();
+  changed.params = { ...changed.params, thresholdC: 21 };
+  assert.notEqual(await computationHash(derived(base())), await computationHash(derived(changed)));
+});
+
+test("der Ergebniswert eines Vorgängers geht nicht in den Hash ein", async () => {
+  assert.equal(await computationHash(derived(base())), await computationHash(derived({ ...base(), value: 7 })));
+});
+
+test("die Reihenfolge der Vorgänger ist unerheblich", async () => {
+  const other: Computation<number> = { ...base(), params: { thresholdC: 25 } };
+  const a: Computation<number> = { ...base(), upstream: [{ role: "a", computation: base() }, { role: "b", computation: other }] };
+  const b: Computation<number> = { ...base(), upstream: [{ role: "b", computation: other }, { role: "a", computation: base() }] };
+  assert.equal(await computationHash(a), await computationHash(b));
+});
+
+test("Vorgänger stehen verschachtelt in der kanonischen Form", () => {
+  const c = canonicalForm(derived(base()));
+  assert.match(c, /"upstream":\[\{"computation":\{.*"id":"indicator.tropicalNights"/);
+  assert.match(c, /"role":"quelle"/);
+});
+
+test("upstreamOf findet die Rolle und wirft bei einer fehlenden", () => {
+  const c = derived(base());
+  assert.equal(upstreamOf<number>(c, "quelle").method.id, "indicator.tropicalNights");
+  assert.throws(() => upstreamOf(c, "gibtsnicht"), /keine vorgelagerte Berechnung "gibtsnicht"/);
+});
+
+test("mergeInputs dedupliziert über den Datenstand, nicht über die Objektidentität", () => {
+  const merged = mergeInputs([ds("SMA", "a".repeat(64))], [ds("SMA", "a".repeat(64)), ds("BER", "b".repeat(64))]);
+  assert.deepEqual(merged.map((i) => i.station), ["SMA", "BER"]);
 });

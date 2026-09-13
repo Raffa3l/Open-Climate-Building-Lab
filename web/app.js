@@ -21,7 +21,6 @@ import {
   citations,
   shortHash,
   simulate5R1C,
-  warmupHours,
 } from "./vendor/core/index.js";
 import { drawChart, drawCrosshair } from "./chart.js";
 
@@ -217,7 +216,7 @@ async function loadClimate(stationAbbr, key) {
   const inputs = [series.source];
 
   const runningMean = runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs);
-  const band = adaptiveComfortBand(runningMean.value, inputs, { category: CATEGORY });
+  const band = adaptiveComfortBand(runningMean, { category: CATEGORY });
 
   return {
     series, band, runningMean, meta, station: stationAbbr, isScenario, key,
@@ -257,17 +256,15 @@ function evaluate(climate, s) {
     longitude: entry.lon,
   }, inputs);
 
-  // Einschwingphase verwerfen: der Massenknoten startet auf der Aussen-
-  // temperatur der ersten Stunde und erinnert sich daran tagelang.
-  const skip = warmupHours(room);
-  const operative = simulation.value.operativeTemperature.slice();
-  operative.fill(NaN, 0, skip);
-
-  const uts = exceedanceHours(operative, series.axis, band.value.upper, inputs, {
-    category: CATEGORY,
+  // Die Einschwingphase verwirft exceedanceHours() selbst (ADR 0007). Für die
+  // Tagesmaxima im Diagramm wird dieselbe Stundenzahl hier ausgeblendet.
+  const uts = exceedanceHours(simulation, band, series.axis, {
     occupiedFromHour: OCCUPIED_FROM,
     occupiedToHour: OCCUPIED_TO,
   });
+  const skip = uts.params.warmupHours;
+  const operative = simulation.value.operativeTemperature.slice();
+  operative.fill(NaN, 0, skip);
 
   // Tagesmaxima der operativen Temperatur für die Darstellung. Die Stunden
   // über der Grenze je Tag kommen aus exceedanceHours() selbst: Hier
@@ -596,15 +593,12 @@ async function buildExport(result, s) {
   const csv = hourlyCsv({
     axis: series.axis,
     outdoorTemperature: getVariable(series, "tre200h0"),
-    simulation: simulation.value,
-    warmupHours: skip,
-    dailyUpperLimit: band.value.upper,
     exceedance: uts,
   });
 
-  // Benannt nach dem Simulations-Hash: Der Hash der Übertemperaturstunden
-  // kennt die Raumparameter nicht (docs/methods/010-export.md, bekannte Lücke).
-  const stem = `ocbl_${climate.station}_${climate.key}_${await shortHash(simulation)}`;
+  // Benannt nach dem Hash der Übertemperaturstunden: Über seine Vorgänger
+  // umfasst er Simulation, Komfortband und Datensatz (ADR 0007).
+  const stem = `ocbl_${climate.station}_${climate.key}_${await shortHash(uts)}`;
 
   const manifest = await exportManifest({
     csv,

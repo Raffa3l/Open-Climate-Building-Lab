@@ -9,23 +9,19 @@
  * docs/methods/005 und 008 stammen aus diesem Skript.
  */
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { readPacked } from "../src/pack.ts";
 import { getVariable } from "../src/series.ts";
+import { station } from "./catalog.ts";
 import { adaptiveComfortBand, dailyMean, exceedanceHours, runningMeanOutdoorTemperature } from "../src/indicators.ts";
-import { simulate5R1C, warmupHours, type RoomSpec } from "../src/building.ts";
+import { simulate5R1C, type RoomSpec } from "../src/building.ts";
 
-const BUILD = path.resolve(import.meta.dirname, "../../data/build");
-const catalog = JSON.parse(await readFile(path.join(BUILD, "catalog.json"), "utf-8"));
-const entry = catalog.stations.SMA;
-const meta = entry.years["2023"];
-const bytes = await readFile(path.join(BUILD, meta.path));
-const series = readPacked(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer, meta.sha256);
+// Über den zweistufigen Katalog wie die übrigen Skripte. Der direkte Zugriff auf
+// entry.years["2023"].path brach, als der Katalog in Index und Detaildateien
+// aufgeteilt wurde: years ist seither eine Liste von Jahreszahlen.
+const { entry, series } = await station("SMA", "2023");
 
 const outdoor = getVariable(series, "tre200h0");
 const inputs = [series.source];
-const band = adaptiveComfortBand(runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs).value, inputs, { category: "II" });
+const band = adaptiveComfortBand(runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs), { category: "II" });
 
 const base = { outdoorTemperature: outdoor, globalHorizontal: getVariable(series, "gre000h0"), axis: series.axis, latitude: entry.lat, longitude: entry.lon };
 const lw = getVariable(series, "oli000h0");
@@ -45,10 +41,9 @@ function room(uOpaque: number, uWindow: number, skyViewFactor: number, skyModel:
 
 function run(spec: RoomSpec, longwave?: Float64Array) {
   const sim = simulate5R1C(spec, longwave ? { ...base, downwellingLongwave: longwave } : base, inputs);
-  const skip = warmupHours(spec);
+  const uts = exceedanceHours(sim, band, series.axis, { occupiedFromHour: 7, occupiedToHour: 19 });
   const op = sim.value.operativeTemperature.slice();
-  op.fill(NaN, 0, skip);
-  const uts = exceedanceHours(op, series.axis, band.value.upper, inputs, { category: "II", occupiedFromHour: 7, occupiedToHour: 19 });
+  op.fill(NaN, 0, Number(uts.params.warmupHours));
   const peak = Math.max(...[...op].filter(Number.isFinite));
   const meanLoss = [...sim.value.skyLoss].filter(Number.isFinite).reduce((a, b) => a + b, 0) / series.axis.length;
   return { uts: uts.value.hours, kh: uts.value.kelvinHours, peak, meanLoss };

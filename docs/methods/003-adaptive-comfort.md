@@ -47,20 +47,39 @@ definiert, die Obergrenze bewegt sich zwischen 25,1 °C und 29,5 °C.
 **Die Grenzen beziehen sich auf die operative Raumtemperatur, nicht auf die
 Aussentemperatur.**
 
-Deshalb ist `exceedanceHours()` eine getrennte Funktion, die eine
-Raumtemperaturreihe verlangt. Solange kein Raummodell existiert, lässt sich
-diese Kennzahl nicht berechnen — und genau so soll es sein. Würde man
+Deshalb nimmt `exceedanceHours()` das Ergebnis des Raummodells entgegen, und
+zwar als `Computation` aus `simulate5R1C()`, nicht als nackte Reihe. Würde man
 ersatzweise die Aussentemperatur einsetzen, käme eine plausibel aussehende und
-vollständig falsche Zahl heraus.
-
-Die Funktion ist bereits vorhanden und geprüft. Sie ist die Schnittstelle, an
-der das 5R1C-Raummodell nach EN ISO 13790 andocken wird.
+vollständig falsche Zahl heraus. Seit Version 2.0.0 verhindert das der Typ.
 
 $$\text{ÜTS} = \left|\{i \in \text{Belegung} : \Theta_{o,i} > \Theta_{o,max}(d_i)\}\right|$$
 
 Mitgeführt werden zusätzlich die Kelvinstunden der Überschreitung — eine
 Überschreitung um 0,2 K ist etwas anderes als eine um 5 K — und die Zahl der
 überhaupt bewerteten Stunden.
+
+### Eingänge und Identität
+
+Die Funktion baut auf zwei Berechnungen auf und führt beide als Vorgänger
+([ADR 0007](../adr/0007-verkettete-berechnungs-hashes.md)):
+
+| Rolle | Berechnung | Beitrag |
+|---|---|---|
+| `simulation` | `building.simulate5R1C` | Operative Raumtemperatur, Raumparameter, Einschwingphase |
+| `comfortBand` | `comfort.adaptiveComfortBand` | Obergrenze je Tag und Kategorie |
+
+Das Komfortband führt seinerseits das gleitende Mittel als Vorgänger
+(`runningMean`), damit α in seinen Hash eingeht.
+
+Der Berechnungs-Hash umfasst damit die ganze Kette. Vor 2.0.0 standen die
+Raumparameter nur im Hash der Simulation: 40 % und 70 % Fensteranteil ergaben
+in Zürich/Fluntern 2024 403 und 662 Übertemperaturstunden unter demselben Hash.
+
+**Die Einschwingphase verwirft die Funktion selbst.** Aus den abgeleiteten
+Kenngrössen der Simulation bestimmt sie dieselbe Stundenzahl wie
+`warmupHours()` und legt sie in `params.warmupHours` ab. **Die Kategorie**
+kommt aus dem Komfortband und wird nicht ein zweites Mal angegeben, weil sich
+zwei Angaben widersprechen könnten.
 
 ### Tageswerte
 
@@ -85,7 +104,8 @@ anderes als «keine Überschreitung».
 Die Tageswerte kamen **ohne Versionssprung** hinzu. Für gleiche Eingaben ändert
 sich keine bestehende Zahl, und die Version geht in den Berechnungs-Hash ein:
 Ein Sprung hätte jeden Permalink gebrochen, ohne dass sich ein publizierter
-Wert verändert hätte.
+Wert verändert hätte. Der Sprung auf 2.0.0 kam danach mit ADR 0007, aus einem
+anderen Grund: Die Signatur wurde inkompatibel, und der Hash sollte sich ändern.
 
 ## Verhältnis zu SIA 180
 

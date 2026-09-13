@@ -57,6 +57,23 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   [006](docs/methods/006-room-model-5r1c.md).
 
 ### Geändert
+- **Verkettete Berechnungs-Hashes**
+  ([ADR 0007](docs/adr/0007-verkettete-berechnungs-hashes.md)). `Computation`
+  hat ein optionales Feld `upstream` mit den Berechnungen, auf denen sie
+  aufbaut. Deren kanonische Form steht verschachtelt in der eigenen, der Hash
+  umfasst damit die ganze Kette. Ohne Vorgänger entfällt das Feld, und der Hash
+  bleibt byte-gleich; ein fester Anker im Test hält das fest.
+- **`comfort.exceedanceHours` auf 2.0.0:** nimmt Simulation und Komfortband als
+  `Computation` statt nackter Reihen. Die Einschwingphase verwirft die Funktion
+  selbst (`params.warmupHours`), die Kategorie kommt aus dem Band. Die Werte
+  für gleiche Eingaben sind unverändert, die Hashes neu.
+- **`comfort.adaptiveComfortBand` auf 2.0.0:** nimmt das gleitende Mittel als
+  `Computation`, damit α in den Hash eingeht.
+- Die Exportdateien tragen den Hash der Übertemperaturstunden statt des
+  Simulations-Hashes. Er umfasst jetzt Raum, Komfortband und Datensatz.
+- `core/scripts` ist in der Typprüfung. Dabei zwei Typfehler in
+  `climate-change.ts` behoben: `loadSeries()` verlangte den ganzen `YearMeta`,
+  braucht aber nur Pfad und Prüfsumme.
 - Die Bezeichnung eines Szenarios kommt jetzt überall aus derselben Funktion.
   Der Untertitel las zuvor `meta.label` aus dem Detailindex („RCP85"), das
   Auswahlfeld dagegen „RCP 8.5"; nebeneinander gestellt fiel die
@@ -80,6 +97,12 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **`core/scripts/model-effects.ts` lief nicht mehr.** Es griff direkt auf
+  `entry.years["2023"].path` zu; seit der Aufteilung des Katalogs in Index und
+  Detaildateien ist `years` eine Liste. Umgestellt auf `station()` wie die
+  übrigen Skripte. Die Ausgabe deckt sich mit den dokumentierten Zahlen:
+  Himmelsabstrahlung Neubau −8.9 %, Altbau −25.5 %, Perez gegen isotrop +4.4 %
+  und +5.7 %.
 - **Die Tagestabelle wies bei Szenarien zu viele Übertemperaturstunden aus.**
   Das Frontend zählte die Stunden je Tag selbst und leitete die Lokalstunde aus
   dem Zeitstempel ab. Für Messreihen (Stempel am Intervallende) war das
@@ -111,12 +134,13 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Zeilen und 648 kB. In beiden Dateien summieren die Zeilen mit Überschreitung
   genau auf die Kennzahl (403 und 465 h). Das Python-Beispiel aus 010, wörtlich
   aus der Doku extrahiert, besteht gegen beide Dateien alle drei Prüfungen.
-- **Der Hash der Übertemperaturstunden kennt den Raum nicht.** Fensteranteil
-  40 % und 70 % ergeben 403 und 662 h unter demselben ÜTS-Hash
-  `5e2124ea304d`; nur der Simulations-Hash ändert sich (`a2fc5ec2f2ac`,
-  `824705722358`). Eindeutig ist erst das Paar. Nicht behoben, weil jede
-  Reparatur alle Berechnungs-Hashes bricht. Der Export benennt seine Dateien
-  deshalb nach dem Simulations-Hash, siehe [010](docs/methods/010-export.md).
+- **Nachmessung ADR 0007, Zürich/Fluntern 2024, Voreinstellung:** Simulation
+  (`a2fc5ec2f2ac`) und gleitendes Mittel (`5911973a7211`) behalten ihren Hash,
+  Komfortband und Übertemperaturstunden erhalten neue. 40 % und 70 %
+  Fensteranteil ergeben 403 und 662 h unter den ÜTS-Hashes `1239df88adda` und
+  `81f396dc6568`; vorher trugen beide `5e2124ea304d`. Die Werte selbst sind
+  unverändert, die Tabellensummen treffen die Kennzahl, und das Python-Beispiel
+  aus 010 besteht gegen die neu benannten Exporte.
 - **Warum der Vergleichsmodus einen Hinweis braucht.** Derselbe Raum in der
   Voreinstellung des Frontends, Zürich/Fluntern, Übertemperaturstunden:
 
@@ -295,6 +319,14 @@ und mussten empirisch bestimmt werden — Herleitung in
 - Verschattung statt isotropem Himmel, als eigenes Verfahren
 - Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
   ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
+
+### Verfahrensversionen
+- `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
+  unverändert
+- `comfort.exceedanceHours` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
+  unverändert
+- Unverändert: `building.simulate5R1C` 1.2.0,
+  `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen Verfahren
 
 ## [0.1.0] — 2026-08-22
 

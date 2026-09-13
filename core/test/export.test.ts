@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { hourlyAxis, type TimeAxis } from "../src/series.ts";
-import { exceedanceHours } from "../src/indicators.ts";
+import { exceedanceHours, type ComfortBand } from "../src/indicators.ts";
 import { computationHash, type Computation, type DatasetRef } from "../src/provenance.ts";
 import type { SimulationResult } from "../src/building.ts";
 import { HOURLY_COLUMNS, exportManifest, hourlyCsv, sha256Hex } from "../src/export.ts";
@@ -25,32 +25,45 @@ const SOURCE: DatasetRef = {
  * Heiss (30 °C) bei den Stempeln 06:00 bis 17:00 UTC, sonst 20 °C. Gegen eine
  * Grenze von 28.4 °C und das Fenster 07 bis 19 Uhr unterscheiden sich die
  * beiden Zeitkonventionen damit um genau eine Stunde je Tag.
+ *
+ * `warmupDay` setzt die abgeleiteten Kenngrössen so, dass τ = 1 h ist und
+ * exceedanceHours() genau einen Tag verwirft.
  */
-function fixture(axis: TimeAxis, warmupHours = 0) {
+function fixture(axis: TimeAxis, warmupDay = false) {
   const operative = new Float64Array(HOURS);
   for (let i = 0; i < HOURS; i++) operative[i] = i % 24 >= 6 && i % 24 <= 17 ? 30 : 20;
   operative[30] = NaN; // ein Fehlwert mitten im Fenster
 
-  const simulation = {
-    operativeTemperature: operative,
-    airTemperature: operative.map((v) => v + 0.5),
-    massTemperature: operative.map((v) => v - 1),
-    solarGains: new Float64Array(HOURS).fill(120.04),
-    skyLoss: new Float64Array(HOURS).fill(-0.0001), // rundet auf «-0.0»
-    longwaveSource: "pauschal",
-    shadedHours: 0,
-    nightVentilationHours: 0,
-    occupiedHours: 0,
-    derived: {},
-  } as unknown as SimulationResult;
+  const simulation: Computation<SimulationResult> = {
+    value: {
+      operativeTemperature: operative,
+      airTemperature: operative.map((v) => v + 0.5),
+      massTemperature: operative.map((v) => v - 1),
+      solarGains: new Float64Array(HOURS).fill(120.04),
+      skyLoss: new Float64Array(HOURS).fill(-0.0001), // rundet auf «-0.0»
+      longwaveSource: "pauschal",
+      shadedHours: 0,
+      nightVentilationHours: 0,
+      occupiedHours: 0,
+      derived: { effectiveCapacity: warmupDay ? 3600 : 0, opaqueConductance: 0.5, windowConductance: 0.5 },
+    } as unknown as SimulationResult,
+    unit: "°C",
+    method: { id: "building.simulate5R1C", version: "test", doc: "", sources: [] },
+    params: {},
+    inputs: [SOURCE],
+  };
+  const comfortBand: Computation<ComfortBand> = {
+    value: { upper: new Float64Array(2).fill(28.4), lower: new Float64Array(2).fill(21.4) },
+    unit: "°C",
+    method: { id: "comfort.adaptiveComfortBand", version: "test", doc: "", sources: [] },
+    params: { category: "II" },
+    inputs: [SOURCE],
+  };
 
-  const evaluated = operative.slice();
-  evaluated.fill(NaN, 0, warmupHours);
-  const limits = new Float64Array(2).fill(28.4);
-  const exceedance = exceedanceHours(evaluated, axis, limits, [SOURCE], { occupiedFromHour: 7, occupiedToHour: 19 });
+  const exceedance = exceedanceHours(simulation, comfortBand, axis, { occupiedFromHour: 7, occupiedToHour: 19 });
   const outdoor = new Float64Array(HOURS).fill(18);
 
-  const csv = hourlyCsv({ axis, outdoorTemperature: outdoor, simulation, warmupHours, dailyUpperLimit: limits, exceedance });
+  const csv = hourlyCsv({ axis, outdoorTemperature: outdoor, exceedance });
   return { csv, exceedance };
 }
 
@@ -123,7 +136,7 @@ test("CSV: Lokalzeit folgt dem Stichzeitpunkt, nicht dem Stempel", () => {
 });
 
 test("CSV: die Einschwingphase ist markiert und nie bewertet", () => {
-  const { csv, exceedance } = fixture(hourlyAxis(START, HOURS), 24);
+  const { csv, exceedance } = fixture(hourlyAxis(START, HOURS), true);
   const { rows } = parse(csv);
   assert.ok(rows.slice(0, 24).every((r) => r.einschwingphase === "1" && r.bewertet === "0"));
   assert.ok(rows.slice(24).every((r) => r.einschwingphase === "0"));

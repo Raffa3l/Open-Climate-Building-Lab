@@ -10,11 +10,11 @@
  */
 
 import type { Computation, DatasetRef, MethodRef, ParamValue } from "./provenance.ts";
-import { canonicalForm, citations, computationHash } from "./provenance.ts";
+import { canonicalForm, citations, computationHash, upstreamOf } from "./provenance.ts";
 import type { TimeAxis } from "./series.ts";
 import { intervalMidpointUtcMs, localDayIndex, localHour } from "./series.ts";
 import type { SimulationResult } from "./building.ts";
-import type { ExceedanceResult } from "./indicators.ts";
+import type { ComfortBand, ExceedanceResult } from "./indicators.ts";
 
 /** Erhöhen, sobald sich Spalten, Einheiten oder Schreibweise ändern. */
 export const EXPORT_FORMAT_VERSION = 1;
@@ -48,11 +48,11 @@ export const HOURLY_COLUMNS: readonly ColumnSpec[] = [
 export interface HourlyExportInput {
   axis: TimeAxis;
   outdoorTemperature: ArrayLike<number>;
-  simulation: SimulationResult;
-  /** Dieselbe Zahl, mit der die bewertete Reihe erzeugt wurde. */
-  warmupHours: number;
-  dailyUpperLimit: ArrayLike<number>;
-  /** Das Belegungsfenster wird aus den params dieser Berechnung gelesen. */
+  /**
+   * Alles Weitere kommt aus dieser Berechnung: Simulation und Komfortband aus
+   * ihren Vorgängern, Belegungsfenster und Einschwingphase aus ihren params.
+   * Getrennt übergeben, könnten die Teile zu verschiedenen Rechnungen gehören.
+   */
   exceedance: Computation<ExceedanceResult>;
 }
 
@@ -81,7 +81,10 @@ function formatNumber(value: number, digits: number): string {
  * erste Zeile als Kopf erkennt; alles Weitere steht im Manifest.
  */
 export function hourlyCsv(input: HourlyExportInput): string {
-  const { axis, outdoorTemperature, simulation, warmupHours, dailyUpperLimit, exceedance } = input;
+  const { axis, outdoorTemperature, exceedance } = input;
+  const simulation = upstreamOf<SimulationResult>(exceedance, "simulation").value;
+  const dailyUpperLimit = upstreamOf<ComfortBand>(exceedance, "comfortBand").value.upper;
+  const warmupHours = Number(exceedance.params.warmupHours ?? 0);
   const from = Number(exceedance.params.occupiedFromHour ?? 0);
   const to = Number(exceedance.params.occupiedToHour ?? 24);
 

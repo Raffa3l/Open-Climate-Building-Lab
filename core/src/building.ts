@@ -464,7 +464,17 @@ export function simulate5R1C(
  * Fünffache, aufgerundet auf ganze Tage.
  */
 export function warmupHours(room: RoomSpec): number {
-  const derived = deriveRoom(room);
+  return warmupHoursFromDerived(deriveRoom(room));
+}
+
+/**
+ * Dasselbe aus den abgeleiteten Kenngrössen, die jedes SimulationResult
+ * mitführt. Damit verwirft exceedanceHours() die Einschwingphase selbst, ohne
+ * die Raumbeschreibung zu kennen, und kein Aufrufer muss daran denken.
+ */
+export function warmupHoursFromDerived(
+  derived: Pick<RoomDerived, "effectiveCapacity" | "opaqueConductance" | "windowConductance">,
+): number {
   const totalConductance = derived.opaqueConductance + derived.windowConductance;
   const tauHours = derived.effectiveCapacity / totalConductance / 3600;
   return Math.ceil((5 * tauHours) / 24) * 24;

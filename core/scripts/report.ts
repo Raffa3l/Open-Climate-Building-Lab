@@ -71,7 +71,7 @@ const last = Object.entries(index).at(-1)!;
 const series = await loadSeries(last[1]);
 const daily = dailyMean(getVariable(series, "tre200h0"), series.axis);
 const rm = runningMeanOutdoorTemperature(daily, [series.source]);
-const band = adaptiveComfortBand(rm.value, [series.source], { category: "II" });
+const band = adaptiveComfortBand(rm, { category: "II" });
 const definedDays = [...band.value.upper].filter(Number.isFinite);
 
 console.log(`\nAdaptives Komfortband EN 16798-1 Kat. II, ${last[0]}:`);

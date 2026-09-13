@@ -10,6 +10,8 @@
  */
 
 import type { Computation, DatasetRef, MethodRef } from "./provenance.ts";
+import { mergeInputs } from "./provenance.ts";
+import { warmupHoursFromDerived, type SimulationResult } from "./building.ts";
 import { completeness, localDayIndex, localHour, type TimeAxis } from "./series.ts";
 
 const M_TROPICAL_NIGHTS: MethodRef = {
@@ -42,7 +44,7 @@ const M_RUNNING_MEAN: MethodRef = {
 
 const M_ADAPTIVE_BAND: MethodRef = {
   id: "comfort.adaptiveComfortBand",
-  version: "1.0.0",
+  version: "2.0.0",
   doc: "docs/methods/003-adaptive-comfort.md#komfortband",
   sources: ["en16798-1"],
 };
@@ -338,13 +340,17 @@ export interface ComfortBand {
  * Diese Funktion liefert deshalb nur das Band aus dem Aussenklima — die
  * Übertemperaturstunden entstehen erst im Zusammenspiel mit einer
  * Raumtemperaturreihe, siehe exceedanceHours().
+ *
+ * Seit 2.0.0 nimmt die Funktion das gleitende Mittel als Computation, nicht als
+ * nackte Reihe. Dessen Parameter α geht damit in den Hash des Bandes ein; zuvor
+ * ergaben zwei verschiedene α denselben Band-Hash (ADR 0007).
  */
 export function adaptiveComfortBand(
-  runningMeanC: Float64Array,
-  inputs: DatasetRef[],
+  runningMean: Computation<Float64Array>,
   params: { category?: ComfortCategory } = {},
 ): Computation<ComfortBand> {
   const category = params.category ?? "II";
+  const runningMeanC = runningMean.value;
   const n = runningMeanC.length;
   const upper = new Float64Array(n).fill(NaN);
   const lower = new Float64Array(n).fill(NaN);
@@ -357,34 +363,16 @@ export function adaptiveComfortBand(
     lower[d] = centre - LOWER_OFFSET[category];
   }
 
-  return { value: { upper, lower }, unit: "°C", method: M_ADAPTIVE_BAND, params: { category }, inputs };
+  return {
+    value: { upper, lower },
+    unit: "°C",
+    method: M_ADAPTIVE_BAND,
+    params: { category },
+    inputs: mergeInputs(runningMean.inputs),
+    upstream: [{ role: "runningMean", computation: runningMean }],
+  };
 }
 
-/**
- * Übertemperaturstunden: Stunden, in denen die operative Raumtemperatur die
- * adaptive Obergrenze des jeweiligen Tages überschreitet.
- *
- * Neben den Jahressummen liefert die Funktion dieselben Grössen **je Tag**.
- * Eine Tabelle oder ein Export, der die Tagesstunden selbst nachzählt, braucht
- * dafür eine eigene Stundenzuordnung und driftet ab, sobald eine Quelle eine
- * andere Zeitkonvention hat: Das Frontend hat bei den DRY-Szenarien genau so
- * 54 bis 64 Stunden zu viel ausgewiesen. Aus derselben Schleife gezählt, summieren
- * die Tageswerte immer auf die Kennzahl.
- *
- * `dailyHours` und `dailyKelvinHours` sind `NaN` an Tagen ohne eine einzige
- * bewertete Stunde. Damit bleibt «nicht bewertet» von «keine Überschreitung»
- * unterscheidbar.
- *
- * Die Tageswerte kamen ohne Versionssprung hinzu: Für gleiche Eingaben ändert
- * sich keine bestehende Zahl, und die Version geht in den Berechnungs-Hash
- * ein. Ein Sprung hätte jeden Permalink gebrochen, ohne dass sich ein
- * publizierter Wert verändert hätte.
- *
- * Verlangt eine Raumtemperaturreihe. Solange kein Raummodell existiert, ist
- * das die Schnittstelle, an der es andocken wird — bewusst getrennt, damit
- * niemand versehentlich Aussentemperaturen einsetzt und das Ergebnis
- * trotzdem plausibel aussieht.
- */
 export interface ExceedanceResult {
   hours: number;
   kelvinHours: number;
@@ -395,16 +383,49 @@ export interface ExceedanceResult {
   dailyKelvinHours: Float64Array;
 }
 
+/**
+ * Übertemperaturstunden: Stunden, in denen die operative Raumtemperatur die
+ * adaptive Obergrenze des jeweiligen Tages überschreitet.
+ *
+ * Seit 2.0.0 nimmt die Funktion die Simulation und das Komfortband als
+ * Computation entgegen, nicht als nackte Reihen (ADR 0007). Das hat drei Folgen:
+ *
+ * - Der Hash kennt den Raum. Zuvor ergaben 40 % und 70 % Fensteranteil 403 und
+ *   662 Stunden unter demselben Hash, weil die Raumparameter nur in der
+ *   Simulation standen.
+ * - Aussentemperaturen lassen sich nicht mehr versehentlich einsetzen: Der Typ
+ *   verlangt ein Simulationsergebnis.
+ * - Die Einschwingphase verwirft die Funktion selbst, aus den abgeleiteten
+ *   Kenngrössen der Simulation. Die Stundenzahl steht in `params.warmupHours`.
+ *
+ * Die Kategorie kommt aus dem Komfortband und wird nicht ein zweites Mal
+ * angegeben. Zwei Angaben könnten sich widersprechen.
+ *
+ * Neben den Jahressummen liefert die Funktion dieselben Grössen je Tag. Aus
+ * derselben Schleife gezählt, summieren sie immer auf die Kennzahl; an Tagen
+ * ohne bewertete Stunde stehen sie auf `NaN`. Siehe
+ * docs/methods/003-adaptive-comfort.md#tageswerte.
+ *
+ * `axis` muss die Zeitachse des Datensatzes sein, aus dem die Simulation
+ * gerechnet wurde. Ihre Konvention steht im `.ocbl`-Header und damit in der
+ * Prüfsumme der Eingangsdaten.
+ */
 export function exceedanceHours(
-  operativeTemperatureC: Float64Array,
+  simulation: Computation<SimulationResult>,
+  comfortBand: Computation<ComfortBand>,
   axis: TimeAxis,
-  dailyUpperLimitC: Float64Array,
-  inputs: DatasetRef[],
-  params: { category?: ComfortCategory; occupiedFromHour?: number; occupiedToHour?: number } = {},
+  params: { occupiedFromHour?: number; occupiedToHour?: number } = {},
 ): Computation<ExceedanceResult> {
-  const category = params.category ?? "II";
+  const category = String(comfortBand.params.category);
   const occupiedFromHour = params.occupiedFromHour ?? 0;
   const occupiedToHour = params.occupiedToHour ?? 24;
+  const warmupHours = warmupHoursFromDerived(simulation.value.derived);
+  const operativeTemperatureC = simulation.value.operativeTemperature;
+  const dailyUpperLimitC = comfortBand.value.upper;
+
+  if (operativeTemperatureC.length !== axis.length) {
+    throw new Error(`Zeitachse (${axis.length} h) passt nicht zur Simulation (${operativeTemperatureC.length} h)`);
+  }
 
   let hours = 0;
   let kelvinHours = 0;
@@ -413,7 +434,7 @@ export function exceedanceHours(
   const dailyHours = new Float64Array(days).fill(NaN);
   const dailyKelvinHours = new Float64Array(days).fill(NaN);
 
-  for (let i = 0; i < axis.length; i++) {
+  for (let i = warmupHours; i < axis.length; i++) {
     const h = localHour(axis, i);
     if (h < occupiedFromHour || h >= occupiedToHour) continue;
     const d = localDayIndex(axis, i);
@@ -439,11 +460,15 @@ export function exceedanceHours(
     unit: "h",
     method: {
       id: "comfort.exceedanceHours",
-      version: "1.0.0",
+      version: "2.0.0",
       doc: "docs/methods/003-adaptive-comfort.md#übertemperaturstunden",
       sources: ["en16798-1", "sia180-2014"],
     },
-    params: { category, occupiedFromHour, occupiedToHour },
-    inputs,
+    params: { category, occupiedFromHour, occupiedToHour, warmupHours },
+    inputs: mergeInputs(simulation.inputs, comfortBand.inputs),
+    upstream: [
+      { role: "simulation", computation: simulation },
+      { role: "comfortBand", computation: comfortBand },
+    ],
   };
 }

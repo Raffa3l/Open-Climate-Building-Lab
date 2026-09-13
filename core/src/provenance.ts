@@ -52,6 +52,19 @@ export interface Computation<T> {
   method: MethodRef;
   params: Record<string, ParamValue>;
   inputs: DatasetRef[];
+  /**
+   * Berechnungen, auf denen diese aufbaut, je mit ihrer Rolle. Ihre Identität
+   * geht in den Hash ein: Eine Kennzahl aus einer Raumtemperatur trägt so die
+   * Raumparameter mit, ohne sie selbst zu kennen. Fehlt das Feld, bleibt der
+   * Hash, was er ohne Vorgänger immer war (ADR 0007).
+   */
+  upstream?: Upstream[];
+}
+
+/** Eine vorgelagerte Berechnung und wofür sie steht, z. B. "simulation". */
+export interface Upstream {
+  role: string;
+  computation: Computation<unknown>;
 }
 
 /**
@@ -76,17 +89,58 @@ export function stableStringify(value: unknown): string {
  * der Hash nicht mehr prüfbar.
  */
 export function canonicalForm<T>(c: Computation<T>): string {
-  return stableStringify({
+  return stableStringify(canonicalObject(c));
+}
+
+/**
+ * Vorgänger stehen verschachtelt in voller kanonischer Form, nicht als Hash.
+ * So bleibt canonicalForm() synchron, und der Hash einer Kette ist trotzdem
+ * eindeutig. Ohne Vorgänger ist `upstream` undefined und fällt in
+ * stableStringify() weg: Die Zeichenkette ist dann byte-gleich zu der vor
+ * ADR 0007. Ein Test hält das an einem festen Hash fest.
+ */
+function canonicalObject<T>(c: Computation<T>): unknown {
+  return {
     method: { id: c.method.id, version: c.method.version },
     params: c.params,
     inputs: c.inputs
       .map((i) => ({ collection: i.collection, station: i.station, year: i.year, sha256: i.sha256 }))
       .sort((a, b) => (canonicalKey(a) < canonicalKey(b) ? -1 : 1)),
-  });
+    upstream: c.upstream?.length
+      ? [...c.upstream]
+          .sort((a, b) => (a.role < b.role ? -1 : a.role > b.role ? 1 : 0))
+          .map((u) => ({ role: u.role, computation: canonicalObject(u.computation) }))
+      : undefined,
+  };
 }
 
 function canonicalKey(i: { collection: string; station: string; year: number }): string {
   return `${i.collection}/${i.station}/${i.year}`;
+}
+
+/**
+ * Eingangsdatensätze mehrerer Berechnungen, dedupliziert über den Datenstand.
+ *
+ * Eine abgeleitete Berechnung führt die Datensätze ihrer Vorgänger selbst mit.
+ * So funktionieren citations() und die Anzeige der Eingangsdaten, ohne die
+ * Kette ablaufen zu müssen.
+ */
+export function mergeInputs(...lists: DatasetRef[][]): DatasetRef[] {
+  const seen = new Map<string, DatasetRef>();
+  for (const list of lists) {
+    for (const i of list) {
+      const key = `${canonicalKey(i)}/${i.sha256}`;
+      if (!seen.has(key)) seen.set(key, i);
+    }
+  }
+  return [...seen.values()];
+}
+
+/** Die vorgelagerte Berechnung einer Rolle; wirft, wenn sie fehlt. */
+export function upstreamOf<T>(c: Computation<unknown>, role: string): Computation<T> {
+  const found = c.upstream?.find((u) => u.role === role);
+  if (!found) throw new Error(`${c.method.id} hat keine vorgelagerte Berechnung "${role}"`);
+  return found.computation as Computation<T>;
 }
 
 /**

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { hourlyAxis, intervalMidpointUtcMs, localDayIndex, localHour } from "../src/series.ts";
-import type { DatasetRef } from "../src/provenance.ts";
+import { computationHash, type Computation, type DatasetRef } from "../src/provenance.ts";
+import type { SimulationResult } from "../src/building.ts";
 import {
   adaptiveComfortBand,
   coolingDegreeHours,
@@ -12,6 +13,7 @@ import {
   runningMeanOutdoorTemperature,
   thresholdDays,
   tropicalNights,
+  type ComfortBand,
 } from "../src/indicators.ts";
 
 const YEAR_2021_START = Date.UTC(2021, 0, 1, 0, 0, 0);
@@ -28,6 +30,44 @@ const SOURCE: DatasetRef = {
 };
 
 const axis = hourlyAxis(YEAR_2021_START, HOURS);
+
+/**
+ * Minimale Vorgänger für Komfortband und Übertemperaturstunden (ADR 0007).
+ * Die Kapazität steuert die Einschwingphase: 0 heisst keine, 3600 J/K bei 1 W/K
+ * ergibt τ = 1 h und damit genau einen verworfenen Tag.
+ */
+function simulationOf(operative: Float64Array, effectiveCapacity = 0): Computation<SimulationResult> {
+  return {
+    value: {
+      operativeTemperature: operative,
+      derived: { effectiveCapacity, opaqueConductance: 0.5, windowConductance: 0.5 },
+    } as unknown as SimulationResult,
+    unit: "°C",
+    method: { id: "building.simulate5R1C", version: "test", doc: "", sources: [] },
+    params: { windowFraction: 0.4 },
+    inputs: [SOURCE],
+  };
+}
+
+function runningMeanOf(values: Float64Array, alpha = 0.8): Computation<Float64Array> {
+  return {
+    value: values,
+    unit: "°C",
+    method: { id: "comfort.runningMeanOutdoorTemperature", version: "test", doc: "", sources: [] },
+    params: { alpha },
+    inputs: [SOURCE],
+  };
+}
+
+function bandOf(upper: Float64Array, category = "II"): Computation<ComfortBand> {
+  return {
+    value: { upper, lower: upper.map((v) => v - 7) },
+    unit: "°C",
+    method: { id: "comfort.adaptiveComfortBand", version: "test", doc: "", sources: [] },
+    params: { category },
+    inputs: [SOURCE],
+  };
+}
 
 function constantSeries(value: number): Float64Array {
   return new Float64Array(HOURS).fill(value);
@@ -146,17 +186,17 @@ test("gleitendes Mittel folgt einem Sprung verzögert und mit α = 0.8", () => {
 
 test("adaptives Komfortband nach EN 16798-1, Kategorie II", () => {
   const rm = new Float64Array([20, 20, 20]);
-  const band = adaptiveComfortBand(rm, [SOURCE], { category: "II" }).value;
+  const band = adaptiveComfortBand(runningMeanOf(rm), { category: "II" }).value;
   // 0.33·20 + 18.8 = 25.4  →  oben +3, unten −4
   assert.ok(Math.abs(band.upper[0] - 28.4) < 1e-9);
   assert.ok(Math.abs(band.lower[0] - 21.4) < 1e-9);
 
-  const catI = adaptiveComfortBand(rm, [SOURCE], { category: "I" }).value;
+  const catI = adaptiveComfortBand(runningMeanOf(rm), { category: "I" }).value;
   assert.ok(catI.upper[0] < band.upper[0], "Kategorie I ist strenger");
 });
 
 test("Komfortband ausserhalb 10…30 °C ist undefiniert statt extrapoliert", () => {
-  const band = adaptiveComfortBand(new Float64Array([5, 15, 35]), [SOURCE]).value;
+  const band = adaptiveComfortBand(runningMeanOf(new Float64Array([5, 15, 35]))).value;
   assert.ok(Number.isNaN(band.upper[0]));
   assert.ok(Number.isFinite(band.upper[1]));
   assert.ok(Number.isNaN(band.upper[2]));
@@ -165,7 +205,7 @@ test("Komfortband ausserhalb 10…30 °C ist undefiniert statt extrapoliert", ()
 test("Übertemperaturstunden gegen eine Raumtemperaturreihe", () => {
   const limits = new Float64Array(365).fill(28.4);
   const indoor = constantSeries(30); // 1.6 K über der Grenze
-  const r = exceedanceHours(indoor, axis, limits, [SOURCE], { occupiedFromHour: 8, occupiedToHour: 18 });
+  const r = exceedanceHours(simulationOf(indoor), bandOf(limits), axis, { occupiedFromHour: 8, occupiedToHour: 18 });
   assert.equal(r.value.hours, 10 * 365);
   assert.ok(Math.abs(r.value.kelvinHours - 1.6 * 10 * 365) < 1e-6);
   assert.equal(r.value.evaluatedHours, 10 * 365);
@@ -173,14 +213,14 @@ test("Übertemperaturstunden gegen eine Raumtemperaturreihe", () => {
 
 test("Übertemperaturstunden zählen nicht, wo das Komfortband undefiniert ist", () => {
   const limits = new Float64Array(365).fill(NaN);
-  const r = exceedanceHours(constantSeries(35), axis, limits, [SOURCE]);
+  const r = exceedanceHours(simulationOf(constantSeries(35)), bandOf(limits), axis);
   assert.equal(r.value.hours, 0);
   assert.equal(r.value.evaluatedHours, 0, "undefinierte Tage werden gar nicht erst bewertet");
 });
 
 test("Tagesstunden summieren auf die Übertemperaturstunden", () => {
   const limits = new Float64Array(365).fill(28.4);
-  const r = exceedanceHours(constantSeries(30), axis, limits, [SOURCE], { occupiedFromHour: 8, occupiedToHour: 18 });
+  const r = exceedanceHours(simulationOf(constantSeries(30)), bandOf(limits), axis, { occupiedFromHour: 8, occupiedToHour: 18 });
   const sum = [...r.value.dailyHours].reduce((a, b) => a + b, 0);
   assert.equal(sum, r.value.hours);
   assert.equal(r.value.dailyHours[100], 10);
@@ -190,7 +230,7 @@ test("Tagesstunden summieren auf die Übertemperaturstunden", () => {
 test("Tage ohne bewertete Stunde sind NaN, nicht null", () => {
   const limits = new Float64Array(365).fill(28.4);
   limits[200] = NaN; // Komfortband an diesem Tag undefiniert
-  const r = exceedanceHours(constantSeries(20), axis, limits, [SOURCE], { occupiedFromHour: 8, occupiedToHour: 18 });
+  const r = exceedanceHours(simulationOf(constantSeries(20)), bandOf(limits), axis, { occupiedFromHour: 8, occupiedToHour: 18 });
   assert.equal(r.value.dailyHours[199], 0, "bewertet, aber keine Überschreitung");
   assert.ok(Number.isNaN(r.value.dailyHours[200]), "nicht bewertet");
   assert.ok(Number.isNaN(r.value.dailyKelvinHours[200]));
@@ -210,10 +250,55 @@ test("Tagesstunden folgen der Zeitkonvention der Szenarien, nicht dem Stempel", 
   for (let i = 0; i < HOURS; i++) indoor[i] = i % 24 >= 6 && i % 24 <= 17 ? 30 : 20;
   const limits = new Float64Array(365).fill(28.4);
 
-  const r = exceedanceHours(indoor, dryAxis, limits, [SOURCE], { occupiedFromHour: 7, occupiedToHour: 19 });
+  const r = exceedanceHours(simulationOf(indoor), bandOf(limits), dryAxis, { occupiedFromHour: 7, occupiedToHour: 19 });
   for (const d of [0, 1, 180, 364]) assert.equal(r.value.dailyHours[d], 12, `Tag ${d}`);
   assert.equal(r.value.hours, 12 * 365);
   assert.equal([...r.value.dailyHours].reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0), r.value.hours);
+});
+
+test("α des gleitenden Mittels geht in den Hash des Komfortbands ein", async () => {
+  const rm = new Float64Array([20, 20, 20]);
+  const a = adaptiveComfortBand(runningMeanOf(rm, 0.8));
+  const b = adaptiveComfortBand(runningMeanOf(rm, 0.7));
+  assert.deepEqual([...a.value.upper], [...b.value.upper], "gleiche Werte …");
+  assert.notEqual(await computationHash(a), await computationHash(b), "… und trotzdem verschiedene Rechnungen");
+});
+
+test("der Hash der Übertemperaturstunden kennt den Raum", async () => {
+  // Die Lücke vor ADR 0007: gleiche Wetterdaten, anderer Raum, gleicher Hash.
+  const band = bandOf(new Float64Array(365).fill(28.4));
+  const a = simulationOf(constantSeries(30));
+  const b: Computation<SimulationResult> = { ...simulationOf(constantSeries(30)), params: { windowFraction: 0.7 } };
+  const ra = exceedanceHours(a, band, axis, { occupiedFromHour: 8, occupiedToHour: 18 });
+  const rb = exceedanceHours(b, band, axis, { occupiedFromHour: 8, occupiedToHour: 18 });
+  assert.equal(ra.value.hours, rb.value.hours, "gleiche Werte …");
+  assert.notEqual(await computationHash(ra), await computationHash(rb), "… aber verschiedene Räume");
+});
+
+test("die Einschwingphase verwirft exceedanceHours() selbst", () => {
+  const limits = new Float64Array(365).fill(28.4);
+  const r = exceedanceHours(simulationOf(constantSeries(30), 3600), bandOf(limits), axis, { occupiedFromHour: 8, occupiedToHour: 18 });
+  assert.equal(r.params.warmupHours, 24);
+  assert.ok(Number.isNaN(r.value.dailyHours[0]), "der erste Tag ist nicht bewertet");
+  assert.equal(r.value.hours, 10 * 364);
+});
+
+test("die Kategorie kommt aus dem Komfortband", () => {
+  const r = exceedanceHours(simulationOf(constantSeries(30)), bandOf(new Float64Array(365).fill(28.4), "III"), axis);
+  assert.equal(r.params.category, "III");
+});
+
+test("Eingangsdaten und Vorgänger stehen in der Übertemperatur-Berechnung", () => {
+  const r = exceedanceHours(simulationOf(constantSeries(30)), bandOf(new Float64Array(365).fill(28.4)), axis);
+  assert.deepEqual(r.inputs, [SOURCE], "derselbe Datensatz aus beiden Vorgängern steht nur einmal da");
+  assert.deepEqual(r.upstream?.map((u) => u.role), ["simulation", "comfortBand"]);
+});
+
+test("eine Zeitachse anderer Länge wird abgewiesen", () => {
+  assert.throws(
+    () => exceedanceHours(simulationOf(constantSeries(30)), bandOf(new Float64Array(365).fill(28.4)), hourlyAxis(YEAR_2021_START, 24)),
+    /passt nicht zur Simulation/,
+  );
 });
 
 test("synthetischer Jahresgang liefert plausible Kennwerte", () => {
