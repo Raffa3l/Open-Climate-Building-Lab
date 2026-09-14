@@ -196,7 +196,9 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   und `model-effects.ts`. Gegen einen Vorlauf aus dem echten Dezember des
   Vorjahres (2022–2024, fünf Fälle) weicht der zyklische Vorlauf im Januar im
   Mittel um 0.10 bis 0.77 K ab, am 1. Januar 2024 um 7.6 K, nach 6 bis 15 Tagen
-  um weniger als 0.1 K. Die Kennzahlen sind gleich.
+  um weniger als 0.1 K. Die Kennzahlen sind gleich. Heutige ÜTS-Hashes für
+  40 % und 70 % Fensteranteil 2024: `d34b3cea91a4` und `dc8301f5c4e1`; das
+  Prüfbeispiel aus 010 besteht gegen den neuen Export.
 - **Neubau mit korrigierter Quellenangabe, 14.09.2026:** alle 2'242 bisherigen
   Dateien (1'972 Stationsjahre, 270 Szenarien) über den Rechenkern decodiert
   und gegen den Stand davor verglichen. Zeitachse, Station, Höhe, Quelle
