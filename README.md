@@ -90,16 +90,17 @@ Und derselbe Referenzraum an allen Stationen — nur das Klima unterscheidet sic
 129 Jungfraujoch (VS)               3571m   -5.8      0      22.7
 ```
 
-Und die Parametervarianten, die das Frontend hinter Reglern zeigt —
-südorientiertes Büro in Zürich, 2023:
+Und die Parametervarianten, die das Frontend hinter Reglern zeigt, für ein
+südorientiertes Büro in Zürich, 2023. Raum und Auswertung kommen aus demselben
+Kern wie im Browser; die Zeile mit Nachtlüftung ist die Voreinstellung der App:
 
 ```
 Variante                                         ÜTS      Kh  θ_op max
-Basis: 40 % Fenster, Sonnenschutz g_tot 0.15    1667    6520      40.4
-+ Nachtlüftung 3 1/h                             348     477      35.2
-+ Nachtlüftung, schwere Bauart                   196     240      33.9
-Fensteranteil 60 %, Sonnenschutz + Nachtlüftung   468     736      36.0
-ohne Sonnenschutz — Kontrast, nicht baubar      2113   20106      50.0
+Basis: 40 % Fenster, Sonnenschutz g_tot 0.15    1773    8387      41.8
++ Nachtlüftung 3 1/h                             501     801      36.3
++ Nachtlüftung, schwere Bauart                   338     431      34.9
+Fensteranteil 60 %, Sonnenschutz + Nachtlüftung   698    1404      37.5
+ohne Sonnenschutz — Kontrast, nicht baubar      2123   20656      50.8
 ```
 
 ## Aufbau

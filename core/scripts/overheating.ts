@@ -3,101 +3,55 @@
  *
  *   node core/scripts/overheating.ts SMA 2023
  *
- * Rechnet die Parametervariationen, die das Frontend später hinter Reglern
- * zeigt: Fensterflächenanteil, Sonnenschutz, Nachtlüftung, Bauart. Jede
- * Variante trägt ihren eigenen Berechnungs-Hash.
+ * Rechnet die Parametervariationen, die das Frontend hinter Reglern zeigt:
+ * Fensterflächenanteil, Sonnenschutz, Nachtlüftung, Bauart. Raum und Auswertung
+ * kommen aus core/src/reference-case.ts, derselben Stelle wie im Browser. Mit
+ * denselben Reglern zeigt das Frontend deshalb dieselbe Zahl unter demselben
+ * Berechnungs-Hash.
+ *
+ * Bis 14.09.2026 baute das Skript den Raum selbst und setzte «g_tot 0.15» als
+ * Abminderungsfaktor ein. Gerechnet wurde damit g_tot 0.075, halb so viel
+ * Sonnendurchlass wie beschriftet.
  */
 
-import { getVariable } from "../src/series.ts";
-import { station } from "./catalog.ts";
 import { shortHash } from "../src/provenance.ts";
-import { adaptiveComfortBand, dailyMean, exceedanceHours, runningMeanOutdoorTemperature } from "../src/indicators.ts";
-import { NO_SHADING, simulate5R1C, warmupHours, type RoomSpec } from "../src/building.ts";
+import { warmupHours } from "../src/building.ts";
+import {
+  DEFAULT_ROOM_SETTINGS,
+  evaluateReferenceCase,
+  peakOperativeTemperature,
+  referenceComfortBand,
+  referenceRoom,
+  roomSettingsToParams,
+  type RoomSettings,
+} from "../src/reference-case.ts";
+import { station } from "./catalog.ts";
 
 const stationAbbr = (process.argv[2] ?? "SMA").toUpperCase();
 const year = process.argv[3] ?? "2023";
 
 const { catalog, entry, meta, series } = await station(stationAbbr, year);
-
-const outdoor = getVariable(series, "tre200h0");
-const global = getVariable(series, "gre000h0");
 const hasDiffuse = series.variables.has("ods000h0");
 const hasLongwave = series.variables.has("oli000h0");
-const inputs = [series.source];
-
-const simInput = {
-  outdoorTemperature: outdoor,
-  globalHorizontal: global,
-  diffuseHorizontal: hasDiffuse ? getVariable(series, "ods000h0") : undefined,
-  downwellingLongwave: hasLongwave ? getVariable(series, "oli000h0") : undefined,
-  axis: series.axis,
-  latitude: entry.lat,
-  longitude: entry.lon,
-};
 
 // Komfortband aus dem Aussenklima — für alle Varianten dasselbe.
-const runningMean = runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs);
-const band = adaptiveComfortBand(runningMean, { category: "II" });
+const band = referenceComfortBand(series);
 
-const FACADE = 9.8;
+/** Basisfall: wirksamer Sonnenschutz, so wird gebaut, aber noch ohne Nachtlüftung. */
+const BASE: RoomSettings = { ...DEFAULT_ROOM_SETTINGS, nightVentOn: false };
+const NIGHT = { nightVentOn: true, nightVent: 3 } as const;
 
-/** Siehe core/src/reference-case.ts: Gleitkommareste gehören nicht in den Berechnungs-Hash. */
-const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
-
-function room(overrides: Partial<RoomSpec> & { windowFraction?: number; shadingFactor?: number } = {}): RoomSpec {
-  const fraction = overrides.windowFraction ?? 0.4;
-  const windowArea = round6(FACADE * fraction);
-  const shadingFactor = overrides.shadingFactor;
-  return {
-    floorArea: 20,
-    height: 2.8,
-    opaqueArea: round6(FACADE - windowArea),
-    opaqueUValue: 0.2,
-    thermalBridges: 0.5,
-    windows: [
-      {
-        area: windowArea,
-        orientation: { tilt: 90, azimuth: 180 },
-        uValue: 1.0,
-        gValue: 0.5,
-        frameFraction: 0.25,
-        shading: shadingFactor === undefined
-          ? NO_SHADING
-          : { factorClosed: shadingFactor, activationIrradiance: 200 },
-      },
-    ],
-    massClass: overrides.massClass ?? "mittel",
-    airChangeRate: 0.3,
-    internalGains: 20,
-    occupancy: OCCUPANCY,
-    nightVentilation: overrides.nightVentilation,
-    ...(overrides.floorArea !== undefined ? { floorArea: overrides.floorArea } : {}),
-  };
-}
-
-/** Büronutzung: werktags 07–19 Uhr, hygienische Lüftung nur bei Belegung. */
-const OCCUPANCY = {
-  fromHour: 7,
-  toHour: 19,
-  weekdaysOnly: true,
-  gainsUnoccupied: 2,
-  airChangeOccupied: 1.5,
-};
-
-const NIGHT_VENT = { airChangeRate: 3, fromHour: 22, toHour: 6, minIndoorC: 22, minDeltaK: 2 };
-
-// Basisfall ist ein Raum mit wirksamem Sonnenschutz — so wird gebaut.
 // Die Varianten ohne Sonnenschutz stehen am Schluss als Kontrast und sind
 // ausdrücklich keine realistische Ausführung.
-const scenarios: Array<{ label: string; spec: RoomSpec }> = [
-  { label: "Basis: 40 % Fenster, Sonnenschutz g_tot 0.15", spec: room({ shadingFactor: 0.15 }) },
-  { label: "+ Nachtlüftung 3 1/h", spec: room({ shadingFactor: 0.15, nightVentilation: NIGHT_VENT }) },
-  { label: "+ Nachtlüftung, schwere Bauart", spec: room({ shadingFactor: 0.15, nightVentilation: NIGHT_VENT, massClass: "schwer" }) },
-  { label: "+ Nachtlüftung, leichte Bauart", spec: room({ shadingFactor: 0.15, nightVentilation: NIGHT_VENT, massClass: "sehr leicht" }) },
-  { label: "Fensteranteil 60 %, Sonnenschutz + Nachtlüftung", spec: room({ windowFraction: 0.6, shadingFactor: 0.15, nightVentilation: NIGHT_VENT }) },
-  { label: "Sonnenschutz g_tot 0.35 statt 0.15", spec: room({ shadingFactor: 0.35, nightVentilation: NIGHT_VENT }) },
-  { label: "ohne Sonnenschutz — Kontrast, nicht baubar", spec: room() },
-  { label: "ohne Sonnenschutz, 60 % Fenster — Kontrast", spec: room({ windowFraction: 0.6 }) },
+const variants: Array<{ label: string; settings: RoomSettings }> = [
+  { label: "Basis: 40 % Fenster, Sonnenschutz g_tot 0.15", settings: BASE },
+  { label: "+ Nachtlüftung 3 1/h", settings: { ...BASE, ...NIGHT } },
+  { label: "+ Nachtlüftung, schwere Bauart", settings: { ...BASE, ...NIGHT, massClass: "schwer" } },
+  { label: "+ Nachtlüftung, leichte Bauart", settings: { ...BASE, ...NIGHT, massClass: "sehr leicht" } },
+  { label: "Fensteranteil 60 %, Sonnenschutz + Nachtlüftung", settings: { ...BASE, ...NIGHT, windowFraction: 0.6 } },
+  { label: "Sonnenschutz g_tot 0.35 statt 0.15", settings: { ...BASE, ...NIGHT, shading: 0.35 } },
+  { label: "ohne Sonnenschutz — Kontrast, nicht baubar", settings: { ...BASE, shading: 1 } },
+  { label: "ohne Sonnenschutz, 60 % Fenster — Kontrast", settings: { ...BASE, shading: 1, windowFraction: 0.6 } },
 ];
 
 console.log(`\n${stationAbbr} — ${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m), ${year}`);
@@ -113,30 +67,23 @@ const header =
 console.log(header);
 console.log("-".repeat(header.length + 4));
 
-for (const { label, spec } of scenarios) {
-  const sim = simulate5R1C(spec, simInput, inputs);
-
-  // Die Simulation rechnet einen Vorlauf (ADR 0008); exceedanceHours() verwirft
-  // nur, was er nicht abdeckt. Für die Spitzentemperatur gilt dieselbe Stundenzahl.
-  const uts = exceedanceHours(sim, band, series.axis, { occupiedFromHour: 7, occupiedToHour: 19 });
-  const evaluated = sim.value.operativeTemperature.slice();
-  evaluated.fill(NaN, 0, Number(uts.params.warmupHours));
-
-  const peak = Math.max(...[...evaluated].filter(Number.isFinite));
-
+for (const { label, settings } of variants) {
+  const { simulation, exceedance } = evaluateReferenceCase(series, entry, settings, band);
   console.log(
     label.padEnd(46) +
-      String(uts.value.hours).padStart(6) +
-      uts.value.kelvinHours.toFixed(0).padStart(8) +
-      peak.toFixed(1).padStart(10) +
-      String(sim.value.shadedHours).padStart(8) +
-      String(sim.value.nightVentilationHours).padStart(8) +
-      "  " + (await shortHash(uts)),
+      String(exceedance.value.hours).padStart(6) +
+      exceedance.value.kelvinHours.toFixed(0).padStart(8) +
+      peakOperativeTemperature(exceedance).toFixed(1).padStart(10) +
+      String(simulation.value.shadedHours).padStart(8) +
+      String(simulation.value.nightVentilationHours).padStart(8) +
+      "  " + (await shortHash(exceedance)),
   );
 }
 
-const reference = simulate5R1C(room(), simInput, inputs).value;
-console.log(`\nBelegte Stunden: ${reference.occupiedHours} von ${series.axis.length}`);
-console.log(`Vorlauf aus dem Jahresende: ${warmupHours(room())} h (5 · Zeitkonstante), das ganze Jahr bewertet`);
+const reference = evaluateReferenceCase(series, entry, BASE, band).simulation.value;
+const permalink = new URLSearchParams([["station", stationAbbr], ["year", `y${year}`], ...roomSettingsToParams(BASE)]);
+console.log(`\nBasisfall im Frontend: #${permalink}`);
+console.log(`Belegte Stunden: ${reference.occupiedHours} von ${series.axis.length}`);
+console.log(`Vorlauf aus dem Jahresende: ${warmupHours(referenceRoom(BASE))} h (5 · Zeitkonstante), das ganze Jahr bewertet`);
 console.log(`Komfortband definiert an ${[...band.value.upper].filter(Number.isFinite).length} Tagen`);
 console.log(`Datenstand ${meta.sha256.slice(0, 12)} · ${catalog.license} · ${catalog.attribution}\n`);

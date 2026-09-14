@@ -120,6 +120,20 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **`core/scripts/overheating.ts` rechnete mit halb so viel Sonnendurchlass wie
+  beschriftet.** Die Zeile «Sonnenschutz g_tot 0.15» setzte 0.15 als
+  Abminderungsfaktor ein; bei g = 0.5 ergibt das g_tot 0.075. Das Frontend
+  rechnet g_tot richtig in den Faktor 0.3 um. Nachgewiesen über den Hash: Der
+  Referenzraum mit g_tot 0.075 trägt exakt den Hash der alten Basiszeile.
+  Zürich/Fluntern 2023, Basis 1'773 statt 1'624 Übertemperaturstunden, mit
+  Nachtlüftung 501 statt 319. Die Varianten ohne Sonnenschutz waren richtig.
+  `overheating.ts`, `stations.ts` und `climate-change.ts` bauen den Raum jetzt
+  nicht mehr selbst, sondern nehmen Referenzraum und Auswertung aus
+  `core/src/reference-case.ts` wie der Browser. Die Zeile mit Nachtlüftung
+  trägt damit denselben Hash wie die Voreinstellung der App. `stations.ts` und
+  `climate-change.ts` rechneten schon richtig; ihre Ausgabe ist Zeichen für
+  Zeichen gleich geblieben. Die README-Tabelle ist nachgeführt, sie war
+  bereits vorher veraltet.
 - **Quellenangabe in ASCII-Umschrift.** Autor und Titel standen als «Bundesamt
   fuer Meteorologie und Klimatologie MeteoSchweiz» und «Klimaszenarien fuers
   zukuenftige Innenraumklima (SIA 2028)» in den Datensätzen, damit auch in jeder
