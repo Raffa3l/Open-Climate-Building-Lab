@@ -70,6 +70,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   aktueller Jahre.
 
 ### Geändert
+- **Zyklischer Vorlauf statt verworfener Einschwingphase**
+  ([ADR 0008](docs/adr/0008-zyklischer-vorlauf.md)). `building.simulate5R1C`
+  1.3.0 rechnet vor der ersten Stunde das Ende derselben Reihe durch, so lange
+  wie die bisherige Einschwingphase (mittlere Bauart 840 h). Jede Stunde des
+  Jahres ist gültig: Diagramm, Tagestabelle, Spitzentemperatur und CSV-Export
+  beginnen am 1. Januar statt Anfang Februar. `spinUpHours` steht in den
+  Parametern, `0` stellt das alte Verhalten her. `comfort.exceedanceHours` 2.1.0
+  rechnet den Vorlauf an und verwirft nichts mehr. Keine Kennzahl ändert sich,
+  alle Hashes schon. Vier Tests, einer weist nach, dass der Vorlauf exakt dem
+  vorangestellten Reihenende entspricht.
 - **Verkettete Berechnungs-Hashes**
   ([ADR 0007](docs/adr/0007-verkettete-berechnungs-hashes.md)). `Computation`
   hat ein optionales Feld `upstream` mit den Berechnungen, auf denen sie
@@ -177,6 +187,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   synchronisierten Ordner ist das untragbar. Jetzt ein Symlink.
 
 ### Gemessen
+- **Vorlauf, Zürich/Fluntern:** 2023, 2024 und Szenario 2060 RCP 8.5, je in
+  drei Bauarten. Ohne Vorlauf lag die Raumtemperatur in der ersten Stunde 1.7
+  bis 7.5 K unter dem Wert mit Vorlauf. Nach der bisherigen Einschwingphase
+  unterscheiden sich beide Rechnungen um höchstens 1.3·10⁻⁶ K;
+  Übertemperaturstunden und bewertete Stunden sind in allen neun Fällen gleich,
+  ebenso die Ausgaben von `overheating.ts`, `stations.ts`, `climate-change.ts`
+  und `model-effects.ts`. Gegen einen Vorlauf aus dem echten Dezember des
+  Vorjahres (2022–2024, fünf Fälle) weicht der zyklische Vorlauf im Januar im
+  Mittel um 0.10 bis 0.77 K ab, am 1. Januar 2024 um 7.6 K, nach 6 bis 15 Tagen
+  um weniger als 0.1 K. Die Kennzahlen sind gleich.
 - **Neubau mit korrigierter Quellenangabe, 14.09.2026:** alle 2'242 bisherigen
   Dateien (1'972 Stationsjahre, 270 Szenarien) über den Rechenkern decodiert
   und gegen den Stand davor verglichen. Zeitachse, Station, Höhe, Quelle
@@ -366,10 +386,13 @@ und mussten empirisch bestimmt werden — Herleitung in
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
   unverändert
-- `comfort.exceedanceHours` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
-  unverändert
-- Unverändert: `building.simulate5R1C` 1.2.0,
-  `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen Verfahren
+- `comfort.exceedanceHours` **1.0.0 → 2.1.0**: 2.0.0 Signatur und Hash, Werte
+  unverändert; 2.1.0 rechnet den Vorlauf der Simulation auf die
+  Einschwingphase an
+- `building.simulate5R1C` **1.2.0 → 1.3.0**: zyklischer Vorlauf aus dem Ende der
+  Reihe, gültige Werte ab der ersten Stunde (ADR 0008)
+- Unverändert: `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen
+  Verfahren
 
 ## [0.1.0] — 2026-08-22
 

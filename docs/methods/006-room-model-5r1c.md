@@ -109,15 +109,33 @@ Tagesgang stärker als leichte; Südfenster bringen im Sommer mehr Ertrag als
 Nord; grösserer Fensteranteil erhöht die Spitzentemperatur; Sonnenschutz und
 Nachtlüftung senken sie.
 
-## Einschwingphase
+## Vorlauf
 
-Der Massenknoten startet auf der Aussentemperatur der ersten Stunde. Wie lange
-diese Anfangsbedingung nachwirkt, hängt an der Zeitkonstante
-$\tau = C_m / H_{tr}$.
+Der Massenknoten braucht einen Startwert. Wie lange dieser nachwirkt, hängt an
+der Zeitkonstante $\tau = C_m / H_{tr}$. `warmupHours()` gibt das Fünffache
+davon an, aufgerundet auf ganze Tage: für den Referenzraum mittlerer Bauart
+840 Stunden, für schwere Bauart 1'296.
 
-`warmupHours()` verwirft das Fünffache von τ, aufgerundet auf ganze Tage — für
-den Referenzraum mittlerer Bauart sind das 840 Stunden. Wer diese Stunden
-mitbewertet, misst die Startbedingung mit.
+Bis Version 1.2.0 startete die Rechnung am 1. Januar auf der Aussentemperatur
+der ersten Stunde, und die Auswertung verwarf diese Stunden. Seit 1.3.0 rechnet
+`simulate5R1C()` sie **vorab**: Die letzten `spinUpHours` Stunden derselben
+Reihe laufen in ihrer Reihenfolge vor der ersten Stunde durch, ohne gespeichert
+oder gezählt zu werden. Beim Messjahr steht so der Dezember vor dem Januar, beim
+Szenario der Dezember des Referenzjahres. Jede Stunde behält ihren eigenen
+Zeitstempel für Sonnenstand und Belegung, und der Startwert ist die
+Aussentemperatur am Beginn des Vorlaufs.
+
+Standard ist `spinUpHours = warmupHours()`. Der Wert steht in den Parametern und
+damit im Berechnungs-Hash. Mit `spinUpHours: 0` rechnet das Modell wie bis
+1.2.0, und `exceedanceHours()` verwirft die Einschwingphase wie bisher.
+
+**Verankert:** Ohne Sonne und Belegungsprofil hängt ein Schritt nur an der
+Aussentemperatur. Dann ist der Vorlauf exakt dasselbe, wie das Reihenende von
+Hand voranzustellen und ohne Vorlauf zu rechnen. Der Test vergleicht beide
+Reihen Wert für Wert.
+
+Gemessene Wirkung und verworfene Alternativen:
+[ADR 0008](../adr/0008-zyklischer-vorlauf.md).
 
 ## Gültigkeitsbereich und Grenzen
 

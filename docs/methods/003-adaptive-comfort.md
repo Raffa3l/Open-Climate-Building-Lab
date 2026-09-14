@@ -65,7 +65,7 @@ Die Funktion baut auf zwei Berechnungen auf und führt beide als Vorgänger
 
 | Rolle | Berechnung | Beitrag |
 |---|---|---|
-| `simulation` | `building.simulate5R1C` | Operative Raumtemperatur, Raumparameter, Einschwingphase |
+| `simulation` | `building.simulate5R1C` | Operative Raumtemperatur, Raumparameter, Vorlauf |
 | `comfortBand` | `comfort.adaptiveComfortBand` | Obergrenze je Tag und Kategorie |
 
 Das Komfortband führt seinerseits das gleitende Mittel als Vorgänger
@@ -75,9 +75,12 @@ Der Berechnungs-Hash umfasst damit die ganze Kette. Vor 2.0.0 standen die
 Raumparameter nur im Hash der Simulation: 40 % und 70 % Fensteranteil ergaben
 in Zürich/Fluntern 2024 403 und 662 Übertemperaturstunden unter demselben Hash.
 
-**Die Einschwingphase verwirft die Funktion selbst.** Aus den abgeleiteten
-Kenngrössen der Simulation bestimmt sie dieselbe Stundenzahl wie
-`warmupHours()` und legt sie in `params.warmupHours` ab. **Die Kategorie**
+**Die Einschwingphase bestimmt die Funktion selbst.** Aus den abgeleiteten
+Kenngrössen der Simulation berechnet sie dieselbe Stundenzahl wie
+`warmupHours()`, zieht den Vorlauf der Simulation ab und verwirft nur den Rest;
+die Zahl steht in `params.warmupHours`. Seit `simulate5R1C` 1.3.0 deckt der
+Vorlauf die Einschwingphase ganz ab, und das ganze Jahr wird bewertet
+([ADR 0008](../adr/0008-zyklischer-vorlauf.md)). **Die Kategorie**
 kommt aus dem Komfortband und wird nicht ein zweites Mal angegeben, weil sich
 zwei Angaben widersprechen könnten.
 

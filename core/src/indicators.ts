@@ -397,6 +397,9 @@ export interface ExceedanceResult {
  *   verlangt ein Simulationsergebnis.
  * - Die Einschwingphase verwirft die Funktion selbst, aus den abgeleiteten
  *   Kenngrössen der Simulation. Die Stundenzahl steht in `params.warmupHours`.
+ *   Seit 2.1.0 zählt der Vorlauf der Simulation dagegen: Hat sie mindestens
+ *   so lange vorgerechnet (Standard seit simulate5R1C 1.3.0), wird nichts
+ *   verworfen und das ganze Jahr bewertet (ADR 0008).
  *
  * Die Kategorie kommt aus dem Komfortband und wird nicht ein zweites Mal
  * angegeben. Zwei Angaben könnten sich widersprechen.
@@ -419,7 +422,12 @@ export function exceedanceHours(
   const category = String(comfortBand.params.category);
   const occupiedFromHour = params.occupiedFromHour ?? 0;
   const occupiedToHour = params.occupiedToHour ?? 24;
-  const warmupHours = warmupHoursFromDerived(simulation.value.derived);
+  // Der Vorlauf der Simulation hat die Einschwingphase schon abgebaut; verworfen
+  // wird nur, was er nicht abdeckt. Mit spinUpHours 0 wie bis 2.0.0.
+  const warmupHours = Math.max(
+    0,
+    warmupHoursFromDerived(simulation.value.derived) - (simulation.value.spinUpHours ?? 0),
+  );
   const operativeTemperatureC = simulation.value.operativeTemperature;
   const dailyUpperLimitC = comfortBand.value.upper;
 
@@ -460,7 +468,7 @@ export function exceedanceHours(
     unit: "h",
     method: {
       id: "comfort.exceedanceHours",
-      version: "2.0.0",
+      version: "2.1.0",
       doc: "docs/methods/003-adaptive-comfort.md#übertemperaturstunden",
       sources: ["en16798-1", "sia180-2014"],
     },

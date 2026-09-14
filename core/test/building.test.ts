@@ -459,8 +459,8 @@ test("Himmelsabstrahlung ändert den Berechnungs-Hash", async () => {
   assert.notEqual(await computationHash(base), await computationHash(noSky));
   assert.equal(base.params.skyViewFactor, 0.5);
   // Die Version ist bewusst festgenagelt: Wer die Physik ändert, muss diesen
-  // Test anfassen und dabei über den Versionssprung nachdenken.
-  assert.equal(base.method.version, "1.2.0");
+  // Test anfassen und dabei über den Versionssprung nachdenken. 1.3.0: Vorlauf.
+  assert.equal(base.method.version, "1.3.0");
 });
 
 
@@ -492,4 +492,61 @@ test("Perez liefert auf der Südfassade mehr solaren Eintrag als isotrop", () =>
   assert.ok(perez > isotropic, `Perez ${perez.toFixed(1)} W ≤ isotrop ${isotropic.toFixed(1)} W`);
   // Der Unterschied gehört in eine plausible Grössenordnung, nicht ins Absurde
   assert.ok(perez / isotropic < 2, `Verhältnis ${(perez / isotropic).toFixed(2)} unplausibel`);
+});
+
+// --- Vorlauf ------------------------------------------------------------------
+
+test("Vorlauf ist dasselbe wie das Reihenende vorab durchzurechnen", () => {
+  // Ohne Sonne, Belegungsprofil und Nachtlüftung hängt ein Schritt nur an der
+  // Aussentemperatur, nicht am Datum. Dann lässt sich der Vorlauf von Hand
+  // nachbauen: Reihenende vorn anhängen, ohne Vorlauf rechnen, vorne abschneiden.
+  const n = 24 * 20;
+  const spinUp = 24 * 7;
+  const start = Date.UTC(2021, 6, 1);
+  const outdoor = Float64Array.from({ length: n }, (_, i) => 18 + 8 * Math.sin(i / 7) + (i % 97) / 20);
+  const room = referenceRoom({ windows: [], internalGains: 5 });
+  const common = { latitude: ZH_LAT, longitude: ZH_LON };
+
+  const cyclic = simulate5R1C(
+    { ...room, spinUpHours: spinUp },
+    { ...common, outdoorTemperature: outdoor, globalHorizontal: new Float64Array(n), axis: hourlyAxis(start, n) },
+    [SOURCE],
+  ).value;
+
+  const extended = new Float64Array(spinUp + n);
+  extended.set(outdoor.subarray(n - spinUp), 0);
+  extended.set(outdoor, spinUp);
+  const manual = simulate5R1C(
+    { ...room, spinUpHours: 0 },
+    {
+      ...common,
+      outdoorTemperature: extended,
+      globalHorizontal: new Float64Array(spinUp + n),
+      axis: hourlyAxis(start - spinUp * 3_600_000, spinUp + n),
+    },
+    [SOURCE],
+  ).value;
+
+  for (const key of ["operativeTemperature", "airTemperature", "massTemperature"] as const) {
+    assert.deepEqual([...cyclic[key]], [...manual[key].subarray(spinUp)], key);
+  }
+  assert.equal(cyclic.spinUpHours, spinUp);
+  assert.equal(manual.spinUpHours, 0);
+});
+
+test("Vorlauf: Standard ist die Einschwingzeit, gezählt wird erst ab der ersten Stunde", () => {
+  const room = referenceRoom();
+  const sim = simulate5R1C(room, input(syntheticTemperature(10, 9, 6), syntheticGlobal(700)), [SOURCE]);
+  assert.equal(sim.value.spinUpHours, warmupHours(room));
+  assert.equal(sim.params.spinUpHours, warmupHours(room));
+  // Ohne Belegungsprofil ist jede Stunde belegt: genau HOURS, nicht HOURS + Vorlauf.
+  assert.equal(sim.value.occupiedHours, HOURS);
+  assert.ok(sim.value.operativeTemperature.every(Number.isFinite), "jede Stunde gültig, auch im Januar");
+});
+
+test("Vorlauf ändert den Berechnungs-Hash", async () => {
+  const series = input(constant(12), constant(0));
+  const withSpinUp = simulate5R1C(referenceRoom(), series, [SOURCE]);
+  const without = simulate5R1C(referenceRoom({ spinUpHours: 0 }), series, [SOURCE]);
+  assert.notEqual(await computationHash(withSpinUp), await computationHash(without));
 });

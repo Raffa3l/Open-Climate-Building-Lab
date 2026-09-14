@@ -164,7 +164,8 @@ function evaluate(climate, s) {
   const { series, band, entry } = climate;
   const { simulation, exceedance: uts } = evaluateReferenceCase(series, entry, s, band);
 
-  // Die Einschwingphase verwirft exceedanceHours() selbst (ADR 0007). Für die
+  // Die Simulation rechnet einen Vorlauf aus dem Jahresende (ADR 0008);
+  // verworfen wird nur, was er nicht abdeckt, im Normalfall nichts. Für die
   // Tagesmaxima im Diagramm wird dieselbe Stundenzahl hier ausgeblendet.
   const skip = uts.params.warmupHours;
   const operative = simulation.value.operativeTemperature.slice();
@@ -229,7 +230,8 @@ function render() {
     `${entry.name} (${entry.canton}, ${Math.round(entry.altitudeM)} m ü. M.) · ${base.climate.label}` +
     (other ? ` gegen ${other.climate.label}` : "") +
     ` · Tagesmaximum gegen die adaptive Komfortgrenze Kat. ${CATEGORY}` +
-    ` · erste ${base.skip} h als Einschwingphase verworfen`;
+    ` · eingeschwungen durch ${base.simulation.value.spinUpHours} h Vorlauf aus dem Jahresende` +
+    (base.skip > 0 ? `, erste ${base.skip} h verworfen` : "");
 
   renderNote();
   renderLegend();
@@ -450,7 +452,7 @@ async function renderProof(elapsed) {
       <dt>H_tr,w Fenster</dt><dd>${d.windowConductance.toFixed(2)} W/K</dd>
       <dt>H_tr,op opak</dt><dd>${d.opaqueConductance.toFixed(2)} W/K</dd>
       <dt>H_tr,em Masse ↔ aussen</dt><dd>${d.externalMassConductance.toFixed(2)} W/K</dd>
-      <dt>Einschwingphase</dt><dd>${skip} h verworfen</dd>
+      <dt>Vorlauf</dt><dd>${simulation.value.spinUpHours} h aus dem Ende der Reihe${skip > 0 ? `, zusätzlich ${skip} h verworfen` : ", nichts verworfen"}</dd>
       <dt>Belegte Stunden</dt><dd>${simulation.value.occupiedHours}</dd>
       <dt>Diffusstrahlung</dt><dd>${entry.capabilities.measuredDiffuse ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}</dd>
       <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource}${entry.capabilities.measuredSky ? "" : " (Pauschalwert der Norm)"}</dd>

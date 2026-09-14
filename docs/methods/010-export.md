@@ -33,9 +33,9 @@ Vorgänger umfasst er Simulation, Komfortband und Datensatz, siehe
 | `zeitstempel_utc` | ISO 8601 | Zeitstempel der Quelle in UTC, unverändert |
 | `lokal_tag` | JJJJ-MM-TT | Lokaler Kalendertag des Stichzeitpunkts |
 | `lokal_stunde` | 0–23 | Lokale Stunde des Stichzeitpunkts |
-| `einschwingphase` | 0/1 | Stunde liegt in der verworfenen Einschwingphase |
+| `einschwingphase` | 0/1 | Stunde liegt in einer verworfenen Einschwingphase; mit Vorlauf (Standard) immer 0 |
 | `theta_e_C` | °C | Aussenlufttemperatur |
-| `theta_op_C` | °C | Operative Raumtemperatur, auch in der Einschwingphase |
+| `theta_op_C` | °C | Operative Raumtemperatur |
 | `theta_air_C` | °C | Raumlufttemperatur |
 | `theta_m_C` | °C | Temperatur des Massenknotens |
 | `phi_sol_W` | W | Solare Wärmeeinträge nach Abzug der Himmelsabstrahlung |
@@ -95,7 +95,7 @@ Periode steht im Manifest unter `subject.climate`.
 | `file` | Dateiname, SHA-256 der CSV, Schreibweise, Spaltenbeschreibung |
 | `subject` | Station, Klimastand und Einstellungen in lesbarer Form |
 | `timeAxis` | Die vollständige Zeitachse, inklusive Konvention |
-| `warmupHours` | Länge der verworfenen Einschwingphase |
+| `warmupHours` | Verworfene Stunden am Reihenbeginn. Mit Vorlauf 0; seine Dauer steht unter den Parametern der Simulation (`spinUpHours`) |
 | `computations` | Je Berechnung: Rolle, Hash, kanonische Form, Verfahren, Parameter, Eingangsdaten |
 | `citations` | Vollständige Quellenangaben: Autor, Titel, Link, Lizenz |
 

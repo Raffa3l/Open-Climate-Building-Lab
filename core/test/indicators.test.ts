@@ -283,6 +283,22 @@ test("die Einschwingphase verwirft exceedanceHours() selbst", () => {
   assert.equal(r.value.hours, 10 * 364);
 });
 
+test("der Vorlauf der Simulation wird auf die Einschwingphase angerechnet", () => {
+  const limits = new Float64Array(365).fill(28.4);
+  const withSpinUp = (spinUpHours: number) => {
+    const sim = simulationOf(constantSeries(30), 3600 * 5); // τ = 5 h, Einschwingphase 48 h
+    (sim.value as { spinUpHours: number }).spinUpHours = spinUpHours;
+    return exceedanceHours(sim, bandOf(limits), axis, { occupiedFromHour: 8, occupiedToHour: 18 });
+  };
+
+  assert.equal(withSpinUp(0).params.warmupHours, 48, "ohne Vorlauf wie bisher");
+  assert.equal(withSpinUp(24).params.warmupHours, 24, "Vorlauf kürzer als die Einschwingphase: nur der Rest");
+  const full = withSpinUp(48);
+  assert.equal(full.params.warmupHours, 0, "Vorlauf deckt sie ab: nichts verworfen");
+  assert.equal(full.value.hours, 10 * 365, "jeder Tag des Jahres bewertet");
+  assert.equal(withSpinUp(500).params.warmupHours, 0, "nie negativ");
+});
+
 test("die Kategorie kommt aus dem Komfortband", () => {
   const r = exceedanceHours(simulationOf(constantSeries(30)), bandOf(new Float64Array(365).fill(28.4), "III"), axis);
   assert.equal(r.params.category, "III");

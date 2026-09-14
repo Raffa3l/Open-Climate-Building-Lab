@@ -32,9 +32,11 @@ export const METHOD_ROOM_5R1C: MethodRef = {
   id: "building.simulate5R1C",
   // 1.1.0: langwellige Abstrahlung gegen den Himmel ergänzt (§11.3.5).
   // 1.2.0: Standard-Himmelsmodell von isotrop auf Perez (1990) umgestellt.
+  // 1.3.0: zyklischer Vorlauf aus dem Ende der Reihe (ADR 0008); das ganze
+  //        Jahr ist gültig statt der ersten 5·τ verworfen.
   // Ergebnisse ändern sich jeweils; publizierte Werte bleiben über die
   // Version zuordenbar.
-  version: "1.2.0",
+  version: "1.3.0",
   doc: "docs/methods/006-room-model-5r1c.md#stundenschritt",
   sources: ["en-iso-13790-2008"],
 };
@@ -105,6 +107,13 @@ export interface RoomSpec {
    * einfachere Modell nach Liu & Jordan, siehe docs/methods/005-solar.md.
    */
   skyModel?: SkyModel;
+  /**
+   * Vorlauf in Stunden, bevor die erste Stunde der Reihe gerechnet wird. Er
+   * durchläuft das Ende derselben Reihe, damit der Massenknoten am ersten Tag
+   * eingeschwungen ist, siehe docs/methods/006-room-model-5r1c.md#vorlauf.
+   * Ohne Angabe gilt die Einschwingzeit `warmupHours()`; 0 schaltet ihn ab.
+   */
+  spinUpHours?: number;
   /**
    * Formfaktor der Aussenbauteile zum Himmel, 0…1. EN ISO 13790 §11.4.6:
    * 1.0 für ein unverschattetes Flachdach, **0.5 für eine senkrechte Fassade**
@@ -240,6 +249,8 @@ export interface SimulationResult {
   nightVentilationHours: number;
   /** Stunden mit Belegung. Ohne Profil sind das alle Stunden. */
   occupiedHours: number;
+  /** Stunden Vorlauf aus dem Ende der Reihe, vor der ersten Stunde gerechnet. */
+  spinUpHours: number;
   derived: RoomDerived;
 }
 
@@ -268,17 +279,23 @@ export function simulate5R1C(
   const skyModel: SkyModel = room.skyModel ?? "perez";
   const hasLongwave = input.downwellingLongwave !== undefined;
 
-  // Startwert des Massenknotens: erster gültiger Aussenwert. Der Einschwing-
-  // vorgang klingt in wenigen Tagen ab; die Aufwärmphase wird beim Auswerten
-  // verworfen, siehe warmupHours().
-  let massPrevious = firstFinite(input.outdoorTemperature) ?? 20;
+  const spinUpHours = Math.max(0, Math.round(room.spinUpHours ?? warmupHoursFromDerived(derived)));
+
+  // Startwert des Massenknotens: erster gültiger Aussenwert ab dem ersten
+  // gerechneten Schritt, mit Vorlauf also ab dessen Beginn. Mit Vorlauf ist er
+  // bis zur ersten Stunde der Reihe abgeklungen; ohne Vorlauf wirkt er über die
+  // Einschwingphase nach, siehe warmupHours().
+  const firstStep = n > 0 ? (((n - spinUpHours) % n) + n) % n : 0;
+  let massPrevious = firstFiniteFrom(input.outdoorTemperature, firstStep) ?? 20;
 
   let shadedHours = 0;
   let nightVentilationHours = 0;
   let occupiedHours = 0;
   let airPrevious = massPrevious;
 
-  for (let i = 0; i < n; i++) {
+  // Ein Stundenschritt. `record` ist im Vorlauf aus: Der Zustand schreitet fort,
+  // aber nichts wird gespeichert oder gezählt.
+  const step = (i: number, record: boolean): void => {
     const outdoor = input.outdoorTemperature[i];
     const global = input.globalHorizontal[i];
 
@@ -286,7 +303,7 @@ export function simulate5R1C(
       // Ohne Aussentemperatur ist der Schritt nicht rechenbar. Der Massenknoten
       // wird eingefroren statt fortgeschrieben — eine erfundene Temperatur
       // würde sich über die Speicherfähigkeit tagelang weiterschleppen.
-      continue;
+      return;
     }
 
     // --- solare Einträge ---
@@ -312,7 +329,7 @@ export function simulate5R1C(
       const glazedArea = window.area * (1 - window.frameFraction);
       solarW += shadingFactor * F_W * window.gValue * glazedArea * irradiance;
     }
-    if (anyShaded) shadedHours++;
+    if (record && anyShaded) shadedHours++;
 
     // --- langwellige Abstrahlung gegen den Himmel, §11.3.5 ---
     // Der Himmel ist kälter als die Luft; Flächen mit Himmelssicht verlieren
@@ -329,9 +346,11 @@ export function simulate5R1C(
       radiativeLoss += skyRadiationLoss(window.uValue, window.area, deltaSky);
     }
     const appliedLoss = skyViewFactor * radiativeLoss;
-    skyLoss[i] = appliedLoss;
     solarW -= appliedLoss;
-    solarGains[i] = solarW;
+    if (record) {
+      skyLoss[i] = appliedLoss;
+      solarGains[i] = solarW;
+    }
 
     // --- Belegung ---
     const hourLocal = localHour(input.axis, i);
@@ -349,7 +368,7 @@ export function simulate5R1C(
       ? room.internalGains
       : room.occupancy?.gainsUnoccupied ?? room.internalGains;
     const internalGainsW = gainsPerArea * room.floorArea;
-    if (occupied) occupiedHours++;
+    if (record && occupied) occupiedHours++;
 
     // --- Lüftung ---
     let airChange = occupied && room.occupancy?.airChangeOccupied !== undefined
@@ -364,7 +383,7 @@ export function simulate5R1C(
       // die Temperatur reagieren, die sie selbst erst erzeugt.
       if (inWindow && airPrevious > nv.minIndoorC && airPrevious - outdoor > nv.minDeltaK) {
         airChange += nv.airChangeRate;
-        nightVentilationHours++;
+        if (record) nightVentilationHours++;
       }
     }
     const ventilationConductance = (RHO_C_AIR * airChange * derived.volume) / 3600;
@@ -411,13 +430,27 @@ export function simulate5R1C(
       (derived.airSurfaceConductance * surface + ventilationConductance * supply + phiIa) /
       (derived.airSurfaceConductance + ventilationConductance);
 
-    massTemperature[i] = massMean;
-    airTemperature[i] = air;
-    operativeTemperature[i] = 0.3 * air + 0.7 * surface;
+    if (record) {
+      massTemperature[i] = massMean;
+      airTemperature[i] = air;
+      operativeTemperature[i] = 0.3 * air + 0.7 * surface;
+    }
 
     massPrevious = massNext;
     airPrevious = air;
+  };
+
+  // Zyklischer Vorlauf: die letzten spinUpHours Stunden derselben Reihe, in
+  // ihrer Reihenfolge, direkt vor der ersten. Beim Messjahr steht damit der
+  // Dezember vor dem Januar, beim Szenario der Dezember des Referenzjahres.
+  // Jede Stunde behält ihren eigenen Zeitstempel für Sonnenstand und Belegung.
+  // Ist die Reihe kürzer als der Vorlauf, läuft sie mehrfach durch.
+  if (n > 0) {
+    for (let k = 0; k < spinUpHours; k++) {
+      step((((n - spinUpHours + k) % n) + n) % n, false);
+    }
   }
+  for (let i = 0; i < n; i++) step(i, true);
 
   return {
     value: {
@@ -430,6 +463,7 @@ export function simulate5R1C(
       shadedHours,
       nightVentilationHours,
       occupiedHours,
+      spinUpHours,
       derived,
     },
     unit: "°C",
@@ -450,6 +484,7 @@ export function simulate5R1C(
       windows: JSON.stringify(room.windows),
       nightVentilation: room.nightVentilation ? JSON.stringify(room.nightVentilation) : "aus",
       occupancy: room.occupancy ? JSON.stringify(room.occupancy) : "durchgehend",
+      spinUpHours,
     },
     inputs,
   };
@@ -480,8 +515,12 @@ export function warmupHoursFromDerived(
   return Math.ceil((5 * tauHours) / 24) * 24;
 }
 
-function firstFinite(values: Float64Array): number | null {
-  for (const v of values) if (Number.isFinite(v)) return v;
+/** Erster gültiger Wert ab `start`, über das Ende hinweg zyklisch weitergesucht. */
+function firstFiniteFrom(values: Float64Array, start: number): number | null {
+  for (let k = 0; k < values.length; k++) {
+    const v = values[(start + k) % values.length];
+    if (Number.isFinite(v)) return v;
+  }
   return null;
 }
 

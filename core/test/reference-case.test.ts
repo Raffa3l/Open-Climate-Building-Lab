@@ -35,7 +35,7 @@ const SOURCE: DatasetRef = {
 
 const STATION = { name: "Teststation", canton: "ZH", altitudeM: 556, lat: 47.38, lon: 8.57 };
 
-/** 60 Sommertage: lang genug für Einschwingphase (840 h) und gleitendes Mittel. */
+/** 60 Sommertage: länger als der Vorlauf (840 h) und lang genug für das gleitende Mittel. */
 function syntheticSeries(source: DatasetRef = SOURCE): StationSeries {
   const hours = 24 * 60;
   const outdoor = Float64Array.from({ length: hours }, (_, i) => 22 + 7 * Math.sin(((i % 24) - 9) / 24 * 2 * Math.PI));
@@ -168,7 +168,10 @@ test("Export: Name, Rollen und Subjekt kommen aus der Berechnung", async () => {
   assert.equal(manifest.subject.windowFraction, 0.4);
   assert.equal(manifest.subject.comfortCategory, "II");
   assert.equal(manifest.subject.calendarYear, 2021);
-  assert.equal(manifest.warmupHours, 840);
+  // Der Vorlauf deckt die Einschwingphase ab: nichts verworfen, jede Stunde gültig.
+  assert.equal(manifest.warmupHours, 0);
+  assert.equal(simulation.value.spinUpHours, 840);
+  assert.ok(Number.isFinite(simulation.value.operativeTemperature[0]));
   assert.equal(manifest.computations[0].value.peakOperativeC, Math.round(peakOperativeTemperature(exceedance) * 1e6) / 1e6);
   assert.ok(exceedance.value.evaluatedHours > 0, "die Reihe ist lang genug, um bewertet zu werden");
   assert.equal(simulation.params.massClass, "mittel");

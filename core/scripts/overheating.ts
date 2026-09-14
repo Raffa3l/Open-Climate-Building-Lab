@@ -116,8 +116,8 @@ console.log("-".repeat(header.length + 4));
 for (const { label, spec } of scenarios) {
   const sim = simulate5R1C(spec, simInput, inputs);
 
-  // Die Einschwingphase verwirft exceedanceHours() selbst (ADR 0007). Für die
-  // Spitzentemperatur wird dieselbe Stundenzahl hier ausgeblendet.
+  // Die Simulation rechnet einen Vorlauf (ADR 0008); exceedanceHours() verwirft
+  // nur, was er nicht abdeckt. Für die Spitzentemperatur gilt dieselbe Stundenzahl.
   const uts = exceedanceHours(sim, band, series.axis, { occupiedFromHour: 7, occupiedToHour: 19 });
   const evaluated = sim.value.operativeTemperature.slice();
   evaluated.fill(NaN, 0, Number(uts.params.warmupHours));
@@ -137,6 +137,6 @@ for (const { label, spec } of scenarios) {
 
 const reference = simulate5R1C(room(), simInput, inputs).value;
 console.log(`\nBelegte Stunden: ${reference.occupiedHours} von ${series.axis.length}`);
-console.log(`Einschwingphase verworfen: ${warmupHours(room())} h (5 · Zeitkonstante)`);
+console.log(`Vorlauf aus dem Jahresende: ${warmupHours(room())} h (5 · Zeitkonstante), das ganze Jahr bewertet`);
 console.log(`Komfortband definiert an ${[...band.value.upper].filter(Number.isFinite).length} Tagen`);
 console.log(`Datenstand ${meta.sha256.slice(0, 12)} · ${catalog.license} · ${catalog.attribution}\n`);
