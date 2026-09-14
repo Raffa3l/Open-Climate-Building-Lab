@@ -120,6 +120,14 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   ersten Publikation, damit kein Permalink bricht. Die Falle steht in
   [004](docs/methods/004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)
   und in CLAUDE.md.
+- **Der Kopf von `catalog.json` behielt die alte Quellenangabe.** `load()`
+  übernahm Sammlung, Lizenz und Autor aus dem bestehenden Katalog und setzte
+  sie nur beim ersten Anlegen aus dem Code. Nach dem Neubau trugen alle
+  Datensätze die korrigierte Schreibweise, die Fusszeile des Frontends aber
+  weiter «fuer». Aufgefallen bei der Prüfung der Fusszeile, weil der
+  Wertevergleich nur die `.ocbl`-Dateien umfasste. Die Angaben kommen jetzt bei
+  jedem Laden aus dem Code; die Fusszeile zeigt den Katalogstand zudem als
+  Datum im Schweizer Format statt als ISO-Zeitstempel.
 - Beim Neubau nach Rezept kam die Station **Uetliberg (UEB)** hinzu, eine
   reine Strahlungsmessstelle mit gemessener Diffusstrahlung. Im Frontend
   erscheint sie nicht, weil ihr die Temperatur fehlt. Stand damit 158 Stationen

@@ -559,6 +559,19 @@ function meanFinite(values) {
   return n ? sum / n : 0;
 }
 
+/**
+ * "2026-09-14T17:59:29+00:00" → "14.09.2026".
+ *
+ * In Zürcher Zeit statt UTC: Ein Katalog, gebaut kurz nach Mitternacht, trüge
+ * sonst das Datum des Vortags. Nur für Anzeigen; Messdaten folgen weiterhin dem
+ * festen Offset ohne Sommerzeit (docs/methods/000-time-conventions.md).
+ */
+function swissDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
+}
+
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 }
@@ -768,7 +781,7 @@ async function main() {
     $("footer").innerHTML =
       `${usableStations().length} von ${Object.keys(catalog.stations).length} Stationen mit Globalstrahlung` +
       (scenarios ? `, ${Object.keys(scenarios.stations).length} mit Klimaszenarien` : "") + ". " +
-      `Daten: ${catalog.attribution} · ${catalog.license} · Katalogstand ${catalog.generated}. ` +
+      `Daten: ${catalog.attribution} · ${catalog.license} · Katalogstand ${swissDate(catalog.generated)}. ` +
       `Code unter Apache-2.0. Methoden in <code>docs/methods/</code>.`;
 
     statusEl.hidden = true;

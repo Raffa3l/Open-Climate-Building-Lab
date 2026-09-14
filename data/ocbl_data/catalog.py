@@ -61,7 +61,7 @@ CAPABILITY_REQUIREMENTS = {
 def _capabilities(entry: dict) -> dict:
     """Leitet aus den vorhandenen Variablen ab, was an dieser Station geht.
 
-    Von 157 SwissMetNet-Stationen taugen nicht alle fuer alles: acht sind
+    Von 158 SwissMetNet-Stationen taugen nicht alle fuer alles: neun sind
     reine Wind- oder Strahlungsmessstellen. Das Frontend soll das anzeigen
     koennen, statt leere Diagramme zu zeigen.
     """
@@ -136,6 +136,12 @@ def load(build_dir: Path) -> dict:
         }
 
     catalog = json.loads(path.read_text(encoding="utf-8"))
+    # Beschreibende Angaben kommen immer aus dem Code, nie aus dem alten Stand.
+    # Sonst blieb eine korrigierte Quellenangabe im Kopf des Katalogs haengen,
+    # waehrend alle Datensaetze sie schon trugen: So stand bis 14.09.2026
+    # "Bundesamt fuer Meteorologie" in der Fusszeile. formatVersion bleibt
+    # unberuehrt, sie beschreibt den vorhandenen Stand.
+    catalog.update({"collection": COLLECTION, "license": LICENSE, "attribution": ATTRIBUTION})
     missing: list[str] = []
 
     for abbr, entry in catalog.get("stations", {}).items():
