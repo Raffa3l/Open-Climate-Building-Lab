@@ -25,6 +25,15 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Erstellungszeitpunkt: Zwei Exporte desselben Sachverhalts sind byte-gleich.
   Acht Tests, darunter die Summenprobe gegen die Kennzahl für beide
   Zeitkonventionen.
+- **Export aus der Kommandozeile** (`core/scripts/export.ts`): nimmt einen
+  Permalink und schreibt dieselben Dateien wie der Download im Browser. Dafür
+  liegen Referenzraum, Belegungsfenster, Reglerbereiche und die Lesart des
+  Permalinks jetzt in `core/src/reference-case.ts` statt in `web/app.js`;
+  Browser und Skript rufen dieselbe Funktion `referenceCaseExport()` auf. Eine
+  Reglerstellung, die es nicht gibt, bricht im Skript ab, statt still gerundet
+  zu werden. Der Export lehnt Einstellungen ab, die nicht zur Simulation passen.
+  Neun Tests, einer davon hält die Regler in `web/index.html` auf die Stellungen
+  und Vorgaben des Kerns fest.
 - **Vergleichsmodus im Frontend:** Ein zweiter Klimastand liegt über demselben
   Verlauf, gemessenes Jahr gegen Szenario oder Szenario gegen Szenario. Beide
   Reihen rechnen denselben Raum mit denselben Parametern; verschieden ist
@@ -129,6 +138,11 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
 
 ### Gemessen
+- **Export Browser gegen Kommandozeile, Zürich/Fluntern:** zwei Permalinks, die
+  Voreinstellung mit 2024 gegen 2060 RCP 8.5 und eine Stellung mit jedem Regler
+  verändert mit 2023 gegen 2035 RCP 8.5 warmer Sommer. Die acht Dateien des
+  Skripts sind byte-gleich zu denen des Frontends, und beide byte-gleich zu den
+  Exporten vor dem Umbau. Keine Zahl und kein Hash hat sich verschoben.
 - **Export Zürich/Fluntern, Voreinstellung:** gemessen 2024 ergibt 8'784
   Zeilen, 647 kB CSV und 11.4 kB Manifest, Szenario 2060 RCP 8.5 ergibt 8'760
   Zeilen und 648 kB. In beiden Dateien summieren die Zeilen mit Überschreitung

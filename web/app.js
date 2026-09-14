@@ -8,27 +8,26 @@
  */
 
 import {
-  adaptiveComfortBand,
+  REFERENCE_EVALUATION,
   alignDailyToCalendarYear,
-  dailyMean,
-  exceedanceHours,
-  exportManifest,
-  getVariable,
-  hourlyCsv,
-  localDayIndex,
-  readPacked,
-  runningMeanOutdoorTemperature,
   citations,
+  climateLabel,
+  climateShortLabel,
+  evaluateReferenceCase,
+  isScenarioKey,
+  localDayIndex,
+  peakOperativeTemperature,
+  readPacked,
+  referenceCaseExport,
+  referenceComfortBand,
+  roomSettingsToParams,
   shortHash,
-  simulate5R1C,
 } from "./vendor/core/index.js";
 import { drawChart, drawCrosshair } from "./chart.js";
 
-const OCCUPANCY = { fromHour: 7, toHour: 19, weekdaysOnly: true, gainsUnoccupied: 2, airChangeOccupied: 1.5 };
-const OCCUPIED_FROM = 7;
-const OCCUPIED_TO = 19;
-const FACADE_AREA = 9.8;
-const CATEGORY = "II";
+// Raum, Belegungsfenster und Permalink-Lesart liegen im Kern
+// (core/src/reference-case.ts), damit der CLI-Export denselben Fall rechnet.
+const CATEGORY = REFERENCE_EVALUATION.category;
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
@@ -70,18 +69,7 @@ function applyState(s) {
 
 /** Permalink: der Zustand steht in der Adresszeile, nicht im Speicher. */
 function writeUrl(s) {
-  const p = new URLSearchParams({
-    station: s.station,
-    year: s.year,
-    azimuth: String(s.azimuth),
-    massClass: s.massClass,
-    skyModel: s.skyModel,
-    windowFraction: String(Math.round(s.windowFraction * 100)),
-    shading: String(s.shading),
-    gains: String(s.gains),
-    nightVent: String(s.nightVent),
-    nightVentOn: s.nightVentOn ? "1" : "0",
-  });
+  const p = new URLSearchParams([["station", s.station], ["year", s.year], ...roomSettingsToParams(s)]);
   // Ohne Vergleich bleibt der Schlüssel weg, damit alte Links unverändert
   // dieselbe Adresse ergeben wie zuvor.
   if (s.compare) p.set("compare", s.compare);
@@ -92,52 +80,6 @@ function readUrl() {
   if (!location.hash.startsWith("#")) return null;
   const p = new URLSearchParams(location.hash.slice(1));
   return p.size ? Object.fromEntries(p) : null;
-}
-
-// --- Raumbeschreibung aus dem Zustand ---------------------------------------
-
-/**
- * Rundet Eingabegeometrie auf sechs Nachkommastellen.
- *
- * 9.8 − 9.8·0.4 ergibt in Gleitkomma 5.880000000000001. Der Rest ist
- * physikalisch bedeutungslos, wandert aber in den Berechnungs-Hash und macht
- * ihn damit vom Rechenweg abhängig statt vom Sachverhalt.
- */
-function round6(value) {
-  return Math.round(value * 1e6) / 1e6;
-}
-
-function buildRoom(s) {
-  const windowArea = round6(FACADE_AREA * s.windowFraction);
-  return {
-    floorArea: 20,
-    height: 2.8,
-    opaqueArea: round6(FACADE_AREA - windowArea),
-    opaqueUValue: 0.2,
-    thermalBridges: 0.5,
-    windows: [
-      {
-        area: windowArea,
-        orientation: { tilt: 90, azimuth: s.azimuth },
-        uValue: 1.0,
-        gValue: 0.5,
-        frameFraction: 0.25,
-        // Der Regler stellt g_tot; daraus folgt der Abminderungsfaktor
-        // gegenüber der ungeschützten Verglasung.
-        shading: s.shading >= 1
-          ? { factorClosed: 1, activationIrradiance: Infinity }
-          : { factorClosed: round6(s.shading / 0.5), activationIrradiance: 200 },
-      },
-    ],
-    massClass: s.massClass,
-    skyModel: s.skyModel,
-    airChangeRate: 0.3,
-    internalGains: s.gains,
-    occupancy: OCCUPANCY,
-    nightVentilation: s.nightVentOn && s.nightVent > 0
-      ? { airChangeRate: s.nightVent, fromHour: 22, toHour: 6, minIndoorC: 22, minDeltaK: 2 }
-      : undefined,
-  };
 }
 
 // --- Daten laden -------------------------------------------------------------
@@ -167,34 +109,15 @@ function climateOptions(stationAbbr) {
   }
   const scen = scenarios?.stations?.[stationAbbr];
   if (scen) {
-    for (const slug of scen.variants) options.push({ value: `s${slug}`, label: scenarioLabel(slug) });
+    // Beschriftung aus dem Kürzel statt aus dem Detailindex: Der Katalog trägt
+    // nur die Kürzel, und ein Ladevorgang nur für Beschriftungen wäre Verschwendung.
+    for (const slug of scen.variants) options.push({ value: `s${slug}`, label: climateLabel(`s${slug}`) });
   }
   return options;
 }
 
-/**
- * "2060_RCP85_dry" → "Szenario 2060 · RCP 8.5 · Referenzjahr".
- *
- * Aus dem Kürzel gebaut statt aus dem Detailindex geholt: Der Katalog trägt
- * nur die Kürzel, und ein Ladevorgang nur für Beschriftungen wäre Verschwendung.
- */
-function scenarioLabel(slug) {
-  const [period, rcp, kind] = slug.split("_");
-  const scenario = rcp.replace(/^RCP(\d)(\d)$/, "RCP $1.$2");
-  const type = kind === "dry" ? "Referenzjahr" : "warmer Sommer (1 in 10)";
-  return `Szenario ${period} · ${scenario} · ${type}`;
-}
-
-/** Kurzform für Legende und Kacheln, wo die volle Bezeichnung nicht hinpasst. */
-function shortLabel(key) {
-  if (!key) return "";
-  if (key.startsWith("y")) return `gemessen ${key.slice(1)}`;
-  const [period, rcp, kind] = key.slice(1).split("_");
-  return `${period} ${rcp.replace(/^RCP(\d)(\d)$/, "RCP $1.$2")}${kind === "dry" ? "" : ", warmer Sommer"}`;
-}
-
 async function loadClimate(stationAbbr, key) {
-  const isScenario = key.startsWith("s");
+  const isScenario = isScenarioKey(key);
   const entry = isScenario ? scenarios.stations[stationAbbr] : catalog.stations[stationAbbr];
   if (!entry) throw new Error(`${stationAbbr} hat keinen Datensatz für ${key}`);
 
@@ -212,21 +135,17 @@ async function loadClimate(stationAbbr, key) {
   }
 
   const series = readPacked(buffer, meta.sha256);
-  const outdoor = getVariable(series, "tre200h0");
-  const inputs = [series.source];
-
-  const runningMean = runningMeanOutdoorTemperature(dailyMean(outdoor, series.axis), inputs);
-  const band = adaptiveComfortBand(runningMean, { category: CATEGORY });
 
   return {
-    series, band, runningMean, meta, station: stationAbbr, isScenario, key,
+    // Das Komfortband hängt nur am Klima und wird je Klimastand einmal gerechnet.
+    series, band: referenceComfortBand(series), meta, station: stationAbbr, isScenario, key,
     // Für die Anzeige immer die Messstation: Name, Kanton und Höhe stammen
     // aus dem SwissMetNet-Verzeichnis, die Szenariometadaten weichen ab.
     entry: catalog.stations[stationAbbr] ?? entry,
     // Nicht `meta.label` aus dem Index: der schreibt "RCP85", das Auswahlfeld
     // "RCP 8.5". Nebeneinander gestellt fiele die Doppelschreibweise auf.
-    label: isScenario ? scenarioLabel(key.slice(1)) : `gemessen ${key.slice(1)}`,
-    short: shortLabel(key),
+    label: climateLabel(key),
+    short: climateShortLabel(key),
     // Das Referenzjahr der Szenarien liegt auf einem Nicht-Schaltjahr.
     calendarYear: new Date(series.axis.startUtcMs).getUTCFullYear(),
   };
@@ -243,25 +162,10 @@ async function loadClimate(stationAbbr, key) {
  */
 function evaluate(climate, s) {
   const { series, band, entry } = climate;
-  const inputs = [series.source];
-  const room = buildRoom(s);
-
-  const simulation = simulate5R1C(room, {
-    outdoorTemperature: getVariable(series, "tre200h0"),
-    globalHorizontal: getVariable(series, "gre000h0"),
-    diffuseHorizontal: series.variables.has("ods000h0") ? getVariable(series, "ods000h0") : undefined,
-    downwellingLongwave: series.variables.has("oli000h0") ? getVariable(series, "oli000h0") : undefined,
-    axis: series.axis,
-    latitude: entry.lat,
-    longitude: entry.lon,
-  }, inputs);
+  const { simulation, exceedance: uts } = evaluateReferenceCase(series, entry, s, band);
 
   // Die Einschwingphase verwirft exceedanceHours() selbst (ADR 0007). Für die
   // Tagesmaxima im Diagramm wird dieselbe Stundenzahl hier ausgeblendet.
-  const uts = exceedanceHours(simulation, band, series.axis, {
-    occupiedFromHour: OCCUPIED_FROM,
-    occupiedToHour: OCCUPIED_TO,
-  });
   const skip = uts.params.warmupHours;
   const operative = simulation.value.operativeTemperature.slice();
   operative.fill(NaN, 0, skip);
@@ -280,11 +184,11 @@ function evaluate(climate, s) {
   }
   const hoursOver = uts.value.dailyHours;
 
-  const finite = [...dailyMax].filter(Number.isFinite);
   return {
     climate, simulation, uts, dailyMax, hoursOver, skip,
     limit: band.value.upper,
-    peak: finite.length ? Math.max(...finite) : NaN,
+    // Aus dem Kern, derselbe Wert wie im Manifest des Downloads.
+    peak: peakOperativeTemperature(uts),
   };
 }
 
@@ -583,80 +487,19 @@ async function renderProof(elapsed) {
  * Baut CSV und Manifest für einen Klimastand.
  *
  * Getrennt vom Speichern, damit dieselben Bytes auch ohne Browser prüfbar
- * sind. Die Serialisierung liegt im Kern, siehe docs/methods/010-export.md;
- * hier wird nur zusammengestellt, was hineingehört.
+ * sind. Zusammenstellung und Serialisierung liegen im Kern; derselbe Aufruf
+ * steckt in core/scripts/export.ts, siehe docs/methods/010-export.md.
  */
-async function buildExport(result, s) {
-  const { climate, simulation, uts, skip } = result;
-  const { series, band, runningMean, entry } = climate;
-
-  const csv = hourlyCsv({
-    axis: series.axis,
-    outdoorTemperature: getVariable(series, "tre200h0"),
+function buildExport(result, s) {
+  const { climate, uts } = result;
+  return referenceCaseExport({
+    station: climate.station,
+    stationInfo: climate.entry,
+    climateKey: climate.key,
+    settings: s,
+    series: climate.series,
     exceedance: uts,
   });
-
-  // Benannt nach dem Hash der Übertemperaturstunden: Über seine Vorgänger
-  // umfasst er Simulation, Komfortband und Datensatz (ADR 0007).
-  const stem = `ocbl_${climate.station}_${climate.key}_${await shortHash(uts)}`;
-
-  const manifest = await exportManifest({
-    csv,
-    csvFileName: `${stem}.csv`,
-    subject: {
-      station: climate.station,
-      stationName: entry.name,
-      canton: entry.canton,
-      altitudeM: entry.altitudeM,
-      latitude: entry.lat,
-      longitude: entry.lon,
-      climate: climate.key,
-      climateLabel: climate.label,
-      isScenario: climate.isScenario,
-      calendarYear: climate.calendarYear,
-      comfortCategory: CATEGORY,
-      azimuthDeg: s.azimuth,
-      massClass: s.massClass,
-      skyModel: s.skyModel,
-      windowFraction: round6(s.windowFraction),
-      shadingGtot: s.shading,
-      internalGainsWm2: s.gains,
-      nightVentilationAch: s.nightVentOn ? s.nightVent : 0,
-    },
-    axis: series.axis,
-    warmupHours: skip,
-    computations: [
-      {
-        role: "simulation",
-        computation: simulation,
-        value: {
-          peakOperativeC: round6(result.peak),
-          shadedHours: simulation.value.shadedHours,
-          nightVentilationHours: simulation.value.nightVentilationHours,
-          occupiedHours: simulation.value.occupiedHours,
-          longwaveSource: simulation.value.longwaveSource,
-        },
-      },
-      {
-        role: "exceedance",
-        computation: uts,
-        value: {
-          hours: uts.value.hours,
-          kelvinHours: round6(uts.value.kelvinHours),
-          evaluatedHours: uts.value.evaluatedHours,
-        },
-      },
-      { role: "comfortBand", computation: band },
-      { role: "runningMean", computation: runningMean },
-    ],
-  });
-
-  return {
-    csvName: `${stem}.csv`,
-    csv,
-    jsonName: `${stem}.json`,
-    json: `${JSON.stringify(manifest, null, 2)}\n`,
-  };
 }
 
 function saveFile(name, text, type) {

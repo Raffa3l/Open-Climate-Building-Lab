@@ -8,9 +8,10 @@ Der Download ist die letzte Stufe der Kette **Daten → Modell → Visualisierun
 alles, was nötig ist, um sie ohne dieses Projekt nachzuprüfen.
 
 Der Serialisierer liegt im Rechenkern, nicht im Frontend. Ein Aufruf aus der
-Kommandozeile erzeugt damit dieselben Bytes wie der Browser; ein eigenes Skript
-dafür gibt es noch nicht. Zwei Serialisierer würden auseinanderdriften, und eine
-Datei, deren Prüfsumme vom Werkzeug abhängt, ist keine prüfbare Datei.
+Kommandozeile erzeugt damit dieselben Bytes wie der Browser, siehe
+[Aus der Kommandozeile](#aus-der-kommandozeile). Zwei Serialisierer würden
+auseinanderdriften, und eine Datei, deren Prüfsumme vom Werkzeug abhängt, ist
+keine prüfbare Datei.
 
 ## Was heruntergeladen wird
 
@@ -130,6 +131,39 @@ assert over == exceedance["value"]["hours"]
 ```
 
 Prüfung 3 ist auch als Test im Kern verankert, für beide Zeitkonventionen.
+
+## Aus der Kommandozeile
+
+```bash
+node core/scripts/export.ts 'http://localhost:8000/#station=SMA&year=y2024&compare=s2060_RCP85_dry' export/
+```
+
+Das Skript nimmt den Permalink aus der Adresszeile und schreibt dieselben
+Dateien wie die Knöpfe im Browser, mit `compare=` für beide Klimastände.
+Fehlende Reglerwerte erhalten die Vorgabe des Frontends, eine fehlende Station
+wird SMA, ein fehlendes Jahr das jüngste Messjahr.
+
+**Byte-gleich, nicht nur inhaltsgleich.** Browser und Skript rufen dieselbe
+Funktion `referenceCaseExport()` auf. Referenzraum, Belegungsfenster,
+Reglerbereiche und die Lesart des Permalinks liegen in
+[`core/src/reference-case.ts`](../../core/src/reference-case.ts), nicht im
+Frontend. Nachgemessen am 14.09.2026 an Zürich/Fluntern mit zwei Permalinks, die
+Voreinstellung und eine Stellung mit jedem Regler verändert, je zwei
+Klimastände: Die acht Dateien des Skripts sind byte-gleich zu denen des
+Frontends.
+
+**Eine Reglerstellung, die es nicht gibt, bricht ab.** Aus `windowFraction=37`
+macht der Browser still eine gültige Stellung. Übernähme das Skript den Wert,
+rechnete es einen anderen Raum als der Browser, unter einem anderen Hash.
+Deshalb meldet es den Wertebereich. Welche Stellungen und Vorgaben es gibt, steht
+einmal im Kern; `core/test/reference-case.test.ts` hält `web/index.html` darauf
+fest.
+
+**Der Export prüft, ob Einstellungen und Berechnung zusammengehören.** Das
+Subjekt des Manifests beschreibt die Reglerstellung in lesbarer Form, die
+Berechnung kommt getrennt. Passt die Stellung nicht zu den Parametern der
+Simulation, oder beruht die Berechnung auf einem anderen Datensatz, bricht
+`referenceCaseExport()` ab.
 
 ## Verkettete Hashes
 

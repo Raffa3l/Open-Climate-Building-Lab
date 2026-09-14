@@ -41,7 +41,7 @@ const band = adaptiveComfortBand(runningMean, { category: "II" });
 
 const FACADE = 9.8;
 
-/** Siehe web/app.js: Gleitkommareste gehören nicht in den Berechnungs-Hash. */
+/** Siehe core/src/reference-case.ts: Gleitkommareste gehören nicht in den Berechnungs-Hash. */
 const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
 
 function room(overrides: Partial<RoomSpec> & { windowFraction?: number; shadingFactor?: number } = {}): RoomSpec {

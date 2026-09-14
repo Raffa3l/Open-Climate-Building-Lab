@@ -10,11 +10,19 @@
  */
 
 import type { Computation, DatasetRef, MethodRef, ParamValue } from "./provenance.ts";
-import { canonicalForm, citations, computationHash, upstreamOf } from "./provenance.ts";
-import type { TimeAxis } from "./series.ts";
-import { intervalMidpointUtcMs, localDayIndex, localHour } from "./series.ts";
+import { canonicalForm, citations, computationHash, shortHash, upstreamOf } from "./provenance.ts";
+import type { StationSeries, TimeAxis } from "./series.ts";
+import { getVariable, intervalMidpointUtcMs, localDayIndex, localHour } from "./series.ts";
 import type { SimulationResult } from "./building.ts";
 import type { ComfortBand, ExceedanceResult } from "./indicators.ts";
+import {
+  assertSettingsMatch,
+  climateLabel,
+  isScenarioKey,
+  peakOperativeTemperature,
+  round6,
+  type RoomSettings,
+} from "./reference-case.ts";
 
 /** Erhöhen, sobald sich Spalten, Einheiten oder Schreibweise ändern. */
 export const EXPORT_FORMAT_VERSION = 1;
@@ -222,5 +230,118 @@ export async function exportManifest(input: ManifestInput): Promise<ExportManife
     verification:
       "SHA-256 über canonicalForm (UTF-8) ergibt hash. SHA-256 über die CSV-Datei ergibt file.sha256. " +
       "Die Zeilen mit ueber_grenze_K > 0 summieren auf value.hours der Berechnung exceedance.",
+  };
+}
+
+// --- Referenzfall -------------------------------------------------------------
+
+export interface ExportFiles {
+  csvName: string;
+  csv: string;
+  jsonName: string;
+  json: string;
+}
+
+export interface ReferenceExportInput {
+  /** Stationskürzel, z. B. "SMA". */
+  station: string;
+  /**
+   * Angaben der Messstation, auch bei Szenarien: Name, Kanton und Höhe stammen
+   * aus dem SwissMetNet-Verzeichnis, die Szenariometadaten weichen ab.
+   */
+  stationInfo: { name: string; canton: string; altitudeM: number; lat: number; lon: number };
+  /** "y2024" oder "s2060_RCP85_dry", wie im Permalink. */
+  climateKey: string;
+  settings: RoomSettings;
+  series: StationSeries;
+  exceedance: Computation<ExceedanceResult>;
+}
+
+/**
+ * CSV und Manifest des Referenzfalls, fertig benannt.
+ *
+ * Der Download im Browser und core/scripts/export.ts rufen genau diese Funktion
+ * auf. Was ins Subjekt gehört und unter welcher Rolle eine Berechnung steht, ist
+ * damit an einer Stelle festgelegt. Stünde das zweimal da, unterschieden sich
+ * zwei Exporte desselben Permalinks in der Prüfsumme des Manifests.
+ */
+export async function referenceCaseExport(input: ReferenceExportInput): Promise<ExportFiles> {
+  const { station, stationInfo, climateKey, settings, series, exceedance } = input;
+  const simulation = upstreamOf<SimulationResult>(exceedance, "simulation");
+  const band = upstreamOf<ComfortBand>(exceedance, "comfortBand");
+  const runningMean = upstreamOf<Float64Array>(band, "runningMean");
+
+  assertSettingsMatch(settings, simulation);
+  if (!exceedance.inputs.some((i) => i.sha256 === series.source.sha256)) {
+    throw new Error(`Die Berechnung beruht nicht auf dem Datensatz ${series.source.sha256.slice(0, 12)}`);
+  }
+
+  const csv = hourlyCsv({
+    axis: series.axis,
+    outdoorTemperature: getVariable(series, "tre200h0"),
+    exceedance,
+  });
+
+  // Benannt nach dem Hash der Übertemperaturstunden: Über seine Vorgänger
+  // umfasst er Simulation, Komfortband und Datensatz (ADR 0007).
+  const stem = `ocbl_${station}_${climateKey}_${await shortHash(exceedance)}`;
+
+  const manifest = await exportManifest({
+    csv,
+    csvFileName: `${stem}.csv`,
+    subject: {
+      station,
+      stationName: stationInfo.name,
+      canton: stationInfo.canton,
+      altitudeM: stationInfo.altitudeM,
+      latitude: stationInfo.lat,
+      longitude: stationInfo.lon,
+      climate: climateKey,
+      climateLabel: climateLabel(climateKey),
+      isScenario: isScenarioKey(climateKey),
+      // Das Referenzjahr der Szenarien liegt auf einem Nicht-Schaltjahr.
+      calendarYear: new Date(series.axis.startUtcMs).getUTCFullYear(),
+      comfortCategory: String(band.params.category),
+      azimuthDeg: settings.azimuth,
+      massClass: settings.massClass,
+      skyModel: settings.skyModel,
+      windowFraction: round6(settings.windowFraction),
+      shadingGtot: settings.shading,
+      internalGainsWm2: settings.gains,
+      nightVentilationAch: settings.nightVentOn ? settings.nightVent : 0,
+    },
+    axis: series.axis,
+    warmupHours: Number(exceedance.params.warmupHours),
+    computations: [
+      {
+        role: "simulation",
+        computation: simulation,
+        value: {
+          peakOperativeC: round6(peakOperativeTemperature(exceedance)),
+          shadedHours: simulation.value.shadedHours,
+          nightVentilationHours: simulation.value.nightVentilationHours,
+          occupiedHours: simulation.value.occupiedHours,
+          longwaveSource: simulation.value.longwaveSource,
+        },
+      },
+      {
+        role: "exceedance",
+        computation: exceedance,
+        value: {
+          hours: exceedance.value.hours,
+          kelvinHours: round6(exceedance.value.kelvinHours),
+          evaluatedHours: exceedance.value.evaluatedHours,
+        },
+      },
+      { role: "comfortBand", computation: band },
+      { role: "runningMean", computation: runningMean },
+    ],
+  });
+
+  return {
+    csvName: `${stem}.csv`,
+    csv,
+    jsonName: `${stem}.json`,
+    json: `${JSON.stringify(manifest, null, 2)}\n`,
   };
 }
