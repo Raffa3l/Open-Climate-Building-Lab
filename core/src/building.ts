@@ -34,9 +34,11 @@ export const METHOD_ROOM_5R1C: MethodRef = {
   // 1.2.0: Standard-Himmelsmodell von isotrop auf Perez (1990) umgestellt.
   // 1.3.0: zyklischer Vorlauf aus dem Ende der Reihe (ADR 0008); das ganze
   //        Jahr ist gültig statt der ersten 5·τ verworfen.
+  // 1.4.0: fehlt die Globalstrahlung bei Sonne über dem Horizont, ist die
+  //        Stunde nicht rechenbar, statt mit 0 W/m² gerechnet zu werden.
   // Ergebnisse ändern sich jeweils; publizierte Werte bleiben über die
   // Version zuordenbar.
-  version: "1.3.0",
+  version: "1.4.0",
   doc: "docs/methods/006-room-model-5r1c.md#stundenschritt",
   sources: ["en-iso-13790-2008"],
 };
@@ -251,6 +253,11 @@ export interface SimulationResult {
   occupiedHours: number;
   /** Stunden Vorlauf aus dem Ende der Reihe, vor der ersten Stunde gerechnet. */
   spinUpHours: number;
+  /**
+   * Stunden mit Sonne über dem Horizont, aber ohne Globalstrahlung. Sie sind
+   * nicht gerechnet und stehen auf `NaN`, wie Stunden ohne Aussentemperatur.
+   */
+  missingSolarHours: number;
   derived: RoomDerived;
 }
 
@@ -291,6 +298,7 @@ export function simulate5R1C(
   let shadedHours = 0;
   let nightVentilationHours = 0;
   let occupiedHours = 0;
+  let missingSolarHours = 0;
   let airPrevious = massPrevious;
 
   // Ein Stundenschritt. `record` ist im Vorlauf aus: Der Zustand schreitet fort,
@@ -311,6 +319,14 @@ export function simulate5R1C(
     const sun = solarPosition(midpoint, input.latitude, input.longitude);
     const dayOfYear = dayOfYearFromMs(midpoint);
 
+    // Fehlt die Globalstrahlung bei Tag, ist die Stunde nicht rechenbar. Bis
+    // 1.3.0 galt sie als 0 W/m²: Vals 2021 misst an 6 % der Stunden, und das
+    // Modell rechnete still einen Raum ohne Sonne. Der Zustand bleibt stehen wie
+    // bei fehlender Aussentemperatur. Nachts ist die Einstrahlung ohnehin null.
+    if (!Number.isFinite(global) && sun.altitude > 0) {
+      if (record) missingSolarHours++;
+      return;
+    }
     const globalOk = Number.isFinite(global) ? Math.max(0, global) : 0;
     const diffuse =
       input.diffuseHorizontal && Number.isFinite(input.diffuseHorizontal[i])
@@ -464,6 +480,7 @@ export function simulate5R1C(
       nightVentilationHours,
       occupiedHours,
       spinUpHours,
+      missingSolarHours,
       derived,
     },
     unit: "°C",

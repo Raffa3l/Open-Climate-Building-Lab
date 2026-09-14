@@ -264,7 +264,11 @@ function renderTiles() {
   const { base, other } = lastResult;
 
   $("utsValue").textContent = base.uts.value.hours.toLocaleString("de-CH");
-  $("utsNote").textContent = `von ${base.uts.value.evaluatedHours.toLocaleString("de-CH")} bewerteten Stunden`;
+  // Tagstunden ohne Strahlungsmessung sind nicht gerechnet und fehlen in der
+  // Bewertung. Ohne Hinweis sähe ein lückenhaftes Jahr einfach kühl aus.
+  const gaps = base.simulation.value.missingSolarHours;
+  $("utsNote").textContent = `von ${base.uts.value.evaluatedHours.toLocaleString("de-CH")} bewerteten Stunden` +
+    (gaps > 0 ? ` · ${gaps.toLocaleString("de-CH")} Tagstunden ohne Strahlungsmessung nicht gerechnet` : "");
   $("khValue").innerHTML = `${Math.round(base.uts.value.kelvinHours).toLocaleString("de-CH")}<span class="tile-unit">Kh</span>`;
   $("peakValue").innerHTML = `${base.peak.toFixed(1)}<span class="tile-unit">°C</span>`;
   $("nvValue").innerHTML = `${base.simulation.value.nightVentilationHours.toLocaleString("de-CH")}<span class="tile-unit">h</span>`;
@@ -456,6 +460,7 @@ async function renderProof(elapsed) {
       <dt>H_tr,em Masse ↔ aussen</dt><dd>${d.externalMassConductance.toFixed(2)} W/K</dd>
       <dt>Vorlauf</dt><dd>${simulation.value.spinUpHours} h aus dem Ende der Reihe${skip > 0 ? `, zusätzlich ${skip} h verworfen` : ", nichts verworfen"}</dd>
       <dt>Belegte Stunden</dt><dd>${simulation.value.occupiedHours}</dd>
+      <dt>Tagstunden ohne Globalstrahlung</dt><dd>${simulation.value.missingSolarHours}${simulation.value.missingSolarHours > 0 ? ", nicht gerechnet" : ""}</dd>
       <dt>Diffusstrahlung</dt><dd>${base.climate.series.variables.has("ods000h0") ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}</dd>
       <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource === "gemessen" ? "gemessen" : "Pauschalwert der Norm"}</dd>
       <dt>Ø Abstrahlungsverlust</dt><dd>${meanFinite(simulation.value.skyLoss).toFixed(1)} W</dd>

@@ -113,7 +113,7 @@ Drei Prüfungen, alle ohne dieses Projekt und nur mit der Python-Standardbibliot
 ```python
 import csv, hashlib, json
 
-m = json.load(open("ocbl_SMA_y2024_d34b3cea91a4.json", encoding="utf-8"))
+m = json.load(open("ocbl_SMA_y2024_609ae7766214.json", encoding="utf-8"))
 raw = open(m["file"]["name"], "rb").read()
 
 # 1. Die CSV ist die, auf die sich das Manifest bezieht
@@ -186,9 +186,11 @@ Berechnungen ohne Vorgänger behielten ihren Hash, etwa die Simulation
 (`a2fc5ec2f2ac`) und das gleitende Mittel (`5911973a7211`).
 
 Alle Hashes dieses Abschnitts gehören zum Stand vom 13.09.2026. Seither haben
-zwei Änderungen jeden Hash neu gesetzt: die Quellenangabe mit Umlauten im Header
-([004](004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)) und der
-Vorlauf des Raummodells ([ADR 0008](../adr/0008-zyklischer-vorlauf.md)). Die
-Kennzahlen sind gleich geblieben. Mit dem Vorlauf hat die CSV zusätzlich gültige
-Januarwerte. Heute tragen 40 % und 70 % Fensteranteil die ÜTS-Hashes
-`d34b3cea91a4` und `dc8301f5c4e1`.
+drei Änderungen jeden Hash neu gesetzt: die Quellenangabe mit Umlauten im Header
+([004](004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)), der
+Vorlauf des Raummodells ([ADR 0008](../adr/0008-zyklischer-vorlauf.md)) und
+`simulate5R1C` 1.4.0, das Tagstunden ohne Strahlungsmessung nicht mehr rechnet
+([006](006-room-model-5r1c.md#fehlende-messwerte)). Die Kennzahlen dieser
+beiden Fälle sind gleich geblieben. Mit dem Vorlauf hat die CSV zusätzlich
+gültige Januarwerte. Heute tragen 40 % und 70 % Fensteranteil die ÜTS-Hashes
+`609ae7766214` und `a83613f02679`.

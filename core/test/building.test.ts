@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hourlyAxis } from "../src/series.ts";
+import { hourlyAxis, intervalMidpointUtcMs } from "../src/series.ts";
+import { solarPosition } from "../src/solar.ts";
 import { H_R, R_SE } from "../src/sky.ts";
 import { computationHash, type DatasetRef } from "../src/provenance.ts";
 import {
@@ -297,6 +298,31 @@ test("fehlende Aussentemperatur ergibt NaN statt einer erfundenen Zahl", () => {
   assert.ok(Number.isFinite(r.operativeTemperature[110]));
 });
 
+test("fehlende Globalstrahlung bei Tag ergibt NaN statt eines Raums ohne Sonne", () => {
+  // Ein ganzer Tag Ende Juni ohne Strahlung; der Vorlauf liegt im Dezember.
+  const global = constant(0);
+  const day = 180 * 24;
+  for (let i = day; i < day + 24; i++) global[i] = NaN;
+  const r = simulate5R1C(referenceRoom(), input(constant(15), global), [SOURCE]).value;
+
+  let daylight = 0;
+  for (let i = day; i < day + 24; i++) {
+    const sun = solarPosition(intervalMidpointUtcMs(axis, i), ZH_LAT, ZH_LON);
+    if (sun.altitude > 0) {
+      daylight++;
+      assert.ok(Number.isNaN(r.operativeTemperature[i]), `Stunde ${i} bei Tag sollte NaN sein`);
+    } else {
+      // Nachts ist die Einstrahlung null, fehlend oder nicht.
+      assert.ok(Number.isFinite(r.operativeTemperature[i]), `Stunde ${i} in der Nacht ist rechenbar`);
+    }
+  }
+  assert.ok(daylight > 12, `Ende Juni ${daylight} Tagstunden`);
+  assert.equal(r.missingSolarHours, daylight);
+
+  const complete = simulate5R1C(referenceRoom(), input(constant(15), constant(0)), [SOURCE]).value;
+  assert.equal(complete.missingSolarHours, 0);
+});
+
 test("Bauart ausserhalb des Modellbereichs wird abgewiesen", () => {
   assert.throws(
     () => deriveRoom(referenceRoom({ opaqueArea: 500, opaqueUValue: 3.0, massClass: "sehr leicht" })),
@@ -460,7 +486,8 @@ test("Himmelsabstrahlung ändert den Berechnungs-Hash", async () => {
   assert.equal(base.params.skyViewFactor, 0.5);
   // Die Version ist bewusst festgenagelt: Wer die Physik ändert, muss diesen
   // Test anfassen und dabei über den Versionssprung nachdenken. 1.3.0: Vorlauf.
-  assert.equal(base.method.version, "1.3.0");
+  // 1.4.0: Stunden ohne Globalstrahlung bei Tag sind nicht rechenbar.
+  assert.equal(base.method.version, "1.4.0");
 });
 
 

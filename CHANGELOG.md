@@ -77,6 +77,20 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   viele Stationen die Strahlung erst seit etwa 2010 messen.
 
 ### Geändert
+- **Tagstunden ohne Globalstrahlung sind nicht rechenbar.**
+  `building.simulate5R1C` 1.4.0 setzt fehlende Strahlung bei Sonne über dem
+  Horizont nicht mehr still auf 0 W/m², sondern behandelt die Stunde wie eine
+  fehlende Aussentemperatur
+  ([006](docs/methods/006-room-model-5r1c.md#fehlende-messwerte)). Vals 2021
+  misst die Globalstrahlung an 6 % der Stunden und wies 1'464 bewertete Stunden
+  aus, gerechnet für einen Raum ohne Sonne; jetzt sind es 19. Das Frontend nennt
+  die nicht gerechneten Tagstunden unter der Kennzahl und im Nachweis, das
+  Manifest führt sie als `missingSolarHours`. Nachgerechnet für alle 3'098
+  tauglichen Stationsjahre: 2'911 unverändert, 187 verlieren Stunden, davon 149
+  weniger als 100, und 52 ändern die Übertemperaturstunden, am stärksten
+  Grenchen 2010 von 63 auf 0. Alle Simulations-Hashes sind neu; Zürich/Fluntern
+  2024 mit 40 % und 70 % Fensteranteil trägt `609ae7766214` und `a83613f02679`,
+  bei unveränderten 403 und 662 h.
 - **Zyklischer Vorlauf statt verworfener Einschwingphase**
   ([ADR 0008](docs/adr/0008-zyklischer-vorlauf.md)). `building.simulate5R1C`
   1.3.0 rechnet vor der ersten Stunde das Ende derselben Reihe durch, so lange
@@ -255,9 +269,10 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   und `model-effects.ts`. Gegen einen Vorlauf aus dem echten Dezember des
   Vorjahres (2022–2024, fünf Fälle) weicht der zyklische Vorlauf im Januar im
   Mittel um 0.10 bis 0.77 K ab, am 1. Januar 2024 um 7.6 K, nach 6 bis 15 Tagen
-  um weniger als 0.1 K. Die Kennzahlen sind gleich. Heutige ÜTS-Hashes für
-  40 % und 70 % Fensteranteil 2024: `d34b3cea91a4` und `dc8301f5c4e1`; das
-  Prüfbeispiel aus 010 besteht gegen den neuen Export.
+  um weniger als 0.1 K. Die Kennzahlen sind gleich. Die ÜTS-Hashes für 40 %
+  und 70 % Fensteranteil 2024 waren damit `d34b3cea91a4` und `dc8301f5c4e1`,
+  bis `simulate5R1C` 1.4.0; das Prüfbeispiel aus 010 bestand gegen den neuen
+  Export.
 - **Neubau mit korrigierter Quellenangabe, 14.09.2026:** alle 2'242 bisherigen
   Dateien (1'972 Stationsjahre, 270 Szenarien) über den Rechenkern decodiert
   und gegen den Stand davor verglichen. Zeitachse, Station, Höhe, Quelle
@@ -450,8 +465,9 @@ und mussten empirisch bestimmt werden — Herleitung in
 - `comfort.exceedanceHours` **1.0.0 → 2.1.0**: 2.0.0 Signatur und Hash, Werte
   unverändert; 2.1.0 rechnet den Vorlauf der Simulation auf die
   Einschwingphase an
-- `building.simulate5R1C` **1.2.0 → 1.3.0**: zyklischer Vorlauf aus dem Ende der
-  Reihe, gültige Werte ab der ersten Stunde (ADR 0008)
+- `building.simulate5R1C` **1.2.0 → 1.4.0**: 1.3.0 zyklischer Vorlauf aus dem
+  Ende der Reihe, gültige Werte ab der ersten Stunde (ADR 0008); 1.4.0
+  Tagstunden ohne Globalstrahlung nicht gerechnet statt mit 0 W/m²
 - Unverändert: `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen
   Verfahren
 

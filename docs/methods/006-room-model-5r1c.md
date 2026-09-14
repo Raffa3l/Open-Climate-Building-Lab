@@ -137,6 +137,45 @@ Reihen Wert für Wert.
 Gemessene Wirkung und verworfene Alternativen:
 [ADR 0008](../adr/0008-zyklischer-vorlauf.md).
 
+## Fehlende Messwerte
+
+Ohne Aussentemperatur ist ein Schritt nicht rechenbar. Die Raumtemperaturen
+stehen auf `NaN`, und der Massenknoten bleibt auf seinem Stand, statt mit einer
+erfundenen Temperatur fortgeschrieben zu werden.
+
+Seit Version 1.4.0 gilt dasselbe für die **Globalstrahlung, wenn die Sonne in
+der Intervallmitte über dem Horizont steht**. Bis 1.3.0 galt fehlende Strahlung
+als 0 W/m². Vals 2021 misst die Globalstrahlung an 6 % der Stunden; das Modell
+rechnete einen Raum ohne Sonne und wies 1'464 bewertete Stunden aus. Heute sind
+es 19, und `missingSolarHours` nennt die nicht gerechneten Tagstunden. Das
+Frontend zeigt sie unter der Kennzahl.
+
+Nachts ist die Einstrahlung null, ob gemessen oder nicht; dort wird
+weitergerechnet. Fehlt in einer Stunde die gemessene Diffusstrahlung, schätzt
+Erbs sie aus der Globalstrahlung. Fehlt die langwellige Einstrahlung, gilt der
+Pauschalwert der Norm. Beides sind dokumentierte Ersatzverfahren, keine
+erfundenen Messwerte.
+
+Nachgerechnet am Referenzfall für alle 3'098 Stationsjahre mit Temperatur und
+Globalstrahlung, 14.09.2026:
+
+| | Stationsjahre |
+|---|---:|
+| unverändert | 2'911 |
+| weniger gültige Stunden | 187 |
+| davon weniger als 100 h | 149 |
+| davon 1'000 h und mehr | 23 |
+| andere Übertemperaturstunden | 52 |
+
+Am stärksten betroffen sind Jahre, in denen die Strahlungsmessung erst begann:
+Grenchen 2010 von 63 auf 0 Übertemperaturstunden bei 11 statt 1'523 bewerteten
+Stunden, La Brévine 2013 von 66 auf 42 bei 624 statt 1'344.
+
+**Der eingefrorene Zustand ist eine Näherung.** Nach einer Lücke rechnet der
+Massenknoten vom Stand davor weiter. Nach wenigen Stunden wirkt das kaum; nach
+wochenlangen Lücken wirkt der alte Zustand über die Zeitkonstante nach wie ein
+Start ohne Vorlauf.
+
 ## Gültigkeitsbereich und Grenzen
 
 **Die Reihenschaltung H_tr,em setzt H_tr,op < H_tr,ms voraus.** Bei sehr

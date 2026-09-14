@@ -321,6 +321,7 @@ export async function referenceCaseExport(input: ReferenceExportInput): Promise<
           shadedHours: simulation.value.shadedHours,
           nightVentilationHours: simulation.value.nightVentilationHours,
           occupiedHours: simulation.value.occupiedHours,
+          missingSolarHours: simulation.value.missingSolarHours,
           longwaveSource: simulation.value.longwaveSource,
         },
       },
