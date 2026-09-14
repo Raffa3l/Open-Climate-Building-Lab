@@ -26,7 +26,7 @@ const rows: Row[] = [];
 let skipped = 0;
 
 for (const [abbr, entry] of Object.entries(catalog.stations) as [string, any][]) {
-  if (!entry.capabilities.roomModel || !entry.years.includes(Number(year))) continue;
+  if (!entry.roomModelYears.includes(Number(year))) continue;
 
   const index = await loadStationIndex(entry);
   const meta = index[year];

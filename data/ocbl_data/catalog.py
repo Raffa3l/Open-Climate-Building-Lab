@@ -65,8 +65,20 @@ def _capabilities(entry: dict) -> dict:
     reine Wind- oder Strahlungsmessstellen. Das Frontend soll das anzeigen
     koennen, statt leere Diagramme zu zeigen.
     """
-    available = {v for meta in entry["years"].values() for v in meta["variables"]}
-    return {name: required <= available for name, required in CAPABILITY_REQUIREMENTS.items()}
+    return {
+        name: bool(_years_with(entry, required)) for name, required in CAPABILITY_REQUIREMENTS.items()
+    }
+
+
+def _years_with(entry: dict, required: set) -> list[int]:
+    """Jahre, die alle geforderten Variablen selbst fuehren.
+
+    Nicht die Vereinigung ueber alle Jahre: Viele Stationen messen die
+    Globalstrahlung erst seit etwa 2010, andere haben sie abgebaut. Bis
+    14.09.2026 galt St. Chrischona als raummodellfaehig, obwohl kein einziges
+    Jahr Temperatur und Strahlung zugleich hat.
+    """
+    return [int(y) for y, meta in entry["years"].items() if required <= set(meta["variables"])]
 
 
 def save(catalog: dict, build_dir: Path) -> Path:
@@ -102,6 +114,9 @@ def save(catalog: dict, build_dir: Path) -> Path:
             "lon": entry["lon"],
             "capabilities": entry["capabilities"],
             "years": [int(y) for y in entry["years"]],
+            # Das Auswahlfeld des Raummodells braucht die Jahre, ohne je Station
+            # eine Detaildatei zu laden.
+            "roomModelYears": _years_with(entry, CAPABILITY_REQUIREMENTS["roomModel"]),
             "index": f"smn/{slug}/{STATION_INDEX_NAME}",
         }
 

@@ -32,15 +32,16 @@ if (!entry?.capabilities.roomModel) {
   throw new Error(`Station ${station} ist nicht im Katalog oder misst keine Globalstrahlung`);
 }
 
-const year = params.get("year") ?? `y${Math.max(...entry.years)}`;
+const year = params.get("year") ?? `y${Math.max(...entry.roomModelYears)}`;
 const compare = params.get("compare");
 // Wie im Browser: ein Klimastand gegen sich selbst wird nicht angeboten.
 const keys = compare && compare !== year ? [year, compare] : [year];
 
 async function seriesFor(key: string) {
   if (!isScenarioKey(key)) {
-    const meta = (await loadStationIndex(entry))[key.slice(1)];
-    if (!meta) throw new Error(`${station} ${key.slice(1)} nicht vorhanden. Jahre: ${entry.years.join(", ")}`);
+    // Wie im Browser: nur Jahre, in denen Temperatur und Globalstrahlung gemessen sind.
+    const meta = entry.roomModelYears.includes(Number(key.slice(1))) && (await loadStationIndex(entry))[key.slice(1)];
+    if (!meta) throw new Error(`${station} ${key.slice(1)} nicht fürs Raummodell vorhanden. Jahre: ${entry.roomModelYears.join(", ")}`);
     return loadSeries(meta);
   }
   const scenarioStation = (await loadScenarioCatalog()).stations[station];

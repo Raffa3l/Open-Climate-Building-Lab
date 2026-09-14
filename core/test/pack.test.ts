@@ -140,6 +140,26 @@ test("Katalogstruktur: Index nennt Jahre und verweist auf die Detaildatei", asyn
   assert.match(station.index, /^smn\/sma\/index\.json$/);
   assert.equal(typeof station.capabilities.roomModel, "boolean");
   assert.ok(station.capabilities.roomModel, "an SMA ist das Raummodell rechenbar");
+  assert.ok(station.roomModelYears.includes(2023), "SMA 2023 taugt fürs Raummodell");
+});
+
+// Bis 14.09.2026 war eine Fähigkeit die Vereinigung über alle Jahre. St. Chrischona
+// galt als raummodellfähig, obwohl kein einziges Jahr Temperatur und
+// Globalstrahlung zugleich führt, und Bergün bot Jahre ohne Strahlung an.
+test("Katalog: Raummodell-Jahre führen Temperatur und Globalstrahlung", async (t) => {
+  const catalog = await loadCatalog();
+  if (!catalog) return t.skip("data/build/ nicht vorhanden");
+
+  for (const [abbr, station] of Object.entries(catalog.stations) as [string, any][]) {
+    assert.equal(station.capabilities.roomModel, station.roomModelYears.length > 0, abbr);
+    assert.ok(station.roomModelYears.every((y: number) => station.years.includes(y)), abbr);
+    if (station.roomModelYears.length === 0) continue;
+    const index = JSON.parse(await readFile(path.join(BUILD_DIR, station.index), "utf-8"));
+    for (const year of station.years) {
+      const has = ["tre200h0", "gre000h0"].every((v) => index[String(year)].variables.includes(v));
+      assert.equal(station.roomModelYears.includes(year), has, `${abbr} ${year}`);
+    }
+  }
 });
 
 test("echtes Stationsjahr aus dem ETL lesen und rechnen", async (t) => {

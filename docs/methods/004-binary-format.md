@@ -52,6 +52,35 @@ Werte ausserhalb des Gültigkeitsbereichs werden beim Packen **verworfen, nicht
 geklemmt**. Ein geklemmter Wert sieht plausibel aus und wandert unbemerkt in
 die Statistik; ein Fehlwert nicht.
 
+### Negative Strahlung ist ein Messwert
+
+Die untere Grenze der Global- und Diffusstrahlung liegt bei −30 W/m², nicht bei
+0. Ein Thermosäulen-Pyranometer zeigt nachts einen Nullpunktversatz, weil seine
+Glaskuppel langwellig gegen den kalten Himmel abstrahlt. ISO 9060:2018 lässt
+diesen Versatz auf −200 W/m² Nettowärmestrahlung bis ±7 W/m² in Klasse A, ±15
+in Klasse B und ±30 in Klasse C zu ([`iso-9060-2018`](sources.md#iso-9060-2018)).
+Welche Klasse die Stationen in den 1990er-Jahren hatten, ist nicht bekannt;
+deshalb gilt die weiteste.
+
+Bis 2003 liefert MeteoSchweiz diese Werte ungeschnitten, ab 2004 praktisch
+nicht mehr. Gezählt über alle 689 Rohdateien am 14.09.2026:
+
+| Wert | Anzahl |
+|---|---:|
+| −1 bis −4 W/m² | 1'340'212 |
+| −5 bis −30 W/m² | 37'188 |
+| unter −30 W/m² bis −1'666'666 | 1'127 |
+
+Die Werte liegen fast ausschliesslich zwischen 16 und 08 UTC. Von den Werten
+zwischen −5 und −30 W/m² stammen 45 % von einer einzigen Station (MAH), mit
+einer Häufung um −20 W/m².
+
+Mit 0 als Grenze fielen die Nachtwerte als Fehlwerte aus. Zürich/Fluntern 1991
+erschien dann zu 83.6 % vollständig, obwohl keine Stunde fehlt, und eine echte
+Lücke am Tag war von einer verworfenen Nacht nicht mehr zu unterscheiden. Das
+Raummodell setzt negative Einstrahlung auf 0; an seinen Ergebnissen ändert die
+Grenze deshalb nichts.
+
 ## Prüfsumme
 
 Die SHA-256 des gesamten Files steht **nicht im File** — eine Prüfsumme, die

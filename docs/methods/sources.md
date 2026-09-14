@@ -160,6 +160,17 @@ SN 520 180 / SIA 180:2014: *Wärmeschutz, Feuchteschutz und Raumklima in
 Gebäuden.*
 → Nachweis des sommerlichen Wärmeschutzes, Nachtlüftung.
 
+### `iso-9060-2018`
+ISO 9060:2018: *Solar energy — Specification and classification of instruments
+for measuring hemispherical solar and direct solar radiation.*
+→ Zulässiger Nullpunktversatz eines Pyranometers auf −200 W/m²
+Nettowärmestrahlung («zero offset a»): Klasse A ±7 W/m², B ±15 W/m², C ±30 W/m².
+Begründet die untere Gültigkeitsgrenze der Strahlung, siehe
+[004](004-binary-format.md#negative-strahlung-ist-ein-messwert). Die Grenzwerte
+sind aus der Klassentabelle bei Apogee Instruments übernommen,
+<https://www.apogeeinstruments.com/content/ISO_9060_Apogee_Comparison.pdf>,
+abgerufen am 14.09.2026; der Normtext selbst lag nicht vor.
+
 > **Hinweis zu Normen.** EN 16798-1 und SIA 180 sind kostenpflichtige
 > Normwerke. Dieses Projekt gibt ihren Text nicht wieder, sondern implementiert
 > die darin beschriebenen Verfahren und benennt die Fundstelle. Wer das

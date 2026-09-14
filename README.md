@@ -10,7 +10,7 @@ Daten, Annahmen und Gleichungen sie entstanden ist.
 
 ## Status
 
-Die Kette steht vollständig: **158 Stationen, 1'977 Stationsjahre, 326 MB**.
+Die Kette steht vollständig: **158 Stationen, 4'154 Stationsjahre, 594 MB**.
 
 - ✅ ETL von MeteoSchweiz-OGD (SwissMetNet, stündlich, seit 1980)
 - ✅ Rechenkern mit Psychrometrie, Hitzekennwerten, adaptivem Komfort
@@ -21,9 +21,8 @@ Die Kette steht vollständig: **158 Stationen, 1'977 Stationsjahre, 326 MB**.
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
 - ✅ Vergleichsmodus: zwei Klimastände in einem Diagramm, mit Differenz je Kennzahl
 - ✅ Download: Stundenreihe als CSV und Manifest zum Nachprüfen ohne dieses Projekt, byte-gleich auch aus der Kommandozeile ([010](docs/methods/010-export.md))
-- ✅ Alle SwissMetNet-Stationen, 2020–2024
+- ✅ Alle SwissMetNet-Stationen, ab 1991 oder ab Messbeginn
 - ✅ Zukunftsklima: DRY-Szenarien 2035 und 2060, RCP 2.6 und 8.5, 45 Stationen
-- ⬜ Längere Historie für alle Stationen (läuft für die 41 Szenariostationen) (siehe [ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
 
 ## Schnellstart
 
@@ -38,8 +37,8 @@ cd data && python3 -m ocbl_data stations --canton ZH
 # Ein paar Stationsjahre bauen (lädt von data.geo.admin.ch, mit Cache)
 python3 -m ocbl_data build --station SMA --from 2019 --to 2024 --qa
 
-# Oder alles: 158 Stationen, rund 5 Minuten, ~1 GB Download
-python3 -m ocbl_data build --from 2020 --to 2024 --jobs 12 --quiet \
+# Oder alles: 158 Stationen ab 1991, rund 40 Minuten, ~4 GB Download
+python3 -m ocbl_data build --from 1991 --to 2024 --jobs 12 --quiet \
   --cache-dir ~/.cache/ocbl
 
 # Prüfsummen nachrechnen

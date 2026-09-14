@@ -20,8 +20,11 @@ export interface StationEntry {
   altitudeM: number;
   lat: number;
   lon: number;
+  /** Wahr, wenn mindestens ein Jahr allein alle nötigen Variablen führt. */
   capabilities: Record<string, boolean>;
   years: number[];
+  /** Jahre mit Temperatur und Globalstrahlung. Nur sie taugen fürs Raummodell. */
+  roomModelYears: number[];
   index: string;
 }
 

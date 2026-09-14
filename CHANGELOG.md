@@ -68,6 +68,13 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Stationsjahre, 2242 Dateien insgesamt, 353 MB. Damit steht als
   Vergleichsbasis eine echte Normalperiode 1991–2020 statt einer Handvoll
   aktueller Jahre.
+- **Messreihe ab 1991 für alle Stationen**: 2'177 weitere Stationsjahre für die
+  117 Stationen, die bisher nur 2020–2024 hatten, zusammen 4'154 Stationsjahre
+  und 594 MB. 70 Stationen reichen bis 1991 zurück, viele erst bis 2010–2015.
+  257 Jahre fehlen, weil die Dekadendatei vor dem Messbeginn der Station
+  beginnt. Die 1'977 bisherigen Dateien blieben byte-gleich. Fürs Raummodell
+  taugen nur Jahre mit Temperatur und Globalstrahlung (`roomModelYears`), weil
+  viele Stationen die Strahlung erst seit etwa 2010 messen.
 
 ### Geändert
 - **Zyklischer Vorlauf statt verworfener Einschwingphase**
@@ -120,6 +127,44 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **Stationsfähigkeiten galten für die ganze Station statt je Jahr.** Der
+  Katalog bildete sie aus der Vereinigung der Variablen über alle Jahre. Mit
+  der längeren Historie hätte das Frontend 641 Stationsjahre an 39 Stationen
+  angeboten, denen Temperatur oder Globalstrahlung fehlt; sie brechen beim
+  Laden ab. St. Chrischona galt als raummodellfähig, ohne ein einziges Jahr mit
+  beidem. Schon vorher bot das Frontend Bergün 2020 und Vals 2020 an, beide ohne
+  Strahlungsmessung. Eine Fähigkeit gilt jetzt, wenn ein einzelnes Jahr sie
+  erfüllt, und der Katalog führt die tauglichen Jahre in `roomModelYears`.
+  Frontend, `export.ts` und `stations.ts` bieten nur diese an; ein Test prüft
+  jede Station gegen die Detaildatei.
+- Ein Permalink mit einer Station oder einem Jahr, das die Auswahl nicht
+  anbietet, leerte das Auswahlfeld, und das Frontend meldete « hat keinen
+  Datensatz». Die Werte wurden nach der Prüfung ein zweites Mal ungeprüft
+  gesetzt. Jetzt fällt ein solcher Link auf die Voreinstellung zurück, die
+  Regler übernimmt er weiterhin. Die Kommandozeile bricht in beiden Fällen mit
+  den tauglichen Jahren ab.
+- **Nächtliche Strahlungswerte bis 2003 fielen als Fehlwerte aus.** Die
+  Gültigkeitsgrenze der Global- und Diffusstrahlung lag bei 0 W/m². MeteoSchweiz
+  liefert bis 2003 aber den Nullpunktversatz der Pyranometer mit, vor allem −1
+  bis −4 W/m² in der Nacht, rund 1.34 Mio. Werte. Zürich/Fluntern 1991 erschien
+  dadurch zu 83.6 % vollständig, obwohl keine Stunde fehlt, und eine echte Lücke
+  am Tag war von einer verworfenen Nacht nicht zu unterscheiden. Die Grenze liegt
+  jetzt bei −30 W/m², dem zulässigen Nullpunktversatz der Klasse C nach
+  ISO 9060:2018 ([004](docs/methods/004-binary-format.md#negative-strahlung-ist-ein-messwert)).
+  929 Stationsjahre sind neu gepackt, ihre Prüfsummen und Berechnungs-Hashes neu.
+  Werte unter −30 W/m², bis −1'666'666, bleiben verworfen. **Kein Ergebnis
+  ändert sich:** Das Raummodell setzt negative Einstrahlung auf 0. Nachgerechnet
+  am Referenzfall für alle 3'098 Stationsjahre mit Temperatur und Strahlung:
+  Übertemperaturstunden, bewertete Stunden, Spitzentemperatur und Zahl der
+  gültigen Stunden sind überall gleich.
+- **Der Nachweis im Frontend beschriftete Diffusstrahlung und Himmelstemperatur
+  nach den Fähigkeiten der Station**, nicht nach der gerechneten Reihe. Schon im
+  bisherigen Datenstand erschienen 506 Stationsjahre als «Diffusstrahlung
+  gemessen», obwohl die Reihe keine führt, etwa Adelboden 1991; mit der längeren
+  Historie wären es 995 gewesen. Bei 454 Stationsjahren fehlte der Hinweis
+  «Pauschalwert der Norm» zur Himmelstemperatur. Gerechnet wurde richtig: Das
+  Modell nimmt, was die Reihe führt. Die Beschriftung folgt jetzt der geladenen
+  Reihe und der Simulation.
 - **`core/scripts/overheating.ts` rechnete mit halb so viel Sonnendurchlass wie
   beschriftet.** Die Zeile «Sonnenschutz g_tot 0.15» setzte 0.15 als
   Abminderungsfaktor ein; bei g = 0.5 ergibt das g_tot 0.075. Das Frontend

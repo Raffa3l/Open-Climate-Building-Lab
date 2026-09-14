@@ -104,7 +104,9 @@ async function detailIndex(path) {
 function climateOptions(stationAbbr) {
   const options = [];
   const measured = catalog.stations[stationAbbr];
-  for (const year of [...measured.years].sort((a, b) => b - a)) {
+  // Nur Jahre mit Temperatur und Globalstrahlung. Viele Stationen messen die
+  // Strahlung erst seit etwa 2010; ein früheres Jahr bräche beim Laden ab.
+  for (const year of [...measured.roomModelYears].sort((a, b) => b - a)) {
     options.push({ value: `y${year}`, label: `gemessen ${year}` });
   }
   const scen = scenarios?.stations?.[stationAbbr];
@@ -454,8 +456,8 @@ async function renderProof(elapsed) {
       <dt>H_tr,em Masse ↔ aussen</dt><dd>${d.externalMassConductance.toFixed(2)} W/K</dd>
       <dt>Vorlauf</dt><dd>${simulation.value.spinUpHours} h aus dem Ende der Reihe${skip > 0 ? `, zusätzlich ${skip} h verworfen` : ", nichts verworfen"}</dd>
       <dt>Belegte Stunden</dt><dd>${simulation.value.occupiedHours}</dd>
-      <dt>Diffusstrahlung</dt><dd>${entry.capabilities.measuredDiffuse ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}</dd>
-      <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource}${entry.capabilities.measuredSky ? "" : " (Pauschalwert der Norm)"}</dd>
+      <dt>Diffusstrahlung</dt><dd>${base.climate.series.variables.has("ods000h0") ? "gemessen" : "aus Globalstrahlung nach Erbs (1982)"}</dd>
+      <dt>Himmelstemperatur</dt><dd>${simulation.value.longwaveSource === "gemessen" ? "gemessen" : "Pauschalwert der Norm"}</dd>
       <dt>Ø Abstrahlungsverlust</dt><dd>${meanFinite(simulation.value.skyLoss).toFixed(1)} W</dd>
     </dl>
 
@@ -758,7 +760,14 @@ async function main() {
     if (fromUrl?.station && stations.includes(fromUrl.station)) $("station").value = fromUrl.station;
     fillClimateSelect($("station").value, fromUrl?.year);
     fillCompareSelect($("station").value, fromUrl?.compare);
-    if (fromUrl) applyState(fromUrl);
+    // Station, Klimastand und Vergleich sind oben schon gegen die Auswahl
+    // geprüft. Hier nochmals gesetzt, leerte ein Wert, den es nicht gibt, das
+    // Feld: Ein Link auf St. Chrischona, die mangels Strahlungsjahren nicht mehr
+    // angeboten wird, lud «Station leer».
+    if (fromUrl) {
+      const { station, year, compare, ...room } = fromUrl;
+      applyState(room);
+    }
 
     loaded = await loadClimate($("station").value, $("year").value);
     comparedTo = $("compare").value ? await loadClimate($("station").value, $("compare").value) : null;
