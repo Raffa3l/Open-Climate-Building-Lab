@@ -713,7 +713,7 @@ async function reloadData() {
 /**
  * Nur Stationen, an denen das Raummodell überhaupt rechenbar ist.
  *
- * Von 157 SwissMetNet-Stationen messen 132 die Globalstrahlung; acht sind
+ * Von 158 SwissMetNet-Stationen messen 132 die Globalstrahlung; neun sind
  * reine Wind- oder Strahlungsmessstellen. Sie anzubieten und dann ein leeres
  * Diagramm zu zeigen wäre schlechter als sie wegzulassen.
  */

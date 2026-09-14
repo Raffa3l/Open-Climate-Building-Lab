@@ -63,3 +63,22 @@ auf die sich ein publizierter Berechnungs-Hash bezieht. `fetchPacked()` tut das
 und wirft bei Abweichung.
 
 `python -m ocbl_data verify` rechnet alle Katalogprüfsummen nach.
+
+### Die Quellenangabe gehört zur Prüfsumme
+
+Der Header führt unter `source` Autor, Titel, Link und Lizenz. Die Prüfsumme
+läuft über das ganze File, also auch über diese Texte. Eine korrigierte
+Schreibweise ändert deshalb jede Prüfsumme und über die Eingangsdaten jeden
+Berechnungs-Hash, ohne dass sich ein Messwert ändert.
+
+Das ist gewollt: Die Quellenangabe ist Teil dessen, was ausgeliefert wird, und
+soll nicht unbemerkt austauschbar sein. Es macht eine Korrektur aber teuer. Bis
+14.09.2026 standen Autor und Titel in ASCII-Umschrift im Header («Bundesamt fuer
+Meteorologie», «Klimaszenarien fuers zukuenftige Innenraumklima»). Korrigiert
+wurde vor der ersten Publikation, weil jede spätere Korrektur publizierte
+Permalinks gebrochen hätte.
+
+Wer Texte in `data/ocbl_data/smn.py` oder `dry.py` ändert, baut alle Daten neu
+und vergleicht die decodierten Werte mit dem Stand davor. Eine neue Prüfsumme
+allein verrät nicht, ob sich nur der Header geändert hat oder auch die
+Messwerte, die MeteoSchweiz nachträglich korrigiert haben kann.

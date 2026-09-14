@@ -1,4 +1,4 @@
-"""Klimaszenarien fuers zukuenftige Innenraumklima (DRY-Datensaetze).
+"""Klimaszenarien fürs zukünftige Innenraumklima (DRY-Datensaetze).
 
 Collection ``ch.meteoschweiz.klimaszenarien-raumklima``: 45 Stationen,
 stuendlich, auf CH2018 beruhend. Je Station sechs Kombinationen aus Periode
@@ -36,8 +36,8 @@ ARCHIVE_URL = (
 )
 COLLECTION = "ch.meteoschweiz.klimaszenarien-raumklima"
 LICENSE = "terms_by"
-ATTRIBUTION = "MeteoSchweiz, Baudirektion Kanton Zuerich, BAFU, SIA, HSLU"
-TITLE = "Klimaszenarien fuers zukuenftige Innenraumklima (SIA 2028)"
+ATTRIBUTION = "MeteoSchweiz, Baudirektion Kanton Zürich, BAFU, SIA, HSLU"
+TITLE = "Klimaszenarien fürs zukünftige Innenraumklima (SIA 2028)"
 DATASET_URL = "https://opendata.swiss/de/dataset/klimaszenarien-furs-zukunftige-innenraumklima-sia-2028"
 
 SOURCE_ENCODING = "cp1252"

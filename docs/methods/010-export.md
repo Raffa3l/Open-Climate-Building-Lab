@@ -113,7 +113,7 @@ Drei Prüfungen, alle ohne dieses Projekt und nur mit der Python-Standardbibliot
 ```python
 import csv, hashlib, json
 
-m = json.load(open("ocbl_SMA_y2024_1239df88adda.json", encoding="utf-8"))
+m = json.load(open("ocbl_SMA_y2024_26af2efcec98.json", encoding="utf-8"))
 raw = open(m["file"]["name"], "rb").read()
 
 # 1. Die CSV ist die, auf die sich das Manifest bezieht
@@ -184,3 +184,9 @@ Gemessen an Zürich/Fluntern 2024:
 
 Berechnungen ohne Vorgänger behielten ihren Hash, etwa die Simulation
 (`a2fc5ec2f2ac`) und das gleitende Mittel (`5911973a7211`).
+
+Alle Hashes dieses Abschnitts gehören zum Datenstand vor dem 14.09.2026. Seither
+steht die Quellenangabe mit Umlauten im Header, und damit hat sich jede
+Prüfsumme geändert ([004](004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)).
+Die Werte sind gleich geblieben, die CSV-Dateien byte-gleich. Heute tragen 40 %
+und 70 % Fensteranteil die ÜTS-Hashes `26af2efcec98` und `e6906664b0ab`.

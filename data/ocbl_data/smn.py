@@ -25,7 +25,7 @@ from .variables import VARIABLES
 BASE_URL = "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"
 COLLECTION = "ch.meteoschweiz.ogd-smn"
 LICENSE = "CC-BY-4.0"
-ATTRIBUTION = "Bundesamt fuer Meteorologie und Klimatologie MeteoSchweiz"
+ATTRIBUTION = "Bundesamt für Meteorologie und Klimatologie MeteoSchweiz"
 #: CC BY 4.0 und die opendata.swiss-Stufe terms_by verlangen Autor, Titel und
 #: Link — ein blosser Name genuegt beiden nicht.
 TITLE = "Automatische Wetterstationen - Messwerte (SwissMetNet)"

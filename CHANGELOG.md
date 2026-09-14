@@ -106,6 +106,20 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **Quellenangabe in ASCII-Umschrift.** Autor und Titel standen als «Bundesamt
+  fuer Meteorologie und Klimatologie MeteoSchweiz» und «Klimaszenarien fuers
+  zukuenftige Innenraumklima (SIA 2028)» in den Datensätzen, damit auch in jeder
+  Quellenangabe, in der Fusszeile und im Manifest des Downloads. Der Header
+  schreibt UTF-8, die Umschrift war keine Absicht. Weil die Texte im Header und
+  damit in der Prüfsumme stehen, **ändern sich alle Prüfsummen und alle
+  Berechnungs-Hashes**; Werte und CSV-Exporte bleiben gleich. Korrigiert vor der
+  ersten Publikation, damit kein Permalink bricht. Die Falle steht in
+  [004](docs/methods/004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)
+  und in CLAUDE.md.
+- Beim Neubau nach Rezept kam die Station **Uetliberg (UEB)** hinzu, eine
+  reine Strahlungsmessstelle mit gemessener Diffusstrahlung. Im Frontend
+  erscheint sie nicht, weil ihr die Temperatur fehlt. Stand damit 158 Stationen
+  und 1'977 Stationsjahre.
 - **`core/scripts/model-effects.ts` lief nicht mehr.** Es griff direkt auf
   `entry.years["2023"].path` zu; seit der Aufteilung des Katalogs in Index und
   Detaildateien ist `years` eine Liste. Umgestellt auf `station()` wie die
@@ -138,6 +152,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
 
 ### Gemessen
+- **Neubau mit korrigierter Quellenangabe, 14.09.2026:** alle 2'242 bisherigen
+  Dateien (1'972 Stationsjahre, 270 Szenarien) über den Rechenkern decodiert
+  und gegen den Stand davor verglichen. Zeitachse, Station, Höhe, Quelle
+  ausser Autor und Titel sowie jede Variable Stunde für Stunde sind gleich;
+  jede Prüfsumme ist neu, keine Datei trägt mehr die Umschrift. `verify`
+  prüft 2'247 Dateien ohne Beanstandung. Die Exporte der beiden Permalinks aus
+  dem Vergleich Browser gegen Kommandozeile ergeben byte-gleiche CSV-Dateien
+  und dieselben Kennzahlen, unter neuen Hashes: 40 % und 70 % Fensteranteil
+  2024 `26af2efcec98` und `e6906664b0ab`. Die Hashes weiter unten in dieser
+  Rubrik gehören zum Datenstand davor.
 - **Export Browser gegen Kommandozeile, Zürich/Fluntern:** zwei Permalinks, die
   Voreinstellung mit 2024 gegen 2060 RCP 8.5 und eine Stellung mit jedem Regler
   verändert mit 2023 gegen 2035 RCP 8.5 warmer Sommer. Die acht Dateien des

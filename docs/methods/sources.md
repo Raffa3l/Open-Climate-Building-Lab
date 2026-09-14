@@ -10,7 +10,7 @@ die Primärquelle.
 Bundesamt für Meteorologie und Klimatologie MeteoSchweiz:
 *Automatische Wetterstationen – Messwerte* (SwissMetNet).
 STAC-Collection `ch.meteoschweiz.ogd-smn`, <https://data.geo.admin.ch>.
-**Lizenz: CC BY 4.0.** 157 Stationen, Stundenwerte seit 1980 in
+**Lizenz: CC BY 4.0.** 158 Stationen, Stundenwerte seit 1980 in
 Zehnjahresdateien.
 
 ### `meteoschweiz-ogd-ch2025`

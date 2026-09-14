@@ -10,7 +10,7 @@ Daten, Annahmen und Gleichungen sie entstanden ist.
 
 ## Status
 
-Die Kette steht vollständig: **157 Stationen, 784 Stationsjahre, 138 MB**.
+Die Kette steht vollständig: **158 Stationen, 1'977 Stationsjahre, 326 MB**.
 
 - ✅ ETL von MeteoSchweiz-OGD (SwissMetNet, stündlich, seit 1980)
 - ✅ Rechenkern mit Psychrometrie, Hitzekennwerten, adaptivem Komfort
@@ -38,7 +38,7 @@ cd data && python3 -m ocbl_data stations --canton ZH
 # Ein paar Stationsjahre bauen (lädt von data.geo.admin.ch, mit Cache)
 python3 -m ocbl_data build --station SMA --from 2019 --to 2024 --qa
 
-# Oder alles: 157 Stationen, rund 5 Minuten, ~1 GB Download
+# Oder alles: 158 Stationen, rund 5 Minuten, ~1 GB Download
 python3 -m ocbl_data build --from 2020 --to 2024 --jobs 12 --quiet \
   --cache-dir ~/.cache/ocbl
 
@@ -72,9 +72,9 @@ Beispielausgabe für Zürich/Fluntern:
 ```
 Jahr     Ø °C  Sommertage  Hitzetage  Tropennächte  KGh 22 °C  NachtLüft Kh  Hash
 ------------------------------------------------------------------------------------------
-2019     10.6          48         13             8       2615         44766  2cf9dbbb79ec
-2021      9.6          31          3             2       1270         47028  2eb5f39f707d
-2023     11.4          64         13             8       3052         41839  ceecad96a7ad
+2019     10.6          48         13             8       2615         44766  764a1bd60aef
+2021      9.6          31          3             2       1270         47028  35721bcb25d9
+2023     11.4          64         13             8       3052         41839  d641f729f46b
 ```
 
 Und derselbe Referenzraum an allen Stationen — nur das Klima unterscheidet sich:
@@ -112,9 +112,9 @@ ohne Sonnenschutz — Kontrast, nicht baubar      2113   20106      50.0
 | [`docs/adr/`](docs/adr/) | Architekturentscheide mit Begründung und verworfenen Alternativen. |
 | [`web/`](web/) | Frontend. Regler, Jahresdiagramm, Nachweis. Kein Framework, kein Bundler. |
 
-Von 157 Stationen messen **149** Temperatur und Feuchte, **132** zusätzlich
+Von 158 Stationen messen **149** Temperatur und Feuchte, **132** zusätzlich
 die Globalstrahlung — nur an diesen ist das Raummodell rechenbar. Die
-Diffusstrahlung liegt an 82, die langwellige Einstrahlung an 46 Stationen
+Diffusstrahlung liegt an 83, die langwellige Einstrahlung an 46 Stationen
 gemessen vor; sonst greifen die dokumentierten Rückfallebenen. Der Katalog
 führt das je Station unter `capabilities`.
 
