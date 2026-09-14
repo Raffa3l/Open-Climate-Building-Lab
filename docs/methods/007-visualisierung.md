@@ -92,7 +92,7 @@ Kennzahlen stehen als Zahl über dem Diagramm, und die Tabelle listet jeden
 
 Der Lightness-Band-Fehlschlag von `#ec835a` im Dunkelmodus ist erwartet: Der
 Prüfbereich gilt für kategoriale Paletten, nicht für Statusfarben. Die sind
-über beide Modi fix und liegen auf der dunklen Oberfläche bei 6,60 Kontrast.
+über beide Modi fix und liegen auf der dunklen Oberfläche bei 6.60 Kontrast.
 
 ## Hell und Dunkel
 

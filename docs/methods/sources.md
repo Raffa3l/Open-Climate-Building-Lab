@@ -125,7 +125,7 @@ Planungsphase rechenbar. Siehe [006](006-room-model-5r1c.md#zur-normenlage).
 ### `michalsky1988`
 Michalsky, J. J. (1988): *The Astronomical Almanac's algorithm for approximate
 solar position (1950–2050).* Solar Energy 40 (3), 227–235.
-→ Sonnenstand, Genauigkeit rund 0,01°.
+→ Sonnenstand, Genauigkeit rund 0.01°.
 
 ### `noaa-solar`
 NOAA Global Monitoring Laboratory, Solar Calculation Details.

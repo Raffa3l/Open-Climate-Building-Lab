@@ -15,7 +15,7 @@ U-Wert abbildet — unter klarem Nachthimmel deutlich, unter Wolken kaum.
 
 Aus der gemessenen abwärts gerichteten langwelligen Strahlung `oli000h0`:
 
-$$T_{sky} = \left(\frac{E_{sky}}{\sigma}\right)^{1/4}, \qquad \sigma = 5{,}670374419 \cdot 10^{-8}\ \text{W/(m²K⁴)}$$
+$$T_{sky} = \left(\frac{E_{sky}}{\sigma}\right)^{1/4}, \qquad \sigma = 5.670374419 \cdot 10^{-8}\ \text{W/(m²K⁴)}$$
 
 ### Warum die Messung dem Normwert überlegen ist
 
@@ -25,14 +25,14 @@ $\Delta\theta_{sky} = 11\ \text{K}$ an. An Zürich/Fluntern gemessen, 2023,
 
 | | Δθ_sky |
 |---|---|
-| Mittel | 9,78 K |
-| Median | 9,29 K |
-| 5-%-Quantil | 1,38 K |
-| 95-%-Quantil | 19,80 K |
-| Maximum | 25,25 K |
+| Mittel | 9.78 K |
+| Median | 9.29 K |
+| 5-%-Quantil | 1.38 K |
+| 95-%-Quantil | 19.80 K |
+| Maximum | 25.25 K |
 
 Der Pauschalwert trifft das Jahresmittel gut. Er kann aber eine **bedeckte
-Nacht (1,4 K) nicht von einer klaren (25 K) unterscheiden** — und genau diese
+Nacht (1.4 K) nicht von einer klaren (25 K) unterscheiden** — und genau diese
 Unterscheidung entscheidet darüber, ob Nachtauskühlung funktioniert.
 
 Wo `oli000h0` vorliegt, wird deshalb gemessen gerechnet; sonst greift der
@@ -47,9 +47,9 @@ $$\Phi_r = R_{se} \cdot U_c \cdot A_c \cdot h_r \cdot \Delta\theta_{sky}$$
 
 | Grösse | Wert | Bedeutung |
 |---|---|---|
-| R_se | 0,04 m²K/W | Wärmeübergangswiderstand aussen, ISO 6946 |
-| h_r | 4,5 W/(m²K) | äusserer Strahlungsübergang, $5\varepsilon$ mit $\varepsilon \approx 0{,}9$ |
-| F_r | 0,5 senkrecht / 1,0 horizontal | Formfaktor zum Himmel |
+| R_se | 0.04 m²K/W | Wärmeübergangswiderstand aussen, ISO 6946 |
+| h_r | 4.5 W/(m²K) | äusserer Strahlungsübergang, $5\varepsilon$ mit $\varepsilon \approx 0.9$ |
+| F_r | 0.5 senkrecht / 1.0 horizontal | Formfaktor zum Himmel |
 
 Vom solaren Eintrag abgezogen wird $F_r \cdot \Phi_r$. Nachts wird der
 Solarterm dadurch **negativ** — physikalisch richtig, kein Fehler.
@@ -61,10 +61,10 @@ Aussenoberfläche liegt:
 
 | Bauteil | U-Wert | $R_{se} \cdot U_c$ |
 |---|---|---|
-| gedämmte Wand | 0,2 | 0,8 % |
-| Fenster modern | 1,0 | 4 % |
-| ungedämmte Wand | 1,4 | 5,6 % |
-| Einfachverglasung | 2,8 | 11 % |
+| gedämmte Wand | 0.2 | 0.8 % |
+| Fenster modern | 1.0 | 4 % |
+| ungedämmte Wand | 1.4 | 5.6 % |
+| Einfachverglasung | 2.8 | 11 % |
 
 **Die Himmelsabstrahlung trifft vor allem schlecht gedämmte Bauteile.** Bei
 einem Neubau ist der Effekt klein, weil die Dämmung ihn ohnehin abschirmt.
@@ -76,17 +76,17 @@ nach EN 16798-1 Kat. II:
 
 | Fall | ÜTS | Kh | θ_op max | Ø F_r·Φ_r |
 |---|---|---|---|---|
-| **Neubau** U 0,2 / 1,0 — ohne Abstrahlung | 527 | 845 | 36,30 | 0,0 W |
-| Neubau — pauschal 11 K | 492 | 777 | 36,16 | 5,0 W |
-| Neubau — gemessen | 480 | 765 | 36,15 | 4,5 W |
-| **Altbau** U 1,4 / 2,8 — ohne Abstrahlung | 188 | 275 | 34,82 | 0,0 W |
-| Altbau — pauschal 11 K | 145 | 216 | 34,44 | 19,0 W |
-| Altbau — gemessen | 140 | 211 | 34,36 | 16,9 W |
+| **Neubau** U 0.2 / 1.0 — ohne Abstrahlung | 527 | 845 | 36.30 | 0.0 W |
+| Neubau — pauschal 11 K | 492 | 777 | 36.16 | 5.0 W |
+| Neubau — gemessen | 480 | 765 | 36.15 | 4.5 W |
+| **Altbau** U 1.4 / 2.8 — ohne Abstrahlung | 188 | 275 | 34.82 | 0.0 W |
+| Altbau — pauschal 11 K | 145 | 216 | 34.44 | 19.0 W |
+| Altbau — gemessen | 140 | 211 | 34.36 | 16.9 W |
 
 ### Was daraus folgt
 
 1. **Der Effekt ist real, aber beim Neubau moderat:** −9 % Übertemperatur­stunden,
-   Spitzentemperatur −0,15 K. Ich hatte ihn zuvor als grösste bekannte
+   Spitzentemperatur −0.15 K. Ich hatte ihn zuvor als grösste bekannte
    Ungenauigkeit des Modells bezeichnet — das war überzogen. Für gut gedämmte
    Hüllen ist er es nicht.
 2. **Beim Altbau ist er erheblich:** −26 % Übertemperaturstunden. Für
@@ -114,5 +114,5 @@ zuordenbar. Wer die alte Fassung reproduzieren will, setzt
   demselben F_r gewichtet. Bei stark unterschiedlicher Verschattung ist das zu
   grob.
 - **Keine Umgebungsverschattung.** Ein Innenhof oder eine Strassenschlucht
-  reduziert die Himmelssicht erheblich; F_r wäre dann kleiner als 0,5.
-- **Emissionsgrad pauschal 0,9.** Für Metallfassaden deutlich zu hoch.
+  reduziert die Himmelssicht erheblich; F_r wäre dann kleiner als 0.5.
+- **Emissionsgrad pauschal 0.9.** Für Metallfassaden deutlich zu hoch.

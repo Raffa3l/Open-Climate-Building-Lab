@@ -21,24 +21,24 @@ Verfahren nach Michalsky (1988) in der NOAA-Fassung: mittlere Länge und
 Anomalie aus den Tagen seit J2000.0, daraus ekliptikale Länge, Rektaszension
 und Deklination, dann über die mittlere Sternzeit Greenwich der Stundenwinkel.
 
-Genauigkeit rund 0,01° — für Gebäudesimulation um Grössenordnungen mehr als
+Genauigkeit rund 0.01° — für Gebäudesimulation um Grössenordnungen mehr als
 nötig, aber der Rechenaufwand ist derselbe wie bei einer gröberen Näherung.
 
 **Der übergebene Zeitpunkt muss die Intervallmitte sein**, nicht der
 Rohdaten-Zeitstempel. Siehe [Zeitkonventionen](000-time-conventions.md);
 `intervalMidpointUtcMs()` liefert ihn.
 
-### Verankerte Stützstellen für Zürich/Fluntern (47,381° N, 8,567° O)
+### Verankerte Stützstellen für Zürich/Fluntern (47.381° N, 8.567° O)
 
 Die Mittagshöhe ist 90° − Breite + Deklination, also astronomisch nachprüfbar:
 
 | Datum | Mittagshöhe | Tageslänge |
 |---|---|---|
-| 21. Juni | 66,06° | 15,9 h |
-| 21. Dezember | 19,18° | 8,5 h |
-| Äquinoktium | 42,62° | 12 h |
+| 21. Juni | 66.06° | 15.9 h |
+| 21. Dezember | 19.18° | 8.5 h |
+| Äquinoktium | 42.62° | 12 h |
 
-Zusätzlich geprüft: Deklination erreicht an den Wendepunkten ±23,44°, der
+Zusätzlich geprüft: Deklination erreicht an den Wendepunkten ±23.44°, der
 Azimut zur Kulmination liegt bei 180°, und die Kulmination fällt auf den wahren
 Ortsmittag — für Zürich rund 34 Minuten vor 12:00 UTC.
 
@@ -53,13 +53,13 @@ $k_t = G / G_0$ mit $G_0$ = extraterrestrische Strahlung auf die Horizontale:
 
 $$
 k_d = \begin{cases}
-1{,}0 - 0{,}09\,k_t & k_t \le 0{,}22 \\
-0{,}9511 - 0{,}1604\,k_t + 4{,}388\,k_t^2 - 16{,}638\,k_t^3 + 12{,}336\,k_t^4 & 0{,}22 < k_t \le 0{,}80 \\
-0{,}165 & k_t > 0{,}80
+1.0 - 0.09\,k_t & k_t \le 0.22 \\
+0.9511 - 0.1604\,k_t + 4.388\,k_t^2 - 16.638\,k_t^3 + 12.336\,k_t^4 & 0.22 < k_t \le 0.80 \\
+0.165 & k_t > 0.80
 \end{cases}
 $$
 
-$$G_0 = 1367 \cdot \left(1 + 0{,}033\cos\frac{2\pi\,n}{365}\right) \cdot \sin(h_s)$$
+$$G_0 = 1367 \cdot \left(1 + 0.033\cos\frac{2\pi\,n}{365}\right) \cdot \sin(h_s)$$
 
 **Wo die Diffusstrahlung gemessen vorliegt, ist der Messwert vorzuziehen.** Das
 Raummodell nimmt sie entgegen und greift nur ersatzweise auf Erbs zurück; der
@@ -82,18 +82,18 @@ mit dem Einfallswinkel
 
 $$\cos\theta = \cos h_s \sin\beta \cos(\gamma_s - \gamma_f) + \sin h_s \cos\beta$$
 
-**Die Obergrenze $I_{bn,max} = 1{,}035 \cdot 1367\ \text{W/m²}$ ist nicht
+**Die Obergrenze $I_{bn,max} = 1.035 \cdot 1367\ \text{W/m²}$ ist nicht
 kosmetisch.** Die Zerlegung teilt durch $\sin h_s$; bei flachem Sonnenstand
 geht der Nenner gegen null, während ein womöglich fehlerhaft gemessener Zähler
 stehen bleibt. Ohne Grenze entstehen Einstrahlungen von mehreren tausend W/m².
 Die Grenze ist die extraterrestrische Bestrahlungsstärke im Perihel — mehr kann
 am Boden unter keinen Umständen ankommen.
 
-An den SwissMetNet-Daten von Zürich/Fluntern greift sie in **5 von 26 078
-Sonnenstunden** (0,019 %); der höchste unbegrenzte Wert lag bei 1561 W/m².
+An den SwissMetNet-Daten von Zürich/Fluntern greift sie in **5 von 26'078
+Sonnenstunden** (0.019 %); der höchste unbegrenzte Wert lag bei 1561 W/m².
 Selten, aber real.
 
-Zusätzlich wird der Direktanteil unterhalb $\sin h_s = 0{,}01$ (etwa 0,6°
+Zusätzlich wird der Direktanteil unterhalb $\sin h_s = 0.01$ (etwa 0.6°
 Sonnenhöhe) ganz auf null gesetzt.
 
 ### Isotropes Himmelsmodell
@@ -123,7 +123,7 @@ Begrenzung von $b$ hält den zirkumsolaren Term bei streifendem Einfall endlich.
 
 Die Koeffizienten $F_1, F_2$ folgen aus Himmelsklarheit ε und -helligkeit Δ:
 
-$$\varepsilon = \frac{(I_d + I_{bn})/I_d + \kappa Z^3}{1 + \kappa Z^3}, \qquad \kappa = 1{,}041,\ Z\ \text{in rad}$$
+$$\varepsilon = \frac{(I_d + I_{bn})/I_d + \kappa Z^3}{1 + \kappa Z^3}, \qquad \kappa = 1.041,\ Z\ \text{in rad}$$
 
 $$\Delta = \frac{I_d \cdot m}{I_0}$$
 
@@ -172,10 +172,10 @@ Südbüro Zürich 2023, Sonnenschutz und Nachtlüftung aktiv:
 
 | Fall | ÜTS | θ_op max |
 |---|---|---|
-| Neubau, isotrop | 480 | 36,15 |
-| Neubau, **Perez** | 501 | 36,32 |
-| Altbau, isotrop | 140 | 34,36 |
-| Altbau, **Perez** | 148 | 34,32 |
+| Neubau, isotrop | 480 | 36.15 |
+| Neubau, **Perez** | 501 | 36.32 |
+| Altbau, isotrop | 140 | 34.36 |
+| Altbau, **Perez** | 148 | 34.32 |
 
 Rund **4 bis 6 % mehr Übertemperaturstunden** — das isotrope Modell lag auf der
 optimistischen Seite, wie erwartet. Der Effekt ist moderat, weil der

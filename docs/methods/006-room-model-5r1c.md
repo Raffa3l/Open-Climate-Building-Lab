@@ -48,27 +48,27 @@ nennenswerte Speichermasse.
 
 | Grösse | Wert | Fundstelle |
 |---|---|---|
-| h_is | 3,45 W/(m²K) | §7.2.2.2 |
-| h_ms | 9,1 W/(m²K) | §12.2.2 |
-| Λ_at | 4,5 | §7.2.2.2 |
-| F_w | 0,9 | §11.4.2 |
+| h_is | 3.45 W/(m²K) | §7.2.2.2 |
+| h_ms | 9.1 W/(m²K) | §12.2.2 |
+| Λ_at | 4.5 | §7.2.2.2 |
+| F_w | 0.9 | §11.4.2 |
 | ρ·c_Luft | 1200 J/(m³K) | — |
 
 Bauart nach Tabelle 12:
 
 | Klasse | A_m | C_m je m² Grundfläche |
 |---|---|---|
-| sehr leicht | 2,5 · A_f | 80 kJ/(m²K) |
-| leicht | 2,5 · A_f | 110 kJ/(m²K) |
-| mittel | 2,5 · A_f | 165 kJ/(m²K) |
-| schwer | 3,0 · A_f | 260 kJ/(m²K) |
-| sehr schwer | 3,5 · A_f | 370 kJ/(m²K) |
+| sehr leicht | 2.5 · A_f | 80 kJ/(m²K) |
+| leicht | 2.5 · A_f | 110 kJ/(m²K) |
+| mittel | 2.5 · A_f | 165 kJ/(m²K) |
+| schwer | 3.0 · A_f | 260 kJ/(m²K) |
+| sehr schwer | 3.5 · A_f | 370 kJ/(m²K) |
 
 ## Aufteilung der Wärmeeinträge
 
-$$\Phi_{ia} = 0{,}5\,\Phi_{int}$$
-$$\Phi_{st} = \left(1 - \frac{A_m}{A_t} - \frac{H_{tr,w}}{9{,}1\,A_t}\right)(0{,}5\,\Phi_{int} + \Phi_{sol})$$
-$$\Phi_{m} = \frac{A_m}{A_t}\,(0{,}5\,\Phi_{int} + \Phi_{sol})$$
+$$\Phi_{ia} = 0.5\,\Phi_{int}$$
+$$\Phi_{st} = \left(1 - \frac{A_m}{A_t} - \frac{H_{tr,w}}{9.1\,A_t}\right)(0.5\,\Phi_{int} + \Phi_{sol})$$
+$$\Phi_{m} = \frac{A_m}{A_t}\,(0.5\,\Phi_{int} + \Phi_{sol})$$
 
 Solare Einträge je Fenster:
 
@@ -86,7 +86,7 @@ Der Massenknoten wird als Mittel über den Zeitschritt ausgewertet,
 $\theta_m = (\theta_{m,t} + \theta_{m,t-1})/2$. Daraus folgen
 Oberflächen- und Lufttemperatur und schliesslich
 
-$$\theta_{op} = 0{,}3\,\theta_{air} + 0{,}7\,\theta_{s}$$
+$$\theta_{op} = 0.3\,\theta_{air} + 0.7\,\theta_{s}$$
 
 Simuliert wird **frei laufend**, $\Phi_{HC} = 0$ — der sommerliche Wärmeschutz
 fragt ja gerade, wie warm es *ohne* Kühlung wird.

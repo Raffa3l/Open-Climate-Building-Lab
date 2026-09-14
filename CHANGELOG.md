@@ -64,6 +64,10 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   eines Raums an einer realen Station.
 - Methodenseiten [005](docs/methods/005-solar.md) und
   [006](docs/methods/006-room-model-5r1c.md).
+- **Messreihe ab 1991** für die 41 Stationen mit Szenariodaten: 1972
+  Stationsjahre, 2242 Dateien insgesamt, 353 MB. Damit steht als
+  Vergleichsbasis eine echte Normalperiode 1991–2020 statt einer Handvoll
+  aktueller Jahre.
 
 ### Geändert
 - **Verkettete Berechnungs-Hashes**
@@ -90,10 +94,10 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 - **`building.simulate5R1C` auf 1.2.0**, weil Perez das neue Standard-Modell
   ist. Zuvor 1.1.0 wegen der Himmelsabstrahlung.
 - **`solar.tiltedIrradiance` auf 1.0.1:** Die Direktnormalstrahlung ist auf
-  1,035 · 1367 W/m² begrenzt — die extraterrestrische Bestrahlungsstärke im
+  1.035 · 1367 W/m² begrenzt — die extraterrestrische Bestrahlungsstärke im
   Perihel. Ohne Grenze erzeugte die Zerlegung I_bn = I_b/sin(h) bei flachem
-  Sonnenstand Werte von mehreren tausend W/m². Betrifft 5 von 26 078
-  Sonnenstunden an Zürich/Fluntern (0,019 %).
+  Sonnenstand Werte von mehreren tausend W/m². Betrifft 5 von 26'078
+  Sonnenstunden an Zürich/Fluntern (0.019 %).
 - **`building.simulate5R1C` auf 1.1.0**, weil die Himmelsabstrahlung die
   Ergebnisse für gleiche Eingaben ändert. Alle davon abhängigen
   Berechnungs-Hashes ändern sich mit. `skyViewFactor: 0` schaltet den Term ab,
@@ -150,6 +154,19 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Doppelte, nach acht Zügen auf 21'760 px. Die Sollhöhe steht jetzt in
   `data-height`, das der Code nie beschreibt. Gefunden beim Browsertest des
   Vergleichsmodus; der Fehler ist älter und betrifft jede Zeigerbewegung.
+- **Alle Prüfsummen haben sich geändert**, weil Titel und Link in den
+  `.ocbl`-Header wandern. Damit ändern sich auch alle Berechnungs-Hashes.
+  Vor der ersten Publikation ist das folgenlos — später wäre es das nicht.
+- Drei Skripte hingen nach der Katalogtrennung noch an der alten Struktur.
+  `report.ts` und `overheating.ts` scheiterten, `stations.ts` war bereits
+  angepasst. Der Zugriff liegt jetzt in `core/scripts/catalog.ts`, damit es
+  beim nächsten Formatwechsel eine Stelle statt vier sind.
+- `catalog.load()` setzte fehlende Detaildateien still auf `{}` zurück und
+  überschrieb damit beim nächsten `save()` den gesamten Index. Passiert genau
+  einmal, beim Einführen der Trennung selbst. Fehlende Detaildateien brechen
+  jetzt laut ab.
+- `scripts/build-web.sh` kopierte den Datenstand; bei 138 MB in einem
+  synchronisierten Ordner ist das untragbar. Jetzt ein Symlink.
 
 ### Gemessen
 - **Neubau mit korrigierter Quellenangabe, 14.09.2026:** alle 2'242 bisherigen
@@ -207,7 +224,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Bestätigt die Annahme aus ADR 0003.
 - **Derselbe Raum an 130 Stationen, 2023:** Lugano 778 Übertemperaturstunden,
   Zürich/Fluntern 501, Jungfraujoch 0. Der Jahresmittelwert allein erklärt die
-  Rangfolge nicht — Vevey (13,4 °C) liegt vor Magadino (13,3 °C) mit 765 zu
+  Rangfolge nicht — Vevey (13.4 °C) liegt vor Magadino (13.3 °C) mit 765 zu
   707 Stunden, der Unterschied kommt aus der Einstrahlung.
 - **Jahressummen der Einstrahlung** als unabhängiger Anker, Zürich/Fluntern:
   horizontal 1198–1253 kWh/m², Südfassade 979–1033 (Perez), 30° Südneigung
@@ -218,18 +235,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Überhitzung wirkt das mit +4 bis +6 % Übertemperaturstunden — das isotrope
   Modell lag auf der optimistischen Seite.
 - Wirkung der Himmelsabstrahlung, Südbüro Zürich 2023: beim **Neubau** −9 %
-  Übertemperaturstunden und −0,15 K Spitzentemperatur, beim **ungedämmten
+  Übertemperaturstunden und −0.15 K Spitzentemperatur, beim **ungedämmten
   Altbau** −26 %. Der Schritt von „gar nicht" zu „pauschal 11 K" wiegt dabei
   schwerer als der von „pauschal" zu „gemessen" (2–3 %).
-- Δθ_sky an Zürich/Fluntern 2023: Mittel 9,78 K, aber Spannweite 1,4 bis
-  25,3 K — der Pauschalwert der Norm kann eine bedeckte Nacht nicht von einer
+- Δθ_sky an Zürich/Fluntern 2023: Mittel 9.78 K, aber Spannweite 1.4 bis
+  25.3 K — der Pauschalwert der Norm kann eine bedeckte Nacht nicht von einer
   klaren unterscheiden.
 
 ### Validierung
 - **Geschlossene Energiebilanz im Beharrungszustand** auf besser als 10⁻⁶ W —
   die schärfste verfügbare Prüfung des Raummodells.
 - Sonnenstand gegen astronomisch nachprüfbare Stützstellen für Zürich:
-  Mittagshöhe 66,06° / 19,18° an den Wendepunkten, Tageslänge 15,9 h / 8,5 h,
+  Mittagshöhe 66.06° / 19.18° an den Wendepunkten, Tageslänge 15.9 h / 8.5 h,
   Kulmination im Süden am wahren Ortsmittag.
 
 - **Frontend** (`web/`) — Regler für Fensterflächenanteil, Sonnenschutz,
@@ -244,7 +261,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   [Methode 007](docs/methods/007-visualisierung.md).
 - `sky` — **langwellige Abstrahlung gegen den Himmel** nach EN ISO 13790
   §11.3.5. Himmelstemperatur aus der gemessenen Einstrahlung `oli000h0`, sonst
-  Pauschalwert 11 K der Norm. Neuer Parameter `skyViewFactor` (0,5 senkrecht).
+  Pauschalwert 11 K der Norm. Neuer Parameter `skyViewFactor` (0.5 senkrecht).
 - `core/scripts/model-effects.ts` — beziffert die Wirkung der
   Modellverfeinerungen an echten Daten; Grundlage für die Zahlen in
   [Methode 005](docs/methods/005-solar.md) und
@@ -296,9 +313,9 @@ und mussten empirisch bestimmt werden — Herleitung in
   SwissMetNet-Messreihen. Bestimmt über das Minimum des Fehlers von
   `gls − diffus − direkt · sin(h)` über Versätze von −120 bis +120 min:
   scharfes Minimum bei +10 min, an sechs Dateien ausnahmslos, Restfehler
-  bis hinunter zu 1,03 W/m².
+  bis hinunter zu 1.03 W/m².
 - **`str.direkt` ist die Direktnormalstrahlung**, nicht die horizontale:
-  13,65 gegen 105,17 W/m² mittlerer Fehler.
+  13.65 gegen 105.17 W/m² mittlerer Fehler.
 
 ### Geklärt
 - **Die Lizenzfrage zu `ch.meteoschweiz.klimaszenarien-raumklima` ist
@@ -316,34 +333,14 @@ und mussten empirisch bestimmt werden — Herleitung in
   offen bleibt allein der Publikationsstand von SIA 4028. Siehe
   [ADR 0004, Nachtrag](docs/adr/0004-v0-nur-vergangenheit.md).
 
-### Behoben
-- **Alle Prüfsummen haben sich geändert**, weil Titel und Link in den
-  `.ocbl`-Header wandern. Damit ändern sich auch alle Berechnungs-Hashes.
-  Vor der ersten Publikation ist das folgenlos — später wäre es das nicht.
-- Drei Skripte hingen nach der Katalogtrennung noch an der alten Struktur.
-  `report.ts` und `overheating.ts` scheiterten, `stations.ts` war bereits
-  angepasst. Der Zugriff liegt jetzt in `core/scripts/catalog.ts`, damit es
-  beim nächsten Formatwechsel eine Stelle statt vier sind.
-- `catalog.load()` setzte fehlende Detaildateien still auf `{}` zurück und
-  überschrieb damit beim nächsten `save()` den gesamten Index. Passiert genau
-  einmal, beim Einführen der Trennung selbst. Fehlende Detaildateien brechen
-  jetzt laut ab.
-- `scripts/build-web.sh` kopierte den Datenstand; bei 138 MB in einem
-  synchronisierten Ordner ist das untragbar. Jetzt ein Symlink.
-
-- **Messreihe ab 1991** für die 41 Stationen mit Szenariodaten: 1972
-  Stationsjahre, 2242 Dateien insgesamt, 353 MB. Damit steht als
-  Vergleichsbasis eine echte Normalperiode 1991–2020 statt einer Handvoll
-  aktueller Jahre.
-
 ### Zu beachten
 - **Ein Design Reference Year ist kein Mittel gemessener Jahre.** Der erste
   Vergleich lief gegen 2020–2024 — fünf Jahre mit zwei Rekordsommern — und sah
   dadurch aus wie ein Rechenfehler. Mit der Normalperiode 1991–2020 als Basis
   wird das Bild kohärent.
 - **Die beobachtete Erwärmung ist der Projektion vorausgeeilt.** Zürich/
-  Fluntern liegt 2021–2024 mit 10,9 °C bereits über dem, was CH2018 für 2035
-  unter RCP 8.5 als typisches Jahr ausweist (10,6 °C). Die Referenzjahre sind
+  Fluntern liegt 2021–2024 mit 10.9 °C bereits über dem, was CH2018 für 2035
+  unter RCP 8.5 als typisches Jahr ausweist (10.6 °C). Die Referenzjahre sind
   deshalb eher als untere Schranke zu lesen.
 - Die Stationshöhen der Szenariometadaten weichen von SwissMetNet ab
   (Zürich/Fluntern 556 m gegen 604 m). Für das Raummodell folgenlos, aber
@@ -430,14 +427,14 @@ Kennwert mit Berechnungs-Hash. Kein Frontend, kein Raummodell.
 
 ### Validierung
 - Taupunkt-Kreuzvergleich Zürich/Fluntern 2023, 8760 Stunden: mittlere
-  Abweichung **+0,002 K**, maximal 0,434 K, 100 % innerhalb 0,5 K. Die
+  Abweichung **+0.002 K**, maximal 0.434 K, 100 % innerhalb 0.5 K. Die
   Reststreuung entspricht der Publikationsrundung.
 - Feuchtkugeltemperatur gegen Stützstellen des h,x-Diagramms; über den gesamten
   Bereich ist $T_d \le T_w \le T$ geprüft.
 - 42 Tests grün, `tsc --noEmit` sauber im strict-Modus.
 
 ### Gemessen
-- Ein Stationsjahr mit elf Variablen: **189,4 kB** (Zürich/Fluntern 2023).
+- Ein Stationsjahr mit elf Variablen: **189.4 kB** (Zürich/Fluntern 2023).
   Bestätigt die Architektur ohne Datenbank.
 
 ### Bekannte Einschränkungen

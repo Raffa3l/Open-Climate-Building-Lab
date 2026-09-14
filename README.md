@@ -167,8 +167,8 @@ Der Taupunkt-Kreuzvergleich prüft die Psychrometrie gegen die Messreihe:
 MeteoSchweiz liefert `tde200h0` mit, und `data/ocbl_data/qa.py` enthält eine
 zweite, getrennt getippte Fassung der Formeln.
 
-Zürich/Fluntern 2023, 8760 verglichene Stunden: mittlere Abweichung **+0,002 K**,
-maximale Abweichung 0,434 K, 100 % innerhalb 0,5 K. Die Reststreuung ist
+Zürich/Fluntern 2023, 8760 verglichene Stunden: mittlere Abweichung **+0.002 K**,
+maximale Abweichung 0.434 K, 100 % innerhalb 0.5 K. Die Reststreuung ist
 Rundung in der Publikationsauflösung.
 
 ## Daten und Lizenz

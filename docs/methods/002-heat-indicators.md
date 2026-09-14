@@ -52,7 +52,7 @@ verschobene Achse verändert das Ergebnis messbar — siehe
 $$\text{KGh} = \sum_{i} \max(0,\ T_i - T_{Basis})\ \text{[Kh]}$$
 
 Standardbasis **22 °C**. Das ist eine Konvention, keine Naturkonstante: mit der
-ASHRAE-Basis 18,3 °C ergeben sich deutlich andere Zahlen. Beide sind richtig,
+ASHRAE-Basis 18.3 °C ergeben sich deutlich andere Zahlen. Beide sind richtig,
 solange die Basis mitpubliziert wird — sie steht in `params`.
 
 Unterschreitungen werden nicht negativ akkumuliert.
@@ -74,5 +74,5 @@ Die Zahl der gewerteten Stunden wird mitgeführt: ein Potenzial von 0 Kh bei
 ## Vollständigkeit
 
 Jeder Kennwert führt `completeness` mit, den Anteil gültiger Eingangswerte.
-Unter 0,9 ist eine Jahreszahl mit Vorsicht zu lesen; das gehört in der
+Unter 0.9 ist eine Jahreszahl mit Vorsicht zu lesen; das gehört in der
 Darstellung sichtbar gemacht und nicht weggerundet.

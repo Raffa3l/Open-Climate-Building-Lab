@@ -10,7 +10,7 @@ Feuchtegehalt kg/kg trockene Luft, Enthalpie kJ/kg trockene Luft.
 
 Magnus-Formel mit den Koeffizienten nach Sonntag (1990), über **Wasser**:
 
-$$e_s(T) = 6{,}112 \cdot \exp\!\left(\frac{17{,}62\,T}{243{,}12 + T}\right)\ \text{[hPa]}$$
+$$e_s(T) = 6.112 \cdot \exp\!\left(\frac{17.62\,T}{243.12 + T}\right)\ \text{[hPa]}$$
 
 Gültig von −45 °C bis +60 °C.
 
@@ -21,9 +21,9 @@ Taupunkte. Wer die Konvention ändert, muss `METHOD_SATURATION.version` erhöhen
 
 ## Taupunkt
 
-Analytische Umkehrung mit $\ln = \ln(e/6{,}112)$:
+Analytische Umkehrung mit $\ln = \ln(e/6.112)$:
 
-$$T_d = \frac{243{,}12 \cdot \ln}{17{,}62 - \ln}$$
+$$T_d = \frac{243.12 \cdot \ln}{17.62 - \ln}$$
 
 ### Kreuzvergleich gegen die Messreihe
 
@@ -36,18 +36,18 @@ Ergebnis für Zürich/Fluntern 2023, 8760 verglichene Stunden:
 
 | Grösse | Wert |
 |---|---|
-| mittlere Abweichung | +0,002 K |
-| maximale Abweichung | 0,434 K |
-| innerhalb 0,5 K | 100,00 % |
+| mittlere Abweichung | +0.002 K |
+| maximale Abweichung | 0.434 K |
+| innerhalb 0.5 K | 100.00 % |
 
 Die verbleibende Streuung erklärt sich aus der Rundung: `tde200h0` ist auf
-0,1 °C publiziert, die relative Feuchte auf 0,1 %.
+0.1 °C publiziert, die relative Feuchte auf 0.1 %.
 
 ## Feuchtegehalt und Enthalpie
 
-$$x = 0{,}62198 \cdot \frac{e}{p - e}\ \text{[kg/kg]}$$
+$$x = 0.62198 \cdot \frac{e}{p - e}\ \text{[kg/kg]}$$
 
-$$h = 1{,}006\,T + x\,(2501 + 1{,}86\,T)\ \text{[kJ/kg]}$$
+$$h = 1.006\,T + x\,(2501 + 1.86\,T)\ \text{[kJ/kg]}$$
 
 Bezugszustand: trockene Luft und flüssiges Wasser bei 0 °C. Daraus folgt
 $h(0\,°\text{C}, x=0) = 0$ — im Test verankert.
@@ -61,10 +61,10 @@ greift `pressureFromAltitude()` als dokumentierte Rückfallebene.
 
 Aus der Psychrometergleichung, numerisch gelöst:
 
-$$e = e_s(T_w) - A \cdot p \cdot (T - T_w), \qquad A = 6{,}53 \cdot 10^{-4}\ \text{K}^{-1}$$
+$$e = e_s(T_w) - A \cdot p \cdot (T - T_w), \qquad A = 6.53 \cdot 10^{-4}\ \text{K}^{-1}$$
 
 $A$ gilt für ventilierte Messung über Wasser (WMO-No. 8). Über Eis wäre
-$5{,}75 \cdot 10^{-4}$ zu verwenden; das ist bewusst **nicht** implementiert,
+$5.75 \cdot 10^{-4}$ zu verwenden; das ist bewusst **nicht** implementiert,
 weil der Gültigkeitsbereich sonst unklar würde.
 
 ### Warum Bisektion und nicht Newton
@@ -81,9 +81,9 @@ Nachvollziehbarkeit schlägt hier Geschwindigkeit.
 
 | Zustand | $T_w$ berechnet | h,x-Diagramm |
 |---|---|---|
-| 20 °C / 50 % | 13,7 °C | ≈ 13,7 °C |
-| 30 °C / 40 % | 20,0 °C | ≈ 20,0 °C |
-| 25 °C / 100 % | 25,0 °C | 25,0 °C |
+| 20 °C / 50 % | 13.7 °C | ≈ 13.7 °C |
+| 30 °C / 40 % | 20.0 °C | ≈ 20.0 °C |
+| 25 °C / 100 % | 25.0 °C | 25.0 °C |
 
 Zusätzlich prüft der Test über den gesamten Bereich die Ordnung
 $T_d \le T_w \le T$.

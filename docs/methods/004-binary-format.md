@@ -9,7 +9,7 @@ ihnen; eine Änderung macht alle bestehenden Prüfsummen ungültig — beabsicht
 ## Warum kein CSV, kein Parquet
 
 Ein Stationsjahr sind 8760 Stunden mal rund elf Variablen. Als skalierte Int16
-ergibt das **rund 190 kB**. Gemessen an Zürich/Fluntern 2023: 189,4 kB für
+ergibt das **rund 190 kB**. Gemessen an Zürich/Fluntern 2023: 189.4 kB für
 elf Variablen.
 
 Das ist klein genug, dass der Browser genau das Jahr lädt, das er anzeigt —
@@ -46,7 +46,7 @@ $$\text{physikalischer Wert} = \text{raw} \cdot \text{scale} + \text{offset}$$
 `data/ocbl_data/variables.py` führt für jede Variable einen Gültigkeitsbereich
 und prüft beim Import, dass die Skalierung ihn wirklich trägt. Ohne diesen
 Selbsttest wäre etwa eine Windrichtung mit `scale = 0.01` stillschweigend bei
-327,67° abgeschnitten worden.
+327.67° abgeschnitten worden.
 
 Werte ausserhalb des Gültigkeitsbereichs werden beim Packen **verworfen, nicht
 geklemmt**. Ein geklemmter Wert sieht plausibel aus und wandert unbemerkt in

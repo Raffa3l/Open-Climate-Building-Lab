@@ -40,14 +40,14 @@ Gleichung berechnet. Das Ergebnis ist ein scharfes Minimum:
 
 | Versatz | Restfehler |
 |---|---|
-| −30 min | 26,91 W/m² |
-| 0 min | 13,21 W/m² |
-| **+10 min** | **9,62 W/m²** |
-| +30 min | 18,87 W/m² |
-| +60 min | 34,14 W/m² |
+| −30 min | 26.91 W/m² |
+| 0 min | 13.21 W/m² |
+| **+10 min** | **9.62 W/m²** |
+| +30 min | 18.87 W/m² |
+| +60 min | 34.14 W/m² |
 
 Geprüft an sechs Dateien über verschiedene Stationen, Perioden, Szenarien und
-Typen — **+10 min ausnahmslos**, mit Restfehlern bis hinunter zu 1,03 W/m²
+Typen — **+10 min ausnahmslos**, mit Restfehlern bis hinunter zu 1.03 W/m²
 (Lugano).
 
 Daraus folgt: Die Zeit ist **UTC**, der Stempel bezeichnet den
@@ -66,8 +66,8 @@ Geprüft über dieselbe Beziehung:
 
 | Annahme | mittlerer Betragsfehler |
 |---|---|
-| `str.direkt` horizontal | 105,17 W/m² |
-| **`str.direkt` normal** | **13,65 W/m²** |
+| `str.direkt` horizontal | 105.17 W/m² |
+| **`str.direkt` normal** | **13.65 W/m²** |
 
 Eindeutig. Das Projekt speichert die Direktstrahlung nicht, sondern nur Global-
 und Diffusstrahlung — das Raummodell leitet den Direktanteil selbst ab, genau
@@ -80,10 +80,10 @@ Eingang.
 
 | Station | mittlerer Fehler |
 |---|---|
-| Lugano | 0,93 W/m² |
-| Genève | 1,64 W/m² |
-| Zürich/Fluntern | 9,44 W/m² |
-| Scuol | 13,70 W/m² |
+| Lugano | 0.93 W/m² |
+| Genève | 1.64 W/m² |
+| Zürich/Fluntern | 9.44 W/m² |
+| Scuol | 13.70 W/m² |
 
 Scuol liegt in einem engen Alpental; die erhöhte Abweichung dürfte auf
 Horizontverschattung in den Ausgangsdaten zurückgehen, die eine einfache
@@ -124,7 +124,7 @@ auffällt und sonst nach einem Fehler aussieht.
 > selbst lang genug ist, um typisch zu sein.
 
 Beim ersten Lauf war die Basis die Jahre 2020–2024 — fünf Jahre mit zwei
-Rekordsommern. Ihr Mittel von 10,9 °C lag über dem Szenario 2035 unter
+Rekordsommern. Ihr Mittel von 10.9 °C lag über dem Szenario 2035 unter
 RCP 8.5, und der Vergleich sah dadurch aus wie ein Rechenfehler. Die Basis
 wurde deshalb auf die **Normalperiode 1991–2020** umgestellt; für die 41
 Stationen mit beidem liegt die Messreihe ab 1991 vor.
@@ -133,20 +133,20 @@ Stationen mit beidem liegt die Messreihe ab 1991 vor.
 
 | Klimastand | Ø °C | Hitzetage | Tropennächte | ÜTS | θ_op max |
 |---|---|---|---|---|---|
-| **Basis 1991–2020** (30 Jahre) | 9,9 | 7 | 3 | 343 | 34,2 |
-| gemessen 2021–2024 (4 Jahre) | 10,9 | 10 | 5 | 406 | 35,1 |
-| 2035 · RCP 8.5 · Referenzjahr | 10,6 | 6 | 4 | 369 | 35,6 |
-| 2035 · RCP 8.5 · warmer Sommer | 11,0 | 16 | 9 | 456 | 37,8 |
-| 2060 · RCP 2.6 · Referenzjahr | 10,5 | 6 | 2 | 336 | 35,0 |
-| 2060 · RCP 2.6 · warmer Sommer | 10,8 | 16 | 9 | 428 | 37,8 |
-| **2060 · RCP 8.5 · Referenzjahr** | 11,7 | 19 | 14 | 465 | 37,5 |
-| **2060 · RCP 8.5 · warmer Sommer** | 12,3 | 34 | 32 | 624 | 38,9 |
+| **Basis 1991–2020** (30 Jahre) | 9.9 | 7 | 3 | 343 | 34.2 |
+| gemessen 2021–2024 (4 Jahre) | 10.9 | 10 | 5 | 406 | 35.1 |
+| 2035 · RCP 8.5 · Referenzjahr | 10.6 | 6 | 4 | 369 | 35.6 |
+| 2035 · RCP 8.5 · warmer Sommer | 11.0 | 16 | 9 | 456 | 37.8 |
+| 2060 · RCP 2.6 · Referenzjahr | 10.5 | 6 | 2 | 336 | 35.0 |
+| 2060 · RCP 2.6 · warmer Sommer | 10.8 | 16 | 9 | 428 | 37.8 |
+| **2060 · RCP 8.5 · Referenzjahr** | 11.7 | 19 | 14 | 465 | 37.5 |
+| **2060 · RCP 8.5 · warmer Sommer** | 12.3 | 34 | 32 | 624 | 38.9 |
 
 Drei Dinge stehen darin:
 
 1. **Die beobachtete Erwärmung ist der Projektion vorausgeeilt.** Die vier
-   Jahre 2021–2024 liegen mit 10,9 °C bereits über dem, was CH2018 für 2035
-   unter RCP 8.5 als typisches Jahr ausweist (10,6 °C). Das ist kein
+   Jahre 2021–2024 liegen mit 10.9 °C bereits über dem, was CH2018 für 2035
+   unter RCP 8.5 als typisches Jahr ausweist (10.6 °C). Das ist kein
    Rechenfehler, sondern eine Aussage über die Kalibrierung der Szenarien —
    und ein Grund, die Referenzjahre eher als untere Schranke zu lesen.
 2. **RCP 2.6 hält den Zustand von heute.** Das Referenzjahr 2060 unter

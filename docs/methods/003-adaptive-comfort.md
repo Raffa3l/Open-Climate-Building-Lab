@@ -8,23 +8,23 @@ ist im August angenehm. Das Modell macht diese Verschiebung rechenbar.
 
 ## Gleitendes Aussentemperaturmittel
 
-$$\Theta_{rm} = (1-\alpha)\,\Theta_{ed-1} + \alpha\,\Theta_{rm-1}, \qquad \alpha = 0{,}8$$
+$$\Theta_{rm} = (1-\alpha)\,\Theta_{ed-1} + \alpha\,\Theta_{rm-1}, \qquad \alpha = 0.8$$
 
 Anlaufwert aus den sieben Vortagen mit den Normgewichten:
 
-$$\Theta_{rm} = \frac{\Theta_{ed-1} + 0{,}8\,\Theta_{ed-2} + 0{,}6\,\Theta_{ed-3} + 0{,}5\,\Theta_{ed-4} + 0{,}4\,\Theta_{ed-5} + 0{,}3\,\Theta_{ed-6} + 0{,}2\,\Theta_{ed-7}}{3{,}8}$$
+$$\Theta_{rm} = \frac{\Theta_{ed-1} + 0.8\,\Theta_{ed-2} + 0.6\,\Theta_{ed-3} + 0.5\,\Theta_{ed-4} + 0.4\,\Theta_{ed-5} + 0.3\,\Theta_{ed-6} + 0.2\,\Theta_{ed-7}}{3.8}$$
 
 Die ersten sieben Tage einer Reihe bleiben `NaN`. Sie zu extrapolieren wäre
 eine Erfindung, kein Ergebnis.
 
-$\alpha = 0{,}8$ entspricht einer Halbwertszeit von rund drei Tagen. Der Test
+$\alpha = 0.8$ entspricht einer Halbwertszeit von rund drei Tagen. Der Test
 verankert das an einem Temperatursprung: von 10 °C auf 20 °C ergibt der erste
 Folgetag exakt 12 °C.
 
 ## Komfortband
 
-$$\Theta_{o,max} = 0{,}33\,\Theta_{rm} + 18{,}8 + \Delta_{oben}$$
-$$\Theta_{o,min} = 0{,}33\,\Theta_{rm} + 18{,}8 - \Delta_{unten}$$
+$$\Theta_{o,max} = 0.33\,\Theta_{rm} + 18.8 + \Delta_{oben}$$
+$$\Theta_{o,min} = 0.33\,\Theta_{rm} + 18.8 - \Delta_{unten}$$
 
 | Kategorie | $\Delta_{oben}$ | $\Delta_{unten}$ |
 |---|---|---|
@@ -40,7 +40,7 @@ Das Band ist nur für $10\ °\text{C} \le \Theta_{rm} \le 30\ °\text{C}$ defini
 Ausserhalb liefert die Implementierung `NaN` statt eines extrapolierten Werts.
 
 Für Zürich/Fluntern 2024 heisst das konkret: an 203 von 366 Tagen ist das Band
-definiert, die Obergrenze bewegt sich zwischen 25,1 °C und 29,5 °C.
+definiert, die Obergrenze bewegt sich zwischen 25.1 °C und 29.5 °C.
 
 ## Übertemperaturstunden
 
@@ -55,7 +55,7 @@ vollständig falsche Zahl heraus. Seit Version 2.0.0 verhindert das der Typ.
 $$\text{ÜTS} = \left|\{i \in \text{Belegung} : \Theta_{o,i} > \Theta_{o,max}(d_i)\}\right|$$
 
 Mitgeführt werden zusätzlich die Kelvinstunden der Überschreitung — eine
-Überschreitung um 0,2 K ist etwas anderes als eine um 5 K — und die Zahl der
+Überschreitung um 0.2 K ist etwas anderes als eine um 5 K — und die Zahl der
 überhaupt bewerteten Stunden.
 
 ### Eingänge und Identität
