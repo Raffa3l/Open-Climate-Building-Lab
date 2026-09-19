@@ -18,7 +18,9 @@
 import { getVariable } from "../src/series.ts";
 import { citations, shortHash } from "../src/provenance.ts";
 import { dailyMean, thresholdDays, tropicalNights } from "../src/indicators.ts";
-import { DEFAULT_ROOM_SETTINGS, evaluateReferenceCase, peakOperativeTemperature } from "../src/reference-case.ts";
+import {
+  DEFAULT_ROOM_SETTINGS, evaluateReferenceCase, isCompleteMeasuredYear, peakOperativeTemperature,
+} from "../src/reference-case.ts";
 import type { StationSeries } from "../src/series.ts";
 import {
   loadCatalog, loadScenarioCatalog, loadScenarioIndex, loadSeries, loadStationIndex,
@@ -73,7 +75,7 @@ let incomplete = 0;
 for (const [year, meta] of Object.entries(measuredIndex)) {
   const y = Number(year);
   if (!measured.roomModelYears.includes(y)) continue;
-  if ((meta.completeness.tre200h0 ?? 0) < 0.95 || (meta.completeness.gre000h0 ?? 0) < 0.95) {
+  if (!isCompleteMeasuredYear(meta.completeness)) {
     incomplete++;
     continue;
   }

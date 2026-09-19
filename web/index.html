@@ -178,6 +178,38 @@
     </details>
   </div>
 
+  <div class="card">
+    <figure>
+      <figcaption>Übertemperaturstunden je Messjahr</figcaption>
+      <div class="subcaption" id="trendSub">Derselbe Raum in jedem Messjahr der Station, mit linearem Trend</div>
+      <div class="trend-intro" id="trendIntro">
+        <button type="button" class="download" id="trendLoad">Alle Messjahre rechnen</button>
+        <span class="download-note" id="trendLoadNote"></span>
+      </div>
+      <div id="trendBody" hidden>
+        <div class="chart-holder">
+          <canvas id="trendChart" data-height="240"></canvas>
+          <div class="tooltip" id="trendTooltip"></div>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch area" style="background: var(--series-1)"></span>Übertemperaturstunden</span>
+          <span class="legend-item"><span class="swatch" style="background: var(--ink-secondary)"></span>linearer Trend</span>
+        </div>
+        <p class="trend-summary" id="trendSummary"></p>
+      </div>
+    </figure>
+
+    <details id="trendTableDetails" hidden>
+      <summary>Tabelle der Messjahre</summary>
+      <div class="scroll" style="margin-top: 12px">
+        <table id="trendTable">
+          <thead><tr><th>Jahr</th><th>ÜTS</th><th>Kh</th><th>bewertet</th><th>θ<sub>op</sub> max</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
   <footer id="footer"></footer>
 
 </main>

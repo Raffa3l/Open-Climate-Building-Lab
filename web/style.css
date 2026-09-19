@@ -53,6 +53,11 @@
 
 * { box-sizing: border-box; }
 
+/* `hidden` muss gegen Klassen mit eigenem `display` gewinnen: `.trend-intro`
+   und `.tile-delta` setzen `display: flex`, und das schlägt die Regel des
+   Browsers für [hidden]. Ausgeblendete Elemente blieben sonst stehen. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--plane);
@@ -215,6 +220,10 @@ td.over { color: var(--ink); font-weight: 600; }
 th[colspan] { text-align: center; }
 th.split, td.split { border-left: 1px solid var(--border); }
 .scroll { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+
+/* --- Mehrjahresverlauf --- */
+.trend-intro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
+.trend-summary { margin: 12px 0 0; font-size: 13px; color: var(--ink-secondary); }
 
 code { font-family: var(--mono); font-size: 12px; }
 a { color: var(--series-1); }

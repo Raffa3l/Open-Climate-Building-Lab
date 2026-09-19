@@ -204,6 +204,120 @@ function strokeSeries(ctx, values, xOf, yOf) {
   ctx.stroke();
 }
 
+/**
+ * Übertemperaturstunden je Messjahr als Säulen, der lineare Trend als Linie.
+ *
+ * Säulen stehen auf null: Ohne Nullpunkt übertreibt ihre Länge die
+ * Unterschiede. Der Trend ist eine Referenz, keine zweite Serie, und trägt
+ * deshalb sekundäre Tinte statt einer Serienfarbe; gestrichelt bleibt der
+ * Komfortgrenze vorbehalten. Fehlende Jahre bleiben als Lücke sichtbar.
+ */
+export function drawYearChart(canvas, state) {
+  const { years, values, fitted, hover } = state;
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.clientWidth;
+  const cssHeight = Number(canvas.dataset.height);
+  canvas.width = Math.round(cssWidth * dpr);
+  canvas.height = Math.round(cssHeight * dpr);
+  canvas.style.height = `${cssHeight}px`;
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
+  if (years.length === 0) return null;
+
+  const colors = {
+    grid: role("--grid"),
+    axis: role("--axis"),
+    muted: role("--ink-muted"),
+    series: role("--series-1"),
+    trend: role("--ink-secondary"),
+  };
+  const plot = { x: PAD.left, y: PAD.top, w: cssWidth - PAD.left - PAD.right, h: cssHeight - PAD.top - PAD.bottom };
+
+  const first = years[0];
+  const last = years[years.length - 1];
+  const band = plot.w / (last - first + 1);
+  const xOf = (year) => plot.x + (year - first + 0.5) * band;
+
+  const top = Math.max(0, ...values, ...fitted.filter(Number.isFinite));
+  const step = niceStep(top > 0 ? top / 4 : 25);
+  const yMax = Math.max(step, Math.ceil(top / step) * step);
+  const yOf = (v) => plot.y + plot.h - (v / yMax) * plot.h;
+
+  // --- Raster ---
+  ctx.lineWidth = 1;
+  ctx.font = "11px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let v = 0; v <= yMax + 1e-9; v += step) {
+    const y = Math.round(yOf(v)) + 0.5;
+    ctx.strokeStyle = colors.grid;
+    ctx.beginPath();
+    ctx.moveTo(plot.x, y);
+    ctx.lineTo(plot.x + plot.w, y);
+    ctx.stroke();
+    ctx.fillStyle = colors.muted;
+    ctx.fillText(v.toLocaleString("de-CH"), plot.x - 8, y);
+  }
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (let year = Math.ceil(first / 5) * 5; year <= last; year += 5) {
+    ctx.fillText(String(year), xOf(year), plot.y + plot.h + 8);
+  }
+
+  // --- Jahr unter dem Zeiger: ein Band, kein Rahmen um die Säule ---
+  if (hover !== null && hover !== undefined) {
+    ctx.fillStyle = colors.grid;
+    ctx.fillRect(xOf(hover) - band / 2, plot.y, band, plot.h);
+  }
+
+  // --- Säulen: höchstens 24 px, oben 4 px gerundet, unten gerade ---
+  const width = Math.max(2, Math.min(24, band - 2));
+  const radius = Math.min(4, width / 2);
+  ctx.fillStyle = colors.series;
+  for (let i = 0; i < years.length; i++) {
+    const y = yOf(values[i]);
+    const height = plot.y + plot.h - y;
+    if (height <= 0) continue;
+    ctx.beginPath();
+    ctx.roundRect(xOf(years[i]) - width / 2, y, width, height, [Math.min(radius, height), Math.min(radius, height), 0, 0]);
+    ctx.fill();
+  }
+
+  // --- Trend ---
+  if (fitted.length >= 2 && fitted.every(Number.isFinite)) {
+    ctx.strokeStyle = colors.trend;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(xOf(years[0]), yOf(fitted[0]));
+    ctx.lineTo(xOf(last), yOf(fitted[fitted.length - 1]));
+    ctx.stroke();
+  }
+
+  // --- Grundlinie und Einheit ---
+  ctx.strokeStyle = colors.axis;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(plot.x, Math.round(plot.y + plot.h) + 0.5);
+  ctx.lineTo(plot.x + plot.w, Math.round(plot.y + plot.h) + 0.5);
+  ctx.stroke();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = colors.muted;
+  ctx.fillText("h", 0, plot.y - 4);
+
+  return { plot, xOf, yOf, band, first, last };
+}
+
+/** Rasterschritt 1, 2, 2.5 oder 5 mal einer Zehnerpotenz. */
+function niceStep(raw) {
+  const power = 10 ** Math.floor(Math.log10(raw));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * power >= raw) return m * power;
+  return 10 * power;
+}
+
 /** Fadenkreuz und Marker für den Tag unter dem Zeiger. */
 export function drawCrosshair(canvas, geometry, state, day) {
   const ctx = canvas.getContext("2d");

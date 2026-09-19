@@ -18,6 +18,7 @@ später genau hierher.
 | [009 Klimaszenarien](009-klimaszenarien.md) | DRY-Datensätze, erschlossene Konventionen, wie der Vergleich zu lesen ist |
 | [010 Export](010-export.md) | CSV und Manifest, Schreibweise, Nachprüfen, verkettete Hashes |
 | [011 Vordach, Balkon und Verbauung](011-vordach.md) | Profilwinkel, Sichtfaktor zum Himmel, Wirkung auf Süd- und Westfassade |
+| [012 Mehrjahresverlauf](012-mehrjahresverlauf.md) | Auswahl der Messjahre, linearer Trend, Lesart und Grenzen |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

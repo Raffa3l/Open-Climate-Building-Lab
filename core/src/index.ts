@@ -17,4 +17,5 @@ export * from "./sky.ts";
 export * from "./overhang.ts";
 export * from "./building.ts";
 export * from "./reference-case.ts";
+export * from "./trend.ts";
 export * from "./export.ts";

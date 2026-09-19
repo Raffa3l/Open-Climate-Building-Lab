@@ -228,6 +228,18 @@ export function roomSettingsFromParams(params: URLSearchParams): RoomSettings {
   };
 }
 
+/**
+ * Mindestvollständigkeit von Temperatur und Globalstrahlung, damit ein Messjahr
+ * in einen Vergleich über Jahre eingeht. Seit simulate5R1C 1.4.0 rechnet ein
+ * Jahr mit Strahlungslücken weniger Stunden und läge im Vergleich zu tief.
+ */
+export const MIN_YEAR_COMPLETENESS = 0.95;
+
+export function isCompleteMeasuredYear(completeness: Readonly<Record<string, number>> | undefined): boolean {
+  return (completeness?.tre200h0 ?? 0) >= MIN_YEAR_COMPLETENESS
+    && (completeness?.gre000h0 ?? 0) >= MIN_YEAR_COMPLETENESS;
+}
+
 // --- Klimastand ---------------------------------------------------------------
 
 const MEASURED_KEY = /^y(\d{4})$/;

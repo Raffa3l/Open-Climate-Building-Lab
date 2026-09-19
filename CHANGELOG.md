@@ -85,6 +85,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
   Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
   Vordach 478; mit Sonnenschutz 501 und 385.
+- **Mehrjahresverlauf** ([012](docs/methods/012-mehrjahresverlauf.md)): derselbe
+  Raum in jedem Messjahr der Station, im Frontend als Säulen mit linearem Trend
+  unter «Übertemperaturstunden je Messjahr». Geladen wird erst auf Knopfdruck,
+  der die Datenmenge nennt (Zürich/Fluntern 34 Jahre, rund 6 MB); danach
+  rechnet der Verlauf bei jedem Reglerzug mit, 34 Jahre in rund 115 ms. Der
+  Trend ist eine eigene `Computation` (`stats.linearTrend`) mit jedem Jahr als
+  Vorgänger im Hash, verankert an Anscombes vier Datensätzen. Es zählen Jahre
+  mit mindestens 95 % Temperatur und Strahlung; die Regel liegt im Kern
+  (`isCompleteMeasuredYear`) und gilt auch in `stations.ts`, `climate-change.ts`
+  und dem neuen `core/scripts/trend.ts`. Ein Permalink mit `trend=1` lädt den
+  Verlauf mit. Zürich/Fluntern, Voreinstellung: +46 Übertemperaturstunden pro
+  Jahrzehnt, r² 0.31, Mittel 289 h in 1991–2000 und 425 h in 2015–2024.
 - **Verbauung gegenüber** ([011](docs/methods/011-vordach.md#verbauung)), im
   Frontend als Verbauungswinkel von 0° bis 60° über dem Horizont, von der
   Fenstermitte aus. Unter dem Winkel fallen Direktstrahlung und Aufhellung um
@@ -160,6 +172,11 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- Das Stylesheet liess Elemente mit eigenem `display` trotz `hidden` stehen:
+  `.tile-delta` und die neue Ladezeile des Mehrjahresverlaufs setzen
+  `display: flex`, und das schlägt die Regel des Browsers für `[hidden]`. Bei
+  den Kacheln blieb das unsichtbar, weil das Element ohne Vergleich leer ist.
+  Jetzt gilt `[hidden] { display: none !important; }`.
 - **`climate-change.ts` brach an Stationen mit Jahren ohne Globalstrahlung
   ab**, etwa Grenchen, weil es jedes Jahr mit vollständiger Temperatur rechnete.
   Das Skript nimmt jetzt nur `roomModelYears` und verlangt wie `stations.ts` 95 %

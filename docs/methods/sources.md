@@ -160,6 +160,13 @@ SN 520 180 / SIA 180:2014: *Wärmeschutz, Feuchteschutz und Raumklima in
 Gebäuden.*
 → Nachweis des sommerlichen Wärmeschutzes, Nachtlüftung.
 
+### `anscombe-1973`
+Anscombe, F. J. (1973): *Graphs in Statistical Analysis.* The American
+Statistician 27 (1), 17–21.
+→ Vier Datensätze mit derselben Regressionsgeraden y = 3.00 + 0.500 x und
+r = 0.816; Prüfwert für den linearen Trend, siehe
+[012](012-mehrjahresverlauf.md#trend).
+
 ### `duffie-beckman-2013`
 Duffie, J. A.; Beckman, W. A. (2013): *Solar Engineering of Thermal Processes.*
 4. Auflage, Wiley. Kapitel 1, Abschnitt «Shading».

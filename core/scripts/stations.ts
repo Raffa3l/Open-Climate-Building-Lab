@@ -12,7 +12,9 @@
 import { getVariable } from "../src/series.ts";
 import { loadCatalog, loadSeries, loadStationIndex } from "./catalog.ts";
 import { dailyMean } from "../src/indicators.ts";
-import { DEFAULT_ROOM_SETTINGS, evaluateReferenceCase, peakOperativeTemperature } from "../src/reference-case.ts";
+import {
+  DEFAULT_ROOM_SETTINGS, evaluateReferenceCase, isCompleteMeasuredYear, peakOperativeTemperature,
+} from "../src/reference-case.ts";
 
 const year = process.argv[2] ?? "2023";
 const catalog = await loadCatalog();
@@ -32,7 +34,7 @@ for (const [abbr, entry] of Object.entries(catalog.stations) as [string, any][])
   const meta = index[year];
   // Auch die Strahlung muss vollständig sein: Seit simulate5R1C 1.4.0 rechnet
   // ein Jahr mit Lücken weniger Stunden und rutschte in der Rangliste nach unten.
-  if (!meta || (meta.completeness?.tre200h0 ?? 0) < 0.95 || (meta.completeness?.gre000h0 ?? 0) < 0.95) {
+  if (!meta || !isCompleteMeasuredYear(meta.completeness)) {
     skipped++;
     continue;
   }

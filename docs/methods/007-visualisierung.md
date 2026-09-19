@@ -136,6 +136,29 @@ Klimastände untereinander, benannt, mit der Differenz der Tagesmaxima.
 Die Filter stehen in einer Zeile über den Reglern, die Regler über dem
 Diagramm.
 
+## Übertemperaturstunden je Messjahr
+
+Ein Wert je Jahr ist eine Grösse, kein Verlauf innerhalb des Jahres: deshalb
+**Säulen**, ab null, höchstens 24 px breit, oben 4 px gerundet. Ohne Nullpunkt
+übertriebe die Säulenlänge die Unterschiede.
+
+- **Eine Serie**, in der Rolle Serie 1 wie die Raumtemperatur oben.
+- **Der Trend ist eine Referenz**, keine zweite Serie: eine durchgezogene Linie
+  in sekundärer Tinte. Gestrichelt in gedämpfter Tinte bleibt der Komfortgrenze
+  vorbehalten.
+- **Eine Legende**, obwohl es nur eine Serie gibt: Säule und Linie müssen
+  unterscheidbar sein, ohne die Farbe zu deuten.
+- **Fehlende Jahre bleiben eine Lücke.** Die Achse läuft über jedes Jahr; wo
+  eines ausgelassen ist, steht keine Säule, und die Zusammenfassung nennt den
+  Grund.
+- **Das Jahr unter dem Zeiger** hebt ein Band in Rasterfarbe hervor, kein Rahmen
+  um die Säule. Der Tooltip nennt Stunden, Kelvinstunden, bewertete Stunden und
+  den Trendwert; die Tabelle darunter trägt dieselben Zahlen für alle Jahre.
+
+Die Zusammenfassung unter der Grafik nennt Trend, r² und Hash in Worten. Sie
+sagt ausdrücklich, dass die Gerade eine mittlere Verschiebung ist und keine
+Vorhersage ([012](012-mehrjahresverlauf.md#lesart-und-grenzen)).
+
 ## Keine Diagrammbibliothek
 
 Eine Linie, eine Referenzkurve und eine Fläche dazwischen sind rund 150 Zeilen

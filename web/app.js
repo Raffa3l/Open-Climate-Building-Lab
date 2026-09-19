@@ -14,6 +14,8 @@ import {
   climateLabel,
   climateShortLabel,
   evaluateReferenceCase,
+  exceedanceTrend,
+  isCompleteMeasuredYear,
   isScenarioKey,
   localDayIndex,
   peakOperativeTemperature,
@@ -23,7 +25,7 @@ import {
   roomSettingsToParams,
   shortHash,
 } from "./vendor/core/index.js";
-import { drawChart, drawCrosshair } from "./chart.js";
+import { drawChart, drawCrosshair, drawYearChart } from "./chart.js";
 
 // Raum, Belegungsfenster und Permalink-Lesart liegen im Kern
 // (core/src/reference-case.ts), damit der CLI-Export denselben Fall rechnet.
@@ -38,6 +40,12 @@ let loaded = null;          // Basis-Klimastand
 let comparedTo = null;      // zweiter Klimastand oder null
 let geometry = null;
 let lastResult = null;
+// Mehrjahresverlauf: erst auf Knopfdruck geladen, dann bei jedem Reglerzug mitgerechnet.
+let trendData = null;       // { station, climates, skipped }
+let trendResult = null;
+let trendGeometry = null;
+let trendHover = null;
+let trendLoading = false;
 let pending = false;
 
 // --- Zustand aus den Bedienelementen ----------------------------------------
@@ -75,6 +83,8 @@ function writeUrl(s) {
   // Ohne Vergleich bleibt der Schlüssel weg, damit alte Links unverändert
   // dieselbe Adresse ergeben wie zuvor.
   if (s.compare) p.set("compare", s.compare);
+  // Ein geteilter Link bringt den Mehrjahresverlauf mit, wenn er geladen war.
+  if (trendData) p.set("trend", "1");
   history.replaceState(null, "", `#${p}`);
 }
 
@@ -204,6 +214,7 @@ async function recompute() {
   const t0 = performance.now();
   const base = evaluate(loaded, s);
   const other = comparedTo ? evaluate(comparedTo, s) : null;
+  trendResult = trendData && trendData.station === s.station ? computeTrend(s) : null;
   const elapsed = performance.now() - t0;
 
   // Die Vergleichsreihe wird für die Darstellung auf die Tagesachse der Basis
@@ -250,6 +261,7 @@ function render() {
   renderTable();
   renderProof(elapsed);
   renderDownloads();
+  renderTrend();
 }
 
 /** Vorzeichenbehaftete Differenz, deutsch gesetzt. */
@@ -589,6 +601,145 @@ function escapeHtml(s) {
 
 // --- Zeigerinteraktion -------------------------------------------------------
 
+// --- Mehrjahresverlauf -------------------------------------------------------
+
+/**
+ * Welche Messjahre in den Verlauf eingehen: taugliche Jahre mit mindestens 95 %
+ * Temperatur und Strahlung. Die Regel liegt im Kern, dieselbe wie im Skript
+ * core/scripts/trend.ts.
+ */
+async function trendYears(stationAbbr) {
+  const entry = catalog.stations[stationAbbr];
+  const index = await detailIndex(entry.index);
+  const years = [];
+  const skipped = [];
+  for (const year of entry.roomModelYears) {
+    const meta = index[String(year)];
+    if (isCompleteMeasuredYear(meta.completeness)) years.push({ year, bytes: meta.bytes });
+    else skipped.push({ year, radiation: meta.completeness.gre000h0 ?? 0 });
+  }
+  return { years, skipped };
+}
+
+/** Zurück auf den Knopf, mit der Datenmenge, bevor jemand sie lädt. */
+async function prepareTrendButton() {
+  trendData = null;
+  trendResult = null;
+  $("trendIntro").hidden = false;
+  $("trendBody").hidden = true;
+  $("trendTableDetails").hidden = true;
+  $("trendLoad").disabled = false;
+  const station = $("station").value;
+  const { years } = await trendYears(station);
+  if ($("station").value !== station) return;
+  const megabytes = years.reduce((sum, y) => sum + y.bytes, 0) / 1e6;
+  $("trendLoadNote").textContent = `lädt ${years.length} Jahre, rund ${megabytes.toFixed(1)} MB`;
+}
+
+async function loadTrend() {
+  const station = $("station").value;
+  trendLoading = true;
+  $("trendLoad").disabled = true;
+  try {
+    const { years, skipped } = await trendYears(station);
+    const climates = [];
+    for (const [i, { year }] of years.entries()) {
+      $("trendLoadNote").textContent = `${i} von ${years.length} Jahren geladen …`;
+      // Dieselbe Ladefunktion wie oben: Prüfsumme gegen den Katalog, Komfortband einmal je Jahr.
+      climates.push(await loadClimate(station, `y${year}`));
+    }
+    if ($("station").value !== station) return;
+    trendData = { station, climates, skipped };
+    $("trendIntro").hidden = true;
+    $("trendBody").hidden = false;
+    $("trendTableDetails").hidden = false;
+    await recompute();
+  } finally {
+    trendLoading = false;
+  }
+}
+
+/** Derselbe Raum in jedem Jahr, dann der Trend; beides aus dem Kern. */
+function computeTrend(s) {
+  const rows = trendData.climates.map((climate) => ({
+    year: climate.calendarYear,
+    exceedance: evaluateReferenceCase(climate.series, climate.entry, s, climate.band).exceedance,
+  }));
+  return { rows, trend: exceedanceTrend(rows), skipped: trendData.skipped };
+}
+
+function renderTrend() {
+  if (!trendResult) return;
+  const { rows, trend, skipped } = trendResult;
+  const t = trend.value;
+  trendGeometry = drawYearChart($("trendChart"), { years: t.years, values: t.values, fitted: t.fitted, hover: trendHover });
+
+  const entry = catalog.stations[trendData.station];
+  $("trendSub").textContent =
+    `${entry.name} (${entry.canton}) · derselbe Raum wie oben in jedem Messjahr · EN 16798-1 Kat. ${CATEGORY}`;
+
+  let text = Number.isFinite(t.perDecade)
+    ? `Trend ${signed(t.perDecade)} h pro Jahrzehnt über ${t.years.length} Messjahre ` +
+      `(${t.years[0]}–${t.years[t.years.length - 1]}), Bestimmtheitsmass r² ${t.rSquared.toFixed(2)}. ` +
+      `Die Jahre streuen stark; die Gerade beschreibt die mittlere Verschiebung, keine Vorhersage.`
+    : `Für einen Trend braucht es mindestens drei vollständige Messjahre.`;
+  if (skipped.length) {
+    text += ` Ausgelassen, weil Temperatur oder Strahlung unter 95 % liegen: ` +
+      skipped.map((s) => `${s.year} (Strahlung ${Math.round(100 * s.radiation)} %)`).join(", ") + ".";
+  }
+  $("trendSummary").textContent = text;
+  const current = trendResult;
+  shortHash(trend).then((hash) => {
+    if (trendResult === current) $("trendSummary").textContent = `${text} ${trend.method.id}@${trend.method.version} · Hash ${hash}`;
+  });
+
+  const peak = (r) => peakOperativeTemperature(r.exceedance);
+  $("trendTable").querySelector("tbody").innerHTML = rows.map((r) => {
+    const v = r.exceedance.value;
+    return `<tr><td>${r.year}</td><td>${v.hours.toLocaleString("de-CH")}</td>` +
+      `<td>${Math.round(v.kelvinHours).toLocaleString("de-CH")}</td>` +
+      `<td>${v.evaluatedHours.toLocaleString("de-CH")}</td><td>${peak(r).toFixed(1)} °C</td></tr>`;
+  }).join("");
+}
+
+function setupTrendHover() {
+  const canvas = $("trendChart");
+  const tip = $("trendTooltip");
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!trendGeometry || !trendResult) return;
+    const { plot, band, first, last, xOf } = trendGeometry;
+    const x = event.clientX - canvas.getBoundingClientRect().left;
+    const year = first + Math.floor((x - plot.x) / band);
+    const row = trendResult.rows.find((r) => r.year === year);
+    if (x < plot.x || year > last || !row) {
+      tip.classList.remove("on");
+      if (trendHover !== null) { trendHover = null; renderTrend(); }
+      return;
+    }
+    if (trendHover !== year) { trendHover = year; renderTrend(); }
+
+    const t = trendResult.trend.value;
+    const v = row.exceedance.value;
+    const line = (label, text) => `<div class="row"><span>${label}</span><span>${text}</span></div>`;
+    tip.innerHTML = `<b>${year}</b>` +
+      line("Übertemperaturstunden", `${v.hours.toLocaleString("de-CH")} h`) +
+      line("Überschreitung", `${Math.round(v.kelvinHours).toLocaleString("de-CH")} Kh`) +
+      line("bewertete Stunden", v.evaluatedHours.toLocaleString("de-CH")) +
+      (Number.isFinite(t.perDecade) ? line("Trend in diesem Jahr", `${Math.round(t.fitted[t.years.indexOf(year)])} h`) : "");
+    tip.classList.add("on");
+    const width = tip.offsetWidth;
+    tip.style.left = `${Math.min(Math.max(xOf(year) - width / 2, 0), canvas.clientWidth - width)}px`;
+    tip.style.top = `${plot.y}px`;
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    tip.classList.remove("on");
+    trendHover = null;
+    renderTrend();
+  });
+}
+
 function setupHover() {
   const canvas = $("chart");
   const tip = $("tooltip");
@@ -718,6 +869,8 @@ function fillCompareSelect(stationAbbr, keep) {
 
 async function reloadData() {
   const station = $("station").value;
+  // Der Verlauf gehört zur Station; ein anderes Jahr derselben Station behält ihn.
+  if (trendData ? trendData.station !== station : !trendLoading) prepareTrendButton().catch(showError);
   const wanted = $("compare").value;
   fillClimateSelect(station, $("year").value);
   fillCompareSelect(station, wanted);
@@ -793,6 +946,10 @@ async function main() {
 
     setupHover();
     setupDownloads();
+    setupTrendHover();
+    $("trendLoad").addEventListener("click", () => loadTrend().catch(showError));
+    await prepareTrendButton();
+    if (fromUrl?.trend === "1") loadTrend().catch(showError);
     setupTheme();
     syncLabels();
 
