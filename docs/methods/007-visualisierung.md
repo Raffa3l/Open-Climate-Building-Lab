@@ -85,6 +85,10 @@ Geprüft mit dem Validator der Visualisierungsrichtlinie:
 Geprüft wurden alle Paare, nicht nur benachbarte: Die drei Marken liegen
 gleichzeitig im Bild und können einander überall begegnen.
 
+Die Szenariomarken im Mehrjahresverlauf nutzen dieselbe Rolle Serie 2. Erneut
+geprüft am 19.09.2026: Serie 1 gegen Serie 2 trennt mit ΔE 26.5 im Hellmodus
+und 27.3 im Dunkelmodus, beide Farben bestehen alle Prüfungen der Richtlinie.
+
 Der Warnwert im Hellmodus löst die **Relief-Regel** aus: Die Statusfarbe darf
 die Aussage nicht allein tragen. Erfüllt durch beides zugleich — die
 Kennzahlen stehen als Zahl über dem Diagramm, und die Tabelle listet jeden

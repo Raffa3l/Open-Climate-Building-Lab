@@ -50,9 +50,13 @@ jobs:
       # Lädt echte Daten von data.geo.admin.ch. Schlägt fehl, wenn sich
       # Format, Kodierung oder Spaltennamen der Quelle ändern — genau das
       # soll dieser Job merken.
-      - name: Zwei Stationsjahre bauen
-        # Zwei Stationen, damit auch der Katalog mit mehreren Einträgen läuft.
-        run: cd data && python -m ocbl_data build --station SMA --station LUG --from 2023 --to 2023 --qa
+      - name: Stationsjahre bauen
+        # Zwei Stationen, damit auch der Katalog mit mehreren Einträgen läuft;
+        # für SMA fünf Jahre, sonst gibt es keinen Trend über die Jahre.
+        run: |
+          cd data
+          python -m ocbl_data build --station SMA --from 2020 --to 2024 --qa
+          python -m ocbl_data build --station LUG --from 2023 --to 2023 --qa
       - name: Vom Rechenkern lesen und rechnen
         run: node --test core/test/pack.test.ts
       - name: Report
@@ -70,6 +74,12 @@ jobs:
         run: node core/scripts/climate-change.ts SMA
       - name: Raummodell auf echten Daten
         run: node core/scripts/overheating.ts SMA 2023
+      # Verlauf über die Jahre samt Szenarien; prüft auch, dass Trend und
+      # Periodenmittel mit wenigen Jahren nicht abstürzen, sondern melden.
+      - name: Mehrjahresverlauf
+        run: node core/scripts/trend.ts 'station=SMA'
+      - name: Trend an allen Stationen
+        run: node core/scripts/trends.ts '' 5
       # Prüft den Emit-Pfad aus ADR 0006: bricht tsc die Browser-Ausgabe,
       # fällt es hier auf und nicht erst beim Aufruf der Seite.
       - name: Web bauen
