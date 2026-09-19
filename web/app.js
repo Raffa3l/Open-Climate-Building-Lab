@@ -52,6 +52,7 @@ function readState() {
     skyModel: $("skyModel").value,
     windowFraction: Number($("windowFraction").value) / 100,
     shading: Number($("shading").value),
+    overhang: Number($("overhang").value),
     gains: Number($("gains").value),
     nightVent: Number($("nightVent").value),
     nightVentOn: $("nightVentOn").checked,
@@ -777,7 +778,7 @@ async function main() {
     loaded = await loadClimate($("station").value, $("year").value);
     comparedTo = $("compare").value ? await loadClimate($("station").value, $("compare").value) : null;
 
-    for (const id of ["azimuth", "massClass", "skyModel", "windowFraction", "shading", "gains", "nightVent", "nightVentOn"]) {
+    for (const id of ["azimuth", "massClass", "skyModel", "windowFraction", "shading", "overhang", "gains", "nightVent", "nightVentOn"]) {
       $(id).addEventListener("input", () => {
         syncLabels();
         schedule();
@@ -817,6 +818,9 @@ function showError(error) {
 function syncLabels() {
   $("windowFractionValue").textContent = `${$("windowFraction").value} %`;
   $("shadingValue").textContent = Number($("shading").value) >= 1 ? "kein Schutz" : Number($("shading").value).toFixed(2);
+  $("overhangValue").textContent = Number($("overhang").value) > 0
+    ? `${Number($("overhang").value).toFixed(1)} m auskragend`
+    : "keines";
   $("gainsValue").textContent = `${$("gains").value} W/m²`;
   $("nightVentValue").textContent = $("nightVentOn").checked
     ? `${Number($("nightVent").value).toFixed(1)} 1/h`

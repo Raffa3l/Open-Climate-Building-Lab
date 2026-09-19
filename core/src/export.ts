@@ -307,6 +307,7 @@ export async function referenceCaseExport(input: ReferenceExportInput): Promise<
       skyModel: settings.skyModel,
       windowFraction: round6(settings.windowFraction),
       shadingGtot: settings.shading,
+      overhangM: settings.overhang,
       internalGainsWm2: settings.gains,
       nightVentilationAch: settings.nightVentOn ? settings.nightVent : 0,
     },

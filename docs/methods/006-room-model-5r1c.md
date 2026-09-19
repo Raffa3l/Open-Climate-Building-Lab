@@ -187,8 +187,9 @@ Bekannte Vereinfachungen, in dieser Reihenfolge relevant:
 1. **Ein Raum, eine Zone.** Kein Wärmeaustausch mit Nachbarräumen.
 2. **Sonnenschutz schaltet hart** an einer Bestrahlungsschwelle, ohne
    Hysterese und ohne Nutzerverhalten.
-3. **Keine Verschattung durch Umgebung**, Horizont oder Auskragungen. Das
-   betrifft auch den Formfaktor zum Himmel, siehe
+3. **Keine Verschattung durch Umgebung**, Horizont oder seitliche Laibungen.
+   Ein langes Vordach oder einen Balkon rechnet [011](011-vordach.md). Der
+   Formfaktor zum Himmel bleibt pauschal, siehe
    [008](008-langwellige-abstrahlung.md#grenzen).
 
 Die kurzwellige Einstrahlung folgt seit Version 1.2.0 dem anisotropen

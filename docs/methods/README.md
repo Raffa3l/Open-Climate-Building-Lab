@@ -17,6 +17,7 @@ später genau hierher.
 | [008 Langwellige Abstrahlung](008-langwellige-abstrahlung.md) | Himmelstemperatur, Φ_r, gemessene Wirkung |
 | [009 Klimaszenarien](009-klimaszenarien.md) | DRY-Datensätze, erschlossene Konventionen, wie der Vergleich zu lesen ist |
 | [010 Export](010-export.md) | CSV und Manifest, Schreibweise, Nachprüfen, verkettete Hashes |
+| [011 Vordach und Balkon](011-vordach.md) | Profilwinkel, Sichtfaktor zum Himmel, Wirkung auf Süd- und Westfassade |
 | [Quellen](sources.md) | Zitierschlüssel, Datenlizenzen, offene Fragen |
 
 ## Regeln

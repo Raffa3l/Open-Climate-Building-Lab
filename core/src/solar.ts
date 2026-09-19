@@ -196,6 +196,15 @@ export interface TiltedIrradiance {
   total: number;
   beam: number;
   diffuse: number;
+  /**
+   * Der Diffusanteil zerlegt: gleichmässiger Himmel, Aufhellung um die Sonne,
+   * Horizontstreifen. Ein Vordach wirkt auf jeden Teil anders (011). Beim
+   * isotropen Modell ist alles gleichmässiger Himmel. `diffuse` ist die auf
+   * null begrenzte Summe.
+   */
+  diffuseIsotropic: number;
+  diffuseCircumsolar: number;
+  diffuseHorizon: number;
   groundReflected: number;
 }
 
@@ -236,7 +245,15 @@ export function tiltedIrradiance(
   const diffuse = diffuseHorizontal * ((1 + Math.cos(tilt)) / 2);
   const groundReflected = globalHorizontal * groundAlbedo * ((1 - Math.cos(tilt)) / 2);
 
-  return { total: beam + diffuse + groundReflected, beam, diffuse, groundReflected };
+  return {
+    total: beam + diffuse + groundReflected,
+    beam,
+    diffuse,
+    diffuseIsotropic: diffuse,
+    diffuseCircumsolar: 0,
+    diffuseHorizon: 0,
+    groundReflected,
+  };
 }
 
 
@@ -337,7 +354,15 @@ export function tiltedIrradiancePerez(
   // Nachts und bei sehr flachem Sonnenstand bleibt nur der isotrope Diffusanteil.
   if (sun.altitude <= 0 || sinAltitude <= 0.01) {
     const diffuse = diffuseHorizontal * ((1 + Math.cos(tilt)) / 2);
-    return { total: diffuse + groundReflected, beam: 0, diffuse, groundReflected };
+    return {
+      total: diffuse + groundReflected,
+      beam: 0,
+      diffuse,
+      diffuseIsotropic: diffuse,
+      diffuseCircumsolar: 0,
+      diffuseHorizon: 0,
+      groundReflected,
+    };
   }
 
   const beamNormal = Math.min(beamHorizontal / sinAltitude, MAX_BEAM_NORMAL);
@@ -364,6 +389,11 @@ export function tiltedIrradiancePerez(
     total: beam + Math.max(0, diffuse) + groundReflected,
     beam,
     diffuse: Math.max(0, diffuse),
+    // Die Teile einzeln; `diffuse` bleibt als ein Ausdruck gerechnet, damit
+    // sich kein bisheriges Ergebnis in der letzten Stelle verschiebt.
+    diffuseIsotropic: diffuseHorizontal * (1 - f1) * ((1 + Math.cos(tilt)) / 2),
+    diffuseCircumsolar: diffuseHorizontal * ((f1 * a) / b),
+    diffuseHorizon: diffuseHorizontal * f2 * Math.sin(tilt),
     groundReflected,
   };
 }

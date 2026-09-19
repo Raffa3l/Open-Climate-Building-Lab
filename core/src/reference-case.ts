@@ -12,6 +12,7 @@ import type { Computation } from "./provenance.ts";
 import { upstreamOf } from "./provenance.ts";
 import { getVariable, type StationSeries } from "./series.ts";
 import { simulate5R1C, type MassClass, type OccupancySchedule, type RoomSpec, type SimulationResult } from "./building.ts";
+import type { Overhang } from "./overhang.ts";
 import type { SkyModel } from "./solar.ts";
 import {
   adaptiveComfortBand,
@@ -38,6 +39,10 @@ export const REFERENCE_EVALUATION = { category: "II", occupiedFromHour: 7, occup
 
 /** Aussenwand des Raums, m²; der Fensteranteil teilt sie auf. */
 const FACADE_AREA = 9.8;
+/** Breite der Aussenwand, m: 9.8 m² bei 2.8 m Raumhöhe. */
+const FACADE_WIDTH = 3.5;
+/** Sturz zwischen Fensteroberkante und Decke, m; darüber liegt das Vordach. */
+const LINTEL = 0.2;
 
 /** Die Stellung der Regler. */
 export interface RoomSettings {
@@ -49,6 +54,8 @@ export interface RoomSettings {
   windowFraction: number;
   /** g_tot bei geschlossenem Sonnenschutz; 1 heisst kein Schutz. */
   shading: number;
+  /** Auskragung eines Vordachs oder Balkons auf Deckenhöhe, m; 0 heisst keines. */
+  overhang: number;
   /** Interne Lasten bei Belegung, W/m². */
   gains: number;
   /** Luftwechsel der Nachtlüftung, 1/h. */
@@ -70,6 +77,7 @@ export const ROOM_SETTING_CHOICES = {
 export const ROOM_SETTING_RANGES = {
   windowFraction: { min: 10, max: 90, step: 5 },
   shading: { min: 0.05, max: 1, step: 0.05 },
+  overhang: { min: 0, max: 2, step: 0.1 },
   gains: { min: 0, max: 45, step: 1 },
   nightVent: { min: 0, max: 8, step: 0.5 },
 } as const;
@@ -80,6 +88,7 @@ export const DEFAULT_ROOM_SETTINGS: Readonly<RoomSettings> = {
   skyModel: "perez",
   windowFraction: 0.4,
   shading: 0.15,
+  overhang: 0,
   gains: 20,
   nightVent: 3,
   nightVentOn: true,
@@ -116,6 +125,8 @@ export function referenceRoom(s: RoomSettings): RoomSpec {
         shading: s.shading >= 1
           ? { factorClosed: 1, activationIrradiance: Infinity }
           : { factorClosed: round6(s.shading / 0.5), activationIrradiance: 200 },
+        // Ohne Vordach fehlt das Feld, und der Hash bleibt der bisherige.
+        ...(s.overhang > 0 ? { overhang: overhangOverWindow(s.overhang, windowArea) } : {}),
       },
     ],
     massClass: s.massClass,
@@ -129,6 +140,16 @@ export function referenceRoom(s: RoomSettings): RoomSpec {
   };
 }
 
+/**
+ * Das Fenster als Band über die ganze Fassadenbreite, Oberkante 0.2 m unter der
+ * Decke; das Vordach liegt auf Deckenhöhe. Mehr Fensteranteil heisst ein höheres
+ * Fenster, und dasselbe Vordach beschattet davon einen kleineren Teil.
+ */
+function overhangOverWindow(depth: number, windowArea: number): Overhang {
+  const windowHeight = windowArea / FACADE_WIDTH;
+  return { depthRatio: round6(depth / windowHeight), gapRatio: round6(LINTEL / windowHeight) };
+}
+
 // --- Permalink ----------------------------------------------------------------
 
 /** In dieser Reihenfolge stehen die Schlüssel im Permalink. */
@@ -139,6 +160,7 @@ export function roomSettingsToParams(s: RoomSettings): Array<[string, string]> {
     ["skyModel", s.skyModel],
     ["windowFraction", String(Math.round(s.windowFraction * 100))],
     ["shading", String(s.shading)],
+    ["overhang", String(s.overhang)],
     ["gains", String(s.gains)],
     ["nightVent", String(s.nightVent)],
     ["nightVentOn", s.nightVentOn ? "1" : "0"],
@@ -192,6 +214,7 @@ export function roomSettingsFromParams(params: URLSearchParams): RoomSettings {
     skyModel: choice("skyModel", d.skyModel),
     windowFraction: range("windowFraction", Math.round(d.windowFraction * 100)) / 100,
     shading: range("shading", d.shading),
+    overhang: range("overhang", d.overhang),
     gains: range("gains", d.gains),
     nightVent: range("nightVent", d.nightVent),
     nightVentOn: flag("nightVentOn", d.nightVentOn),

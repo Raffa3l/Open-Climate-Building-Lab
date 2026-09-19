@@ -75,6 +75,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   beginnt. Die 1'977 bisherigen Dateien blieben byte-gleich. Fürs Raummodell
   taugen nur Jahre mit Temperatur und Globalstrahlung (`roomModelYears`), weil
   viele Stationen die Strahlung erst seit etwa 2010 messen.
+- **Vordach oder Balkon über dem Fenster** ([011](docs/methods/011-vordach.md)),
+  im Frontend als Regler von 0 bis 2 m Auskragung. Der Schatten folgt dem
+  Profilwinkel, der gleichmässige Himmel verliert Sichtfaktor nach der
+  Fadenmethode, Aufhellung um die Sonne wird wie Direktstrahlung beschattet,
+  Horizont und Boden bleiben unberührt. Dafür liefert die Einstrahlung ihren
+  Diffusanteil jetzt in drei Teilen. Ohne Vordach fehlt das Feld im Fenster, und
+  alle bisherigen Hashes bleiben gleich. Sieben Tests, darunter eine
+  Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
+  Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
+  Vordach 478; mit Sonnenschutz 501 und 385.
 
 ### Geändert
 - **Tagstunden ohne Globalstrahlung sind nicht rechenbar.**
@@ -461,8 +471,8 @@ und mussten empirisch bestimmt werden — Herleitung in
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
 
 ### Geplant
-- Verschattung durch Umgebung, Vordächer und Laibungen, als eigenes Verfahren
-  ([006](docs/methods/006-room-model-5r1c.md#gültigkeitsbereich-und-grenzen))
+- Verschattung durch Horizont, Nachbargebäude und seitliche Laibungen; ein
+  Vordach begrenzter Breite ([011](docs/methods/011-vordach.md#grenzen))
 
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte

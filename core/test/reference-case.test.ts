@@ -59,7 +59,7 @@ test("Permalink: ohne Schlüssel gelten die Vorgaben, Hin- und Rückweg sind ver
 
   const changed: RoomSettings = {
     azimuth: 225, massClass: "sehr schwer", skyModel: "isotrop", windowFraction: 0.7,
-    shading: 0.35, gains: 30, nightVent: 5.5, nightVentOn: false,
+    shading: 0.35, overhang: 1.2, gains: 30, nightVent: 5.5, nightVentOn: false,
   };
   for (const s of [DEFAULT_ROOM_SETTINGS, changed]) {
     assert.deepEqual(roomSettingsFromParams(new URLSearchParams(roomSettingsToParams(s))), s);

@@ -160,6 +160,26 @@ SN 520 180 / SIA 180:2014: *Wärmeschutz, Feuchteschutz und Raumklima in
 Gebäuden.*
 → Nachweis des sommerlichen Wärmeschutzes, Nachtlüftung.
 
+### `duffie-beckman-2013`
+Duffie, J. A.; Beckman, W. A. (2013): *Solar Engineering of Thermal Processes.*
+4. Auflage, Wiley. Kapitel 1, Abschnitt «Shading».
+→ Profilwinkel und Schatten eines Vordachs über einem Fenster.
+
+### `hottel-sarofim-1967`
+Hottel, H. C.; Sarofim, A. F. (1967): *Radiative Transfer.* McGraw-Hill.
+→ Fadenmethode (crossed strings) für Sichtfaktoren im zweidimensionalen
+Schnitt; daraus der Sichtfaktor eines Fensters unter einem langen Vordach.
+
+### `nrel-bluebook-1995`
+Marion, W.; Wilcox, S. (1995): *Solar Radiation Data Manual for Buildings.*
+NREL/TP-463-7904, National Renewable Energy Laboratory. Anhang «Transmitted
+solar radiation for shaded windows».
+→ Welche Strahlungsanteile ein langes Vordach mindert, und die Bemessung mit
+71° minus Breite, siehe [011](011-vordach.md#prüfungen). Gelesen im Auszug
+«Solar Overhang Dimensions» der Virginia Tech,
+<https://vept.energy.vt.edu/content/dam/vept_energy_vt_edu/Solar%20Overhang%20Dimensions.pdf>,
+abgerufen am 19.09.2026; das Original bei NREL war nicht erreichbar.
+
 ### `iso-9060-2018`
 ISO 9060:2018: *Solar energy — Specification and classification of instruments
 for measuring hemispherical solar and direct solar radiation.*

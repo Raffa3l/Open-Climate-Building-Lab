@@ -11,6 +11,7 @@
  */
 
 import type { Computation, DatasetRef, MethodRef } from "./provenance.ts";
+import { assertOverhangApplies, irradianceUnderOverhang, type Overhang } from "./overhang.ts";
 import { intervalMidpointUtcMs, localHour, localWeekday, type TimeAxis } from "./series.ts";
 import { diffuseFraction, irradianceOnSurface, solarPosition, type SkyModel, type SurfaceOrientation } from "./solar.ts";
 import { DELTA_SKY_DEFAULT_K, skyRadiationLoss, skyTemperature } from "./sky.ts";
@@ -36,6 +37,8 @@ export const METHOD_ROOM_5R1C: MethodRef = {
   //        Jahr ist gültig statt der ersten 5·τ verworfen.
   // 1.4.0: fehlt die Globalstrahlung bei Sonne über dem Horizont, ist die
   //        Stunde nicht rechenbar, statt mit 0 W/m² gerechnet zu werden.
+  // Das Vordach (WindowSpec.overhang, 011) kam ohne Versionssprung dazu: Ohne
+  // Vordach ändert sich kein Ergebnis, mit Vordach steht es in den Parametern.
   // Ergebnisse ändern sich jeweils; publizierte Werte bleiben über die
   // Version zuordenbar.
   version: "1.4.0",
@@ -79,6 +82,12 @@ export interface WindowSpec {
   /** Rahmenanteil an der Fensterfläche, 0…1. */
   frameFraction: number;
   shading: ShadingControl;
+  /**
+   * Vordach oder Balkon über dem Fenster, nur bei senkrechten Fenstern.
+   * Fehlt das Feld, fehlt es auch im Hash: Räume ohne Vordach rechnen und
+   * heissen wie vorher.
+   */
+  overhang?: Overhang;
 }
 
 export interface RoomSpec {
@@ -274,6 +283,9 @@ export function simulate5R1C(
 ): Computation<SimulationResult> {
   const derived = deriveRoom(room);
   const n = input.axis.length;
+  for (const window of room.windows) {
+    if (window.overhang) assertOverhangApplies(window.overhang, window.orientation);
+  }
 
   const operativeTemperature = new Float64Array(n).fill(NaN);
   const airTemperature = new Float64Array(n).fill(NaN);
@@ -336,9 +348,14 @@ export function simulate5R1C(
     let solarW = 0;
     let anyShaded = false;
     for (const window of room.windows) {
-      const irradiance = irradianceOnSurface(
+      const onSurface = irradianceOnSurface(
         skyModel, globalOk, diffuse, sun, window.orientation, dayOfYear, albedo,
-      ).total;
+      );
+      // Der Sonnenschutz regelt auf das, was unter dem Vordach ankommt, wie ein
+      // Fühler am Fenster.
+      const irradiance = window.overhang
+        ? irradianceUnderOverhang(onSurface, sun, window.orientation, window.overhang).total
+        : onSurface.total;
       const shadingActive = irradiance >= window.shading.activationIrradiance;
       if (shadingActive) anyShaded = true;
       const shadingFactor = shadingActive ? window.shading.factorClosed : 1;
