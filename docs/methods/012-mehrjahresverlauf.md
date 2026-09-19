@@ -49,6 +49,43 @@ ein neu gepacktes Stationsjahr ergibt einen anderen.
 alle die Gerade y = 3.00 + 0.500 x mit r = 0.816. Der Test rechnet alle vier
 nach.
 
+## Normalperiode
+
+Das Mittel der Übertemperaturstunden über 1991–2020 ist eine eigene
+`Computation` (`stats.periodMean`), mit jedem Jahr der Periode als Vorgänger im
+Hash. Es gilt erst ab 24 der 30 Jahre; darunter kommt `NaN`, und das Frontend
+nennt, wie viele Jahre fehlen. Die Schwelle von 80 % ist eine Festlegung dieses
+Projekts und steht in den Parametern.
+
+**Verankert** an Anscombe (1973): Das Mittel von y ist in allen vier
+Datensätzen 7.50.
+
+## Szenarien
+
+An den Szenariostationen stehen rechts neben den Messjahren die DRY-Szenarien
+2035 RCP 8.5, 2060 RCP 2.6 und 2060 RCP 8.5, je als Referenzjahr und als warmer
+Sommer (1 in 10). Jedes rechnet derselbe Raum mit seinem eigenen Komfortband,
+wie im Vergleichsmodus.
+
+**Ein Szenario ist gegen die Normalperiode zu lesen**, nicht gegen ein einzelnes
+Jahr und nicht gegen den Trend. Ein Referenzjahr ist ein synthetisches typisches
+Jahr, kein Mittel gemessener Jahre, und CH2018 ist auf eine ältere Periode
+kalibriert ([009](009-klimaszenarien.md)). Deshalb läuft die Linie des Mittels
+1991–2020 über die ganze Breite, auch unter den Szenarien.
+
+Zürich/Fluntern, Voreinstellung, gegen das Mittel 1991–2020 von 343 h:
+
+| Szenario | Referenzjahr | warmer Sommer |
+|---|---:|---:|
+| 2035 RCP 8.5 | 369 h (+26) | 456 h (+113) |
+| 2060 RCP 2.6 | 336 h (−7) | 428 h (+85) |
+| 2060 RCP 8.5 | 465 h (+122) | 624 h (+281) |
+
+Dieselben Zahlen wie in `climate-change.ts`. Das Mittel der gemessenen Jahre
+2015–2024 liegt mit 425 h bereits nahe am Referenzjahr 2060 RCP 8.5; das
+bestätigt, was 009 für die Temperatur feststellt: Die beobachtete Erwärmung ist
+der Projektion vorausgeeilt.
+
 ## Ergebnis Zürich/Fluntern
 
 Voreinstellung des Frontends, 34 Messjahre:
@@ -62,7 +99,8 @@ Voreinstellung des Frontends, 34 Messjahre:
 | höchstes Jahr | 2003 mit 526 h |
 | tiefstes Jahr | 2014 mit 225 h |
 
-Hash des Trends: `da1e06638c63`. Browser und `trend.ts` ergeben denselben.
+Hash des Trends: `da1e06638c63`, des Mittels 1991–2020: `a73a027472b3`. Browser
+und `trend.ts` ergeben dieselben.
 
 ## Lesart und Grenzen
 

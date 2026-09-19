@@ -211,9 +211,15 @@ function strokeSeries(ctx, values, xOf, yOf) {
  * Unterschiede. Der Trend ist eine Referenz, keine zweite Serie, und trägt
  * deshalb sekundäre Tinte statt einer Serienfarbe; gestrichelt bleibt der
  * Komfortgrenze vorbehalten. Fehlende Jahre bleiben als Lücke sichtbar.
+ *
+ * Rechts, nach einer Lücke, die Szenarien je Periode und RCP: ein Punkt für das
+ * Referenzjahr, ein Ring für den warmen Sommer, in der Farbe des zweiten
+ * Klimastands. Sie sind gegen das Mittel der Normalperiode zu lesen, nicht gegen
+ * ein einzelnes Jahr (009); deshalb läuft dessen gepunktete Linie über die ganze
+ * Breite.
  */
 export function drawYearChart(canvas, state) {
-  const { years, values, fitted, hover } = state;
+  const { years, values, fitted, normal, scenarios = [], hover } = state;
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth;
   const cssHeight = Number(canvas.dataset.height);
@@ -231,16 +237,25 @@ export function drawYearChart(canvas, state) {
     axis: role("--axis"),
     muted: role("--ink-muted"),
     series: role("--series-1"),
+    scenario: role("--series-2"),
     trend: role("--ink-secondary"),
+    surface: role("--surface"),
   };
-  const plot = { x: PAD.left, y: PAD.top, w: cssWidth - PAD.left - PAD.right, h: cssHeight - PAD.top - PAD.bottom };
+  // Zwei Zeilen Beschriftung unter den Szenariospalten.
+  const bottom = scenarios.length ? PAD.bottom + 14 : PAD.bottom;
+  const plot = { x: PAD.left, y: PAD.top, w: cssWidth - PAD.left - PAD.right, h: cssHeight - PAD.top - bottom };
 
+  // Jede Jahresspalte ein Band; nach einer Lücke zwei Bänder je Szenariospalte.
   const first = years[0];
   const last = years[years.length - 1];
-  const band = plot.w / (last - first + 1);
+  const span = last - first + 1;
+  const slots = span + (scenarios.length ? 1 + 2 * scenarios.length : 0);
+  const band = plot.w / slots;
   const xOf = (year) => plot.x + (year - first + 0.5) * band;
+  const xOfScenario = (i) => plot.x + (span + 1 + 2 * i + 1) * band;
 
-  const top = Math.max(0, ...values, ...fitted.filter(Number.isFinite));
+  const shown = [...values, ...fitted, normal, ...scenarios.flatMap((s) => [s.dry, s.warm])].filter(Number.isFinite);
+  const top = Math.max(0, ...shown);
   const step = niceStep(top > 0 ? top / 4 : 25);
   const yMax = Math.max(step, Math.ceil(top / step) * step);
   const yOf = (v) => plot.y + plot.h - (v / yMax) * plot.h;
@@ -265,11 +280,18 @@ export function drawYearChart(canvas, state) {
   for (let year = Math.ceil(first / 5) * 5; year <= last; year += 5) {
     ctx.fillText(String(year), xOf(year), plot.y + plot.h + 8);
   }
+  scenarios.forEach((s, i) => {
+    ctx.fillText(s.period, xOfScenario(i), plot.y + plot.h + 8);
+    ctx.fillText(s.rcp, xOfScenario(i), plot.y + plot.h + 22);
+  });
 
-  // --- Jahr unter dem Zeiger: ein Band, kein Rahmen um die Säule ---
-  if (hover !== null && hover !== undefined) {
+  // --- Spalte unter dem Zeiger: ein Band, kein Rahmen um die Marke ---
+  if (typeof hover === "number") {
     ctx.fillStyle = colors.grid;
     ctx.fillRect(xOf(hover) - band / 2, plot.y, band, plot.h);
+  } else if (typeof hover === "string") {
+    ctx.fillStyle = colors.grid;
+    ctx.fillRect(xOfScenario(Number(hover.slice(1))) - band, plot.y, 2 * band, plot.h);
   }
 
   // --- Säulen: höchstens 24 px, oben 4 px gerundet, unten gerade ---
@@ -285,7 +307,20 @@ export function drawYearChart(canvas, state) {
     ctx.fill();
   }
 
-  // --- Trend ---
+  // --- Mittel der Normalperiode: über die ganze Breite, damit man die Szenarien daran liest ---
+  if (Number.isFinite(normal)) {
+    ctx.strokeStyle = colors.trend;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.setLineDash([0.1, 5]);
+    ctx.beginPath();
+    ctx.moveTo(plot.x, yOf(normal));
+    ctx.lineTo(plot.x + plot.w, yOf(normal));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // --- Trend über die gemessenen Jahre ---
   if (fitted.length >= 2 && fitted.every(Number.isFinite)) {
     ctx.strokeStyle = colors.trend;
     ctx.lineWidth = 2;
@@ -295,6 +330,22 @@ export function drawYearChart(canvas, state) {
     ctx.lineTo(xOf(last), yOf(fitted[fitted.length - 1]));
     ctx.stroke();
   }
+
+  // --- Szenarien: Punkt für das Referenzjahr, Ring für den warmen Sommer ---
+  scenarios.forEach((s, i) => {
+    const x = xOfScenario(i);
+    for (const [value, filled] of [[s.warm, false], [s.dry, true]]) {
+      if (!Number.isFinite(value)) continue;
+      ctx.beginPath();
+      ctx.arc(x, yOf(value), 5, 0, Math.PI * 2);
+      ctx.fillStyle = filled ? colors.scenario : colors.surface;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      // Der Ring um den Punkt ist Oberflächenfarbe, damit er sich von der Linie löst.
+      ctx.strokeStyle = filled ? colors.surface : colors.scenario;
+      ctx.stroke();
+    }
+  });
 
   // --- Grundlinie und Einheit ---
   ctx.strokeStyle = colors.axis;
@@ -308,7 +359,16 @@ export function drawYearChart(canvas, state) {
   ctx.fillStyle = colors.muted;
   ctx.fillText("h", 0, plot.y - 4);
 
-  return { plot, xOf, yOf, band, first, last };
+  /** Welche Spalte unter dem Zeiger liegt: ein Jahr, ein Szenario oder nichts. */
+  const hitTest = (x) => {
+    const slot = Math.floor((x - plot.x) / band);
+    if (x < plot.x || slot < 0) return null;
+    if (slot < span) return { kind: "year", year: first + slot };
+    const column = Math.floor((slot - span - 1) / 2);
+    return slot > span && column < scenarios.length ? { kind: "scenario", column } : null;
+  };
+
+  return { plot, xOf, xOfScenario, yOf, band, first, last, hitTest };
 }
 
 /** Rasterschritt 1, 2, 2.5 oder 5 mal einer Zehnerpotenz. */

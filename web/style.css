@@ -224,6 +224,10 @@ th.split, td.split { border-left: 1px solid var(--border); }
 /* --- Mehrjahresverlauf --- */
 .trend-intro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; }
 .trend-summary { margin: 12px 0 0; font-size: 13px; color: var(--ink-secondary); }
+.swatch.dotted-secondary { height: 0; border-top: 2px dotted var(--ink-secondary); }
+.swatch.dot, .swatch.ring { width: 10px; height: 10px; border-radius: 50%; }
+.swatch.dot { background: var(--series-2); }
+.swatch.ring { border: 2px solid var(--series-2); }
 
 code { font-family: var(--mono); font-size: 12px; }
 a { color: var(--series-1); }

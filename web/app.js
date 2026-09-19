@@ -14,6 +14,7 @@ import {
   climateLabel,
   climateShortLabel,
   evaluateReferenceCase,
+  exceedancePeriodMean,
   exceedanceTrend,
   isCompleteMeasuredYear,
   isScenarioKey,
@@ -606,7 +607,7 @@ function escapeHtml(s) {
 /**
  * Welche Messjahre in den Verlauf eingehen: taugliche Jahre mit mindestens 95 %
  * Temperatur und Strahlung. Die Regel liegt im Kern, dieselbe wie im Skript
- * core/scripts/trend.ts.
+ * core/scripts/trend.ts. Dazu die Szenarien der Station, falls es welche gibt.
  */
 async function trendYears(stationAbbr) {
   const entry = catalog.stations[stationAbbr];
@@ -618,7 +619,13 @@ async function trendYears(stationAbbr) {
     if (isCompleteMeasuredYear(meta.completeness)) years.push({ year, bytes: meta.bytes });
     else skipped.push({ year, radiation: meta.completeness.gre000h0 ?? 0 });
   }
-  return { years, skipped };
+  const scenarioStation = scenarios?.stations?.[stationAbbr];
+  const variants = [];
+  if (scenarioStation) {
+    const scenarioIndex = await detailIndex(scenarioStation.index);
+    for (const slug of scenarioStation.variants) variants.push({ key: `s${slug}`, bytes: scenarioIndex[slug].bytes });
+  }
+  return { years, skipped, variants };
 }
 
 /** Zurück auf den Knopf, mit der Datenmenge, bevor jemand sie lädt. */
@@ -630,10 +637,11 @@ async function prepareTrendButton() {
   $("trendTableDetails").hidden = true;
   $("trendLoad").disabled = false;
   const station = $("station").value;
-  const { years } = await trendYears(station);
+  const { years, variants } = await trendYears(station);
   if ($("station").value !== station) return;
-  const megabytes = years.reduce((sum, y) => sum + y.bytes, 0) / 1e6;
-  $("trendLoadNote").textContent = `lädt ${years.length} Jahre, rund ${megabytes.toFixed(1)} MB`;
+  const megabytes = [...years, ...variants].reduce((sum, y) => sum + y.bytes, 0) / 1e6;
+  $("trendLoadNote").textContent =
+    `lädt ${years.length} Jahre${variants.length ? ` und ${variants.length} Szenarien` : ""}, rund ${megabytes.toFixed(1)} MB`;
 }
 
 async function loadTrend() {
@@ -641,15 +649,21 @@ async function loadTrend() {
   trendLoading = true;
   $("trendLoad").disabled = true;
   try {
-    const { years, skipped } = await trendYears(station);
+    const { years, skipped, variants } = await trendYears(station);
+    const keys = [...years.map(({ year }) => `y${year}`), ...variants.map((v) => v.key)];
     const climates = [];
-    for (const [i, { year }] of years.entries()) {
-      $("trendLoadNote").textContent = `${i} von ${years.length} Jahren geladen …`;
-      // Dieselbe Ladefunktion wie oben: Prüfsumme gegen den Katalog, Komfortband einmal je Jahr.
-      climates.push(await loadClimate(station, `y${year}`));
+    for (const [i, key] of keys.entries()) {
+      $("trendLoadNote").textContent = `${i} von ${keys.length} Dateien geladen …`;
+      // Dieselbe Ladefunktion wie oben: Prüfsumme gegen den Katalog, Komfortband einmal je Klimastand.
+      climates.push(await loadClimate(station, key));
     }
     if ($("station").value !== station) return;
-    trendData = { station, climates, skipped };
+    trendData = {
+      station,
+      climates: climates.filter((c) => !c.isScenario),
+      scenarioClimates: climates.filter((c) => c.isScenario),
+      skipped,
+    };
     $("trendIntro").hidden = true;
     $("trendBody").hidden = false;
     $("trendTableDetails").hidden = false;
@@ -659,85 +673,179 @@ async function loadTrend() {
   }
 }
 
-/** Derselbe Raum in jedem Jahr, dann der Trend; beides aus dem Kern. */
+const SCENARIO_KEY_PARTS = /^s(\d{4})_RCP(\d)(\d)_(dry|warmsummer)$/;
+
+/**
+ * Derselbe Raum in jedem Jahr und jedem Szenario, dazu Trend und Mittel der
+ * Normalperiode; alles aus dem Kern. Jedes Szenario rechnet mit seinem eigenen
+ * Komfortband, wie im Vergleichsmodus.
+ */
 function computeTrend(s) {
-  const rows = trendData.climates.map((climate) => ({
-    year: climate.calendarYear,
-    exceedance: evaluateReferenceCase(climate.series, climate.entry, s, climate.band).exceedance,
-  }));
-  return { rows, trend: exceedanceTrend(rows), skipped: trendData.skipped };
+  const run = (climate) => evaluateReferenceCase(climate.series, climate.entry, s, climate.band).exceedance;
+  const rows = trendData.climates.map((climate) => ({ year: climate.calendarYear, exceedance: run(climate) }));
+
+  // Eine Spalte je Periode und RCP, darin Referenzjahr und warmer Sommer.
+  const columns = new Map();
+  for (const climate of trendData.scenarioClimates) {
+    const [, period, a, b, kind] = SCENARIO_KEY_PARTS.exec(climate.key);
+    const id = `${period}_${a}${b}`;
+    if (!columns.has(id)) columns.set(id, { id, period, rcp: `RCP ${a}.${b}` });
+    columns.get(id)[kind === "dry" ? "dry" : "warm"] = { key: climate.key, exceedance: run(climate) };
+  }
+  return {
+    rows,
+    trend: exceedanceTrend(rows),
+    normal: exceedancePeriodMean(rows),
+    columns: [...columns.values()].sort((x, y) => x.id.localeCompare(y.id)),
+    skipped: trendData.skipped,
+  };
 }
 
 function renderTrend() {
   if (!trendResult) return;
-  const { rows, trend, skipped } = trendResult;
+  const { rows, trend, normal, columns, skipped } = trendResult;
   const t = trend.value;
-  trendGeometry = drawYearChart($("trendChart"), { years: t.years, values: t.values, fitted: t.fitted, hover: trendHover });
+  const normalMean = normal.value.mean;
+  trendGeometry = drawYearChart($("trendChart"), {
+    years: t.years,
+    values: t.values,
+    fitted: t.fitted,
+    normal: normalMean,
+    scenarios: columns.map((c) => ({
+      period: c.period, rcp: c.rcp,
+      dry: c.dry?.exceedance.value.hours ?? NaN,
+      warm: c.warm?.exceedance.value.hours ?? NaN,
+    })),
+    hover: trendHover,
+  });
 
   const entry = catalog.stations[trendData.station];
   $("trendSub").textContent =
-    `${entry.name} (${entry.canton}) · derselbe Raum wie oben in jedem Messjahr · EN 16798-1 Kat. ${CATEGORY}`;
+    `${entry.name} (${entry.canton}) · derselbe Raum wie oben in jedem Messjahr` +
+    (columns.length ? " und jedem Szenario" : "") + ` · EN 16798-1 Kat. ${CATEGORY}`;
+
+  const item = (swatch, label) => `<span class="legend-item">${swatch}${label}</span>`;
+  const legend = [
+    item(`<span class="swatch area" style="background: var(--series-1)"></span>`, "Übertemperaturstunden, gemessen"),
+    item(`<span class="swatch" style="background: var(--ink-secondary)"></span>`, "linearer Trend"),
+  ];
+  if (Number.isFinite(normalMean)) {
+    legend.push(item(`<span class="swatch dotted-secondary"></span>`,
+      `Mittel ${normal.params.fromYear}–${normal.params.toYear}`));
+  }
+  if (columns.length) {
+    legend.push(
+      item(`<span class="swatch dot"></span>`, "Szenario, Referenzjahr"),
+      item(`<span class="swatch ring"></span>`, "Szenario, warmer Sommer (1 in 10)"),
+    );
+  }
+  $("trendLegend").innerHTML = legend.join("");
 
   let text = Number.isFinite(t.perDecade)
     ? `Trend ${signed(t.perDecade)} h pro Jahrzehnt über ${t.years.length} Messjahre ` +
       `(${t.years[0]}–${t.years[t.years.length - 1]}), Bestimmtheitsmass r² ${t.rSquared.toFixed(2)}. ` +
       `Die Jahre streuen stark; die Gerade beschreibt die mittlere Verschiebung, keine Vorhersage.`
     : `Für einen Trend braucht es mindestens drei vollständige Messjahre.`;
+  const periodYears = Number(normal.params.toYear) - Number(normal.params.fromYear) + 1;
+  text += Number.isFinite(normalMean)
+    ? ` Mittel der Normalperiode ${normal.params.fromYear}–${normal.params.toYear}: ` +
+      `${Math.round(normalMean)} h aus ${normal.value.count} Jahren.`
+    : ` Für ein Mittel der Normalperiode fehlen Jahre: ${normal.value.count} von ${periodYears}.`;
+  const strongest = columns[columns.length - 1];
+  if (strongest?.dry && strongest?.warm) {
+    const hours = (x) => x.exceedance.value.hours;
+    const vs = (h) => (Number.isFinite(normalMean) ? ` (${signed(h - normalMean)} h)` : "");
+    text += ` Szenario ${strongest.period} ${strongest.rcp}: Referenzjahr ${hours(strongest.dry)} h${vs(hours(strongest.dry))}, ` +
+      `warmer Sommer ${hours(strongest.warm)} h${vs(hours(strongest.warm))}. Ein Referenzjahr ist ein synthetisches ` +
+      `typisches Jahr, kein Mittel gemessener Jahre; lesbar ist es gegen die Normalperiode, nicht gegen ein einzelnes Jahr.`;
+  }
   if (skipped.length) {
     text += ` Ausgelassen, weil Temperatur oder Strahlung unter 95 % liegen: ` +
       skipped.map((s) => `${s.year} (Strahlung ${Math.round(100 * s.radiation)} %)`).join(", ") + ".";
   }
   $("trendSummary").textContent = text;
   const current = trendResult;
-  shortHash(trend).then((hash) => {
-    if (trendResult === current) $("trendSummary").textContent = `${text} ${trend.method.id}@${trend.method.version} · Hash ${hash}`;
+  Promise.all([shortHash(trend), shortHash(normal)]).then(([trendHash, normalHash]) => {
+    if (trendResult !== current) return;
+    $("trendSummary").textContent = `${text} Trend ${trend.method.id}@${trend.method.version} · Hash ${trendHash}; ` +
+      `Mittel ${normal.method.id}@${normal.method.version} · Hash ${normalHash}`;
   });
 
-  const peak = (r) => peakOperativeTemperature(r.exceedance);
-  $("trendTable").querySelector("tbody").innerHTML = rows.map((r) => {
-    const v = r.exceedance.value;
-    return `<tr><td>${r.year}</td><td>${v.hours.toLocaleString("de-CH")}</td>` +
-      `<td>${Math.round(v.kelvinHours).toLocaleString("de-CH")}</td>` +
-      `<td>${v.evaluatedHours.toLocaleString("de-CH")}</td><td>${peak(r).toFixed(1)} °C</td></tr>`;
-  }).join("");
+  const cells = (exceedance) => {
+    const v = exceedance.value;
+    return `<td>${v.hours.toLocaleString("de-CH")}</td><td>${Math.round(v.kelvinHours).toLocaleString("de-CH")}</td>` +
+      `<td>${v.evaluatedHours.toLocaleString("de-CH")}</td><td>${peakOperativeTemperature(exceedance).toFixed(1)} °C</td>`;
+  };
+  const body = rows.map((r) => `<tr><td>${r.year}</td>${cells(r.exceedance)}</tr>`);
+  if (columns.length) {
+    body.push(`<tr><th colspan="5">Szenarien${Number.isFinite(normalMean)
+      ? `, gegen das Mittel ${normal.params.fromYear}–${normal.params.toYear} von ${Math.round(normalMean)} h zu lesen` : ""}</th></tr>`);
+    for (const c of columns) {
+      for (const scenario of [c.dry, c.warm]) {
+        if (scenario) body.push(`<tr><td>${escapeHtml(climateShortLabel(scenario.key))}</td>${cells(scenario.exceedance)}</tr>`);
+      }
+    }
+  }
+  $("trendTable").querySelector("tbody").innerHTML = body.join("");
 }
 
 function setupTrendHover() {
   const canvas = $("trendChart");
   const tip = $("trendTooltip");
+  const line = (label, text) => `<div class="row"><span>${label}</span><span>${text}</span></div>`;
+
+  const clear = () => {
+    tip.classList.remove("on");
+    if (trendHover !== null) {
+      trendHover = null;
+      renderTrend();
+    }
+  };
 
   canvas.addEventListener("pointermove", (event) => {
     if (!trendGeometry || !trendResult) return;
-    const { plot, band, first, last, xOf } = trendGeometry;
     const x = event.clientX - canvas.getBoundingClientRect().left;
-    const year = first + Math.floor((x - plot.x) / band);
-    const row = trendResult.rows.find((r) => r.year === year);
-    if (x < plot.x || year > last || !row) {
-      tip.classList.remove("on");
-      if (trendHover !== null) { trendHover = null; renderTrend(); }
-      return;
-    }
-    if (trendHover !== year) { trendHover = year; renderTrend(); }
+    const hit = trendGeometry.hitTest(x);
+    if (!hit) return clear();
 
-    const t = trendResult.trend.value;
-    const v = row.exceedance.value;
-    const line = (label, text) => `<div class="row"><span>${label}</span><span>${text}</span></div>`;
-    tip.innerHTML = `<b>${year}</b>` +
-      line("Übertemperaturstunden", `${v.hours.toLocaleString("de-CH")} h`) +
-      line("Überschreitung", `${Math.round(v.kelvinHours).toLocaleString("de-CH")} Kh`) +
-      line("bewertete Stunden", v.evaluatedHours.toLocaleString("de-CH")) +
-      (Number.isFinite(t.perDecade) ? line("Trend in diesem Jahr", `${Math.round(t.fitted[t.years.indexOf(year)])} h`) : "");
+    let html;
+    let center;
+    if (hit.kind === "year") {
+      const row = trendResult.rows.find((r) => r.year === hit.year);
+      if (!row) return clear();
+      const t = trendResult.trend.value;
+      const v = row.exceedance.value;
+      html = `<b>${hit.year}</b>` +
+        line("Übertemperaturstunden", `${v.hours.toLocaleString("de-CH")} h`) +
+        line("Überschreitung", `${Math.round(v.kelvinHours).toLocaleString("de-CH")} Kh`) +
+        line("bewertete Stunden", v.evaluatedHours.toLocaleString("de-CH")) +
+        (Number.isFinite(t.perDecade) ? line("Trend in diesem Jahr", `${Math.round(t.fitted[t.years.indexOf(hit.year)])} h`) : "");
+      center = trendGeometry.xOf(hit.year);
+    } else {
+      const column = trendResult.columns[hit.column];
+      const normalMean = trendResult.normal.value.mean;
+      const vs = (h) => (Number.isFinite(normalMean) ? `, ${signed(h - normalMean)} h` : "");
+      html = `<b>Szenario ${column.period} ${column.rcp}</b>`;
+      for (const [label, scenario] of [["Referenzjahr", column.dry], ["warmer Sommer", column.warm]]) {
+        if (scenario) html += line(label, `${scenario.exceedance.value.hours.toLocaleString("de-CH")} h${vs(scenario.exceedance.value.hours)}`);
+      }
+      if (Number.isFinite(normalMean)) html += line("Mittel 1991–2020", `${Math.round(normalMean)} h`);
+      center = trendGeometry.xOfScenario(hit.column);
+    }
+
+    const key = hit.kind === "year" ? hit.year : `s${hit.column}`;
+    if (trendHover !== key) {
+      trendHover = key;
+      renderTrend();
+    }
+    tip.innerHTML = html;
     tip.classList.add("on");
     const width = tip.offsetWidth;
-    tip.style.left = `${Math.min(Math.max(xOf(year) - width / 2, 0), canvas.clientWidth - width)}px`;
-    tip.style.top = `${plot.y}px`;
+    tip.style.left = `${Math.min(Math.max(center - width / 2, 0), canvas.clientWidth - width)}px`;
+    tip.style.top = `${trendGeometry.plot.y}px`;
   });
 
-  canvas.addEventListener("pointerleave", () => {
-    tip.classList.remove("on");
-    trendHover = null;
-    renderTrend();
-  });
+  canvas.addEventListener("pointerleave", clear);
 }
 
 function setupHover() {

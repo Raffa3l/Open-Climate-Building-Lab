@@ -155,6 +155,18 @@ Ein Wert je Jahr ist eine Grösse, kein Verlauf innerhalb des Jahres: deshalb
   um die Säule. Der Tooltip nennt Stunden, Kelvinstunden, bewertete Stunden und
   den Trendwert; die Tabelle darunter trägt dieselben Zahlen für alle Jahre.
 
+An den Szenariostationen folgen rechts, nach einer Lücke, die Szenarien:
+
+- **Eine Spalte je Periode und RCP**, zweizeilig beschriftet.
+- **Punkt für das Referenzjahr, Ring für den warmen Sommer**, beide in der
+  Rolle Serie 2 wie der zweite Klimastand im Vergleichsmodus. Punkt und Ring
+  unterscheiden die Varianten ohne zusätzliche Farbe.
+- **Das Mittel der Normalperiode 1991–2020 als gepunktete Linie** in sekundärer
+  Tinte über die ganze Breite: Gegen sie sind die Szenarien zu lesen, nicht
+  gegen ein einzelnes Jahr ([012](012-mehrjahresverlauf.md#szenarien)).
+- **Die Legende entsteht aus dem, was gezeigt wird.** An einer Station ohne
+  Szenarien fehlen deren Einträge, ohne Mittel fehlt die Linie.
+
 Die Zusammenfassung unter der Grafik nennt Trend, r² und Hash in Worten. Sie
 sagt ausdrücklich, dass die Gerade eine mittlere Verschiebung ist und keine
 Vorhersage ([012](012-mehrjahresverlauf.md#lesart-und-grenzen)).

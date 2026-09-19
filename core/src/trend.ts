@@ -20,6 +20,16 @@ export const METHOD_LINEAR_TREND: MethodRef = {
   sources: ["anscombe-1973"],
 };
 
+export const METHOD_PERIOD_MEAN: MethodRef = {
+  id: "stats.periodMean",
+  version: "1.0.0",
+  doc: "docs/methods/012-mehrjahresverlauf.md#normalperiode",
+  sources: ["anscombe-1973"],
+};
+
+/** Normalperiode, gegen die Szenarien zu lesen sind (009). */
+export const NORMAL_PERIOD = { fromYear: 1991, toYear: 2020, minYears: 24 } as const;
+
 export interface LeastSquares {
   slope: number;
   intercept: number;
@@ -61,6 +71,49 @@ export function ordinaryLeastSquares(x: ArrayLike<number>, y: ArrayLike<number>)
     intercept: meanY - slope * meanX,
     rSquared: syy === 0 ? NaN : (sxy * sxy) / (sxx * syy),
     n,
+  };
+}
+
+export interface PeriodMean {
+  mean: number;
+  /** Jahre der Periode, die eingingen. */
+  count: number;
+  years: number[];
+}
+
+/**
+ * Mittel der Übertemperaturstunden über eine Periode, etwa die Normalperiode
+ * 1991–2020.
+ *
+ * Ein Design Reference Year ist kein Mittel gemessener Jahre; gegen ein
+ * einzelnes Jahr oder fünf aktuelle gelesen erscheint ein Szenario kühler als
+ * die Gegenwart (009). Die Basis ist deshalb eine Normalperiode, und sie gilt
+ * erst, wenn genug ihrer Jahre vorliegen: Unter `minYears` kommt NaN.
+ */
+export function exceedancePeriodMean(
+  byYear: ReadonlyArray<{ year: number; exceedance: Computation<ExceedanceResult> }>,
+  period: { fromYear: number; toYear: number; minYears: number } = NORMAL_PERIOD,
+): Computation<PeriodMean> {
+  const inside = [...byYear]
+    .filter((r) => r.year >= period.fromYear && r.year <= period.toYear)
+    .sort((a, b) => a.year - b.year);
+  const values = inside.map((r) => r.exceedance.value.hours);
+  const mean = values.length >= period.minYears && values.length > 0
+    ? values.reduce((a, b) => a + b, 0) / values.length
+    : NaN;
+  return {
+    value: { mean, count: inside.length, years: inside.map((r) => r.year) },
+    unit: "h",
+    method: METHOD_PERIOD_MEAN,
+    params: {
+      quantity: "Übertemperaturstunden",
+      fromYear: period.fromYear,
+      toYear: period.toYear,
+      minYears: period.minYears,
+      count: inside.length,
+    },
+    inputs: mergeInputs(...inside.map((r) => r.exceedance.inputs)),
+    upstream: inside.map((r) => ({ role: `y${r.year}`, computation: r.exceedance })),
   };
 }
 

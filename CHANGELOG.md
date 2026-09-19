@@ -85,6 +85,16 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
   Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
   Vordach 478; mit Sonnenschutz 501 und 385.
+- **Szenarien im Mehrjahresverlauf** ([012](docs/methods/012-mehrjahresverlauf.md#szenarien)):
+  An den Szenariostationen stehen rechts neben den Messjahren die sechs
+  DRY-Szenarien, Punkt für das Referenzjahr, Ring für den warmen Sommer, dazu
+  das Mittel der Normalperiode 1991–2020 als Linie über die ganze Breite.
+  Das Mittel ist eine eigene `Computation` (`stats.periodMean`) mit jedem Jahr
+  als Vorgänger und gilt erst ab 24 der 30 Jahre. `trend.ts` gibt Mittel und
+  Szenarien mit Hash aus; Browser und Skript stimmen überein. Zürich/Fluntern:
+  Mittel 1991–2020 343 h, 2060 RCP 8.5 Referenzjahr 465 h (+122), warmer
+  Sommer 624 h (+281); das Mittel 2015–2024 liegt mit 425 h schon nahe am
+  Referenzjahr 2060 RCP 8.5.
 - **Mehrjahresverlauf** ([012](docs/methods/012-mehrjahresverlauf.md)): derselbe
   Raum in jedem Messjahr der Station, im Frontend als Säulen mit linearem Trend
   unter «Übertemperaturstunden je Messjahr». Geladen wird erst auf Knopfdruck,

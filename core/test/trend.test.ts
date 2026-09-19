@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { computationHash, type Computation } from "../src/provenance.ts";
 import type { ExceedanceResult } from "../src/indicators.ts";
-import { exceedanceTrend, ordinaryLeastSquares } from "../src/trend.ts";
+import { exceedancePeriodMean, exceedanceTrend, ordinaryLeastSquares } from "../src/trend.ts";
 import { isCompleteMeasuredYear } from "../src/reference-case.ts";
 
 // Anscombe (1973): vier Datensätze mit derselben Regressionsgeraden
@@ -67,6 +67,35 @@ test("der Hash des Trends kennt jedes Jahr und seinen Raum", async () => {
   assert.notEqual(base, fewer);
   // Der Wert geht nicht ein, wie überall (zentrale Invariante).
   assert.equal(base, await computationHash(exceedanceTrend(years.map((y) => fakeYear(y, 999)))));
+});
+
+test("Periodenmittel trifft Anscombes Mittelwert 7.50", () => {
+  // Anscombe (1973): In allen vier Datensätzen ist das Mittel von y 7.50.
+  for (const [i, [, y]] of ANSCOMBE.entries()) {
+    const rows = y.map((v, k) => fakeYear(2000 + k, v));
+    const mean = exceedancePeriodMean(rows, { fromYear: 2000, toYear: 2010, minYears: 11 });
+    assert.ok(Math.abs(mean.value.mean - 7.5) < 0.005, `Satz ${i + 1}: ${mean.value.mean}`);
+    assert.equal(mean.value.count, 11);
+  }
+});
+
+test("Normalperiode: nur ihre Jahre, und erst ab genug Jahren ein Mittel", async () => {
+  const rows = [];
+  for (let y = 1985; y <= 2024; y++) rows.push(fakeYear(y, y <= 2020 ? 300 : 500));
+  const normal = exceedancePeriodMean(rows);
+  assert.equal(normal.value.mean, 300);
+  assert.equal(normal.value.count, 30);
+  assert.deepEqual([normal.value.years[0], normal.value.years[29]], [1991, 2020]);
+  assert.equal(normal.upstream!.length, 30);
+
+  // 23 von 30 Jahren reichen nicht.
+  const sparse = exceedancePeriodMean(rows.filter((r) => r.year < 1991 || r.year > 1997));
+  assert.equal(sparse.value.count, 23);
+  assert.ok(Number.isNaN(sparse.value.mean));
+
+  // Ein anderer Raum in einem einzigen Jahr ergibt einen anderen Hash.
+  const other = rows.map((r) => (r.year === 2005 ? fakeYear(2005, 300, 0.6) : r));
+  assert.notEqual(await computationHash(normal), await computationHash(exceedancePeriodMean(other)));
 });
 
 test("ein Messjahr zählt im Vergleich über Jahre ab 95 % Temperatur und Strahlung", () => {
