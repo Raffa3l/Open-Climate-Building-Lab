@@ -85,6 +85,15 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
   Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
   Vordach 478; mit Sonnenschutz 501 und 385.
+- **`core/scripts/trends.ts`**: derselbe Raum an jeder Station mit mindestens
+  30 vollständigen Messjahren, rangiert nach dem Trend
+  ([012](docs/methods/012-mehrjahresverlauf.md#alle-stationen)). 66 der 132
+  Raummodell-Stationen erfüllen die Bedingung; kürzere Reihen beginnen in einer
+  anderen Klimaperiode und stünden nicht in derselben Spalte. Im Mittel +35.3 h
+  pro Jahrzehnt, am stärksten Lugano mit +99.1 und Locarno mit +87.5; auf
+  Jungfraujoch und Piz Corvatsch null, weil dort kein Jahr die Komfortgrenze
+  überschreitet und es deshalb weder Trend noch r² gibt. Läuft in rund
+  9 Sekunden über 2'200 Stationsjahre.
 - **Szenarien im Mehrjahresverlauf** ([012](docs/methods/012-mehrjahresverlauf.md#szenarien)):
   An den Szenariostationen stehen rechts neben den Messjahren die sechs
   DRY-Szenarien, Punkt für das Referenzjahr, Ring für den warmen Sommer, dazu

@@ -55,6 +55,12 @@ node core/scripts/overheating.ts SMA 2023
 # Derselbe Raum an allen Stationen, nach Überhitzung rangiert
 node core/scripts/stations.ts 2023
 
+# Alle Messjahre einer Station mit Trend, wie im Browser
+node core/scripts/trend.ts 'station=SMA'
+
+# Und der Trend an allen Stationen mit mindestens 30 vollständigen Jahren
+node core/scripts/trends.ts
+
 # Klimaszenarien bauen und Gegenwart gegen 2035/2060 stellen
 cd data && python3 -m ocbl_data scenarios --qa && cd ..
 node core/scripts/climate-change.ts SMA

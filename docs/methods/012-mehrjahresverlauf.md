@@ -102,6 +102,39 @@ Voreinstellung des Frontends, 34 Messjahre:
 Hash des Trends: `da1e06638c63`, des Mittels 1991–2020: `a73a027472b3`. Browser
 und `trend.ts` ergeben dieselben.
 
+## Alle Stationen
+
+`node core/scripts/trends.ts` rechnet denselben Raum an jeder Station mit
+mindestens 30 vollständigen Messjahren und rangiert nach dem Trend. Im Browser
+geht das nicht: Alle Stationen mit allen Jahren wären rund 600 MB.
+
+**Nur lange Reihen sind vergleichbar.** Eine Station, die erst 2011 mit der
+Strahlungsmessung begann, brächte einen Trend über 14 Jahre in dieselbe Spalte
+wie einen über 34 — und die kurze Reihe beginnt in einer anderen Klimaperiode.
+66 der 132 Raummodell-Stationen erfüllen die Bedingung.
+
+Stand 19.09.2026, Voreinstellung des Frontends, h pro Jahrzehnt:
+
+| | Station | Höhe | Trend | r² | 1991–2020 | 2015–2024 |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | Lugano (TI) | 273 m | +99.1 | 0.44 | 609 h | 763 h |
+| 2 | Locarno / Monti (TI) | 367 m | +87.5 | 0.37 | 625 h | 771 h |
+| 3 | Sion (VS) | 482 m | +73.7 | 0.48 | 469 h | 576 h |
+| 4 | Stabio (TI) | 351 m | +71.3 | 0.38 | 509 h | 612 h |
+| 5 | Nyon / Changins (VD) | 458 m | +63.4 | 0.32 | 387 h | 508 h |
+| 64 | Weissfluhjoch (GR) | 2'691 m | +0.5 | 0.11 | 1 h | 2 h |
+| 65 | Piz Corvatsch (GR) | 3'294 m | +0.0 | — | 0 h | 0 h |
+| 66 | Jungfraujoch (VS) | 3'571 m | +0.0 | — | 0 h | 0 h |
+
+Im Mittel über die 66 Stationen: +35.3 h pro Jahrzehnt, 238 h in der
+Normalperiode gegen 299 h in 2015–2024.
+
+**Ein Trend von null heisst nicht, dass sich nichts ändert.** Auf Jungfraujoch
+und Piz Corvatsch überschreitet der Referenzraum die Komfortgrenze in keinem
+Jahr; ohne eine einzige Stunde gibt es weder Trend noch r². Auf Säntis und
+Weissfluhjoch sind es 1 bis 3 Stunden. Die Erwärmung zeigt sich dort in anderen
+Kennwerten, nicht in den Übertemperaturstunden eines Büroraums.
+
 ## Lesart und Grenzen
 
 **Die Gerade beschreibt die mittlere Verschiebung, keine Vorhersage.** Ein
