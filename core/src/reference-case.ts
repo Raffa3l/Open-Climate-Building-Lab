@@ -56,6 +56,8 @@ export interface RoomSettings {
   shading: number;
   /** Auskragung eines Vordachs oder Balkons auf Deckenhöhe, m; 0 heisst keines. */
   overhang: number;
+  /** Verbauungswinkel gegenüber, von der Fenstermitte aus, Grad; 0 heisst frei. */
+  obstruction: number;
   /** Interne Lasten bei Belegung, W/m². */
   gains: number;
   /** Luftwechsel der Nachtlüftung, 1/h. */
@@ -78,6 +80,7 @@ export const ROOM_SETTING_RANGES = {
   windowFraction: { min: 10, max: 90, step: 5 },
   shading: { min: 0.05, max: 1, step: 0.05 },
   overhang: { min: 0, max: 2, step: 0.1 },
+  obstruction: { min: 0, max: 60, step: 5 },
   gains: { min: 0, max: 45, step: 1 },
   nightVent: { min: 0, max: 8, step: 0.5 },
 } as const;
@@ -89,6 +92,7 @@ export const DEFAULT_ROOM_SETTINGS: Readonly<RoomSettings> = {
   windowFraction: 0.4,
   shading: 0.15,
   overhang: 0,
+  obstruction: 0,
   gains: 20,
   nightVent: 3,
   nightVentOn: true,
@@ -127,6 +131,7 @@ export function referenceRoom(s: RoomSettings): RoomSpec {
           : { factorClosed: round6(s.shading / 0.5), activationIrradiance: 200 },
         // Ohne Vordach fehlt das Feld, und der Hash bleibt der bisherige.
         ...(s.overhang > 0 ? { overhang: overhangOverWindow(s.overhang, windowArea) } : {}),
+        ...(s.obstruction > 0 ? { obstruction: { angle: s.obstruction } } : {}),
       },
     ],
     massClass: s.massClass,
@@ -161,6 +166,7 @@ export function roomSettingsToParams(s: RoomSettings): Array<[string, string]> {
     ["windowFraction", String(Math.round(s.windowFraction * 100))],
     ["shading", String(s.shading)],
     ["overhang", String(s.overhang)],
+    ["obstruction", String(s.obstruction)],
     ["gains", String(s.gains)],
     ["nightVent", String(s.nightVent)],
     ["nightVentOn", s.nightVentOn ? "1" : "0"],
@@ -215,6 +221,7 @@ export function roomSettingsFromParams(params: URLSearchParams): RoomSettings {
     windowFraction: range("windowFraction", Math.round(d.windowFraction * 100)) / 100,
     shading: range("shading", d.shading),
     overhang: range("overhang", d.overhang),
+    obstruction: range("obstruction", d.obstruction),
     gains: range("gains", d.gains),
     nightVent: range("nightVent", d.nightVent),
     nightVentOn: flag("nightVentOn", d.nightVentOn),

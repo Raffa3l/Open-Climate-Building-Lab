@@ -170,6 +170,17 @@ Hottel, H. C.; Sarofim, A. F. (1967): *Radiative Transfer.* McGraw-Hill.
 → Fadenmethode (crossed strings) für Sichtfaktoren im zweidimensionalen
 Schnitt; daraus der Sichtfaktor eines Fensters unter einem langen Vordach.
 
+### `oke-1981`
+Oke, T. R. (1981): *Canyon geometry and the nocturnal urban heat island:
+comparison of scale model and field observations.* Journal of Climatology 1,
+237–254.
+→ Sichtfaktor zum Himmel in der Mitte einer langen, symmetrischen
+Strassenschlucht, ψ = cos β. Zitiert nach Chen, L. et al. (2012): *Sky view
+factor analysis of street canyons and its implications for daytime intra-urban
+air temperature differentials in high-rise, high-density urban areas of Hong
+Kong.* International Journal of Climatology 32, 121–136. Prüfwert für die
+Sichtfaktorregel im Schnitt, siehe [011](011-vordach.md#verbauung).
+
 ### `nrel-bluebook-1995`
 Marion, W.; Wilcox, S. (1995): *Solar Radiation Data Manual for Buildings.*
 NREL/TP-463-7904, National Renewable Energy Laboratory. Anhang «Transmitted

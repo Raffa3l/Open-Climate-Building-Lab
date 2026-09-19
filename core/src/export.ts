@@ -308,6 +308,7 @@ export async function referenceCaseExport(input: ReferenceExportInput): Promise<
       windowFraction: round6(settings.windowFraction),
       shadingGtot: settings.shading,
       overhangM: settings.overhang,
+      obstructionDeg: settings.obstruction,
       internalGainsWm2: settings.gains,
       nightVentilationAch: settings.nightVentOn ? settings.nightVent : 0,
     },

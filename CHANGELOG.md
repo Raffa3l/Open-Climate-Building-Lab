@@ -85,6 +85,15 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
   Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
   Vordach 478; mit Sonnenschutz 501 und 385.
+- **Verbauung gegenüber** ([011](docs/methods/011-vordach.md#verbauung)), im
+  Frontend als Verbauungswinkel von 0° bis 60° über dem Horizont, von der
+  Fenstermitte aus. Unter dem Winkel fallen Direktstrahlung und Aufhellung um
+  die Sonne weg, der Horizontstreifen ebenso; der Himmel wird zusammen mit dem
+  Vordach in geschlossener Form über die Fensterhöhe gemittelt. Die
+  Sichtfaktorregel ist an Okes Strassenschlucht verankert (ψ = cos β). Ohne
+  Verbauung bleiben alle Hashes gleich, auch die mit Vordach. Zürich/Fluntern
+  2023 ohne Sonnenschutz, Westfassade: 1'099 Übertemperaturstunden frei, 697
+  bei 30°; Südfassade 1'308 und 1'154.
 
 ### Geändert
 - **Tagstunden ohne Globalstrahlung sind nicht rechenbar.**
@@ -471,8 +480,8 @@ und mussten empirisch bestimmt werden — Herleitung in
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
 
 ### Geplant
-- Verschattung durch Horizont, Nachbargebäude und seitliche Laibungen; ein
-  Vordach begrenzter Breite ([011](docs/methods/011-vordach.md#grenzen))
+- Seitliche Laibungen; Vordach und Verbauung begrenzter Breite; Reflexion von
+  Vordach und Gegenüber ([011](docs/methods/011-vordach.md#grenzen))
 
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte

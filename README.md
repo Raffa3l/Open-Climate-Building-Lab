@@ -18,7 +18,7 @@ Die Kette steht vollständig: **158 Stationen, 4'154 Stationsjahre, 594 MB**.
 - ✅ Binärformat mit Prüfsummen, Python schreibt, TypeScript liest
 - ✅ Sonnenstand, Strahlungszerlegung, Einstrahlung geneigter Flächen (isotrop und Perez)
 - ✅ Raummodell 5R1C nach EN ISO 13790 mit Belegungsprofil und Himmelsabstrahlung
-- ✅ Vordach oder Balkon über dem Fenster ([011](docs/methods/011-vordach.md))
+- ✅ Vordach oder Balkon über dem Fenster, Verbauung gegenüber ([011](docs/methods/011-vordach.md))
 - ✅ Frontend mit Reglern, Permalink und «Berechnung anzeigen»
 - ✅ Vergleichsmodus: zwei Klimastände in einem Diagramm, mit Differenz je Kennzahl
 - ✅ Download: Stundenreihe als CSV und Manifest zum Nachprüfen ohne dieses Projekt, byte-gleich auch aus der Kommandozeile ([010](docs/methods/010-export.md))

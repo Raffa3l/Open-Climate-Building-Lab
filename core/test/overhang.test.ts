@@ -5,10 +5,14 @@ import { hourlyAxis } from "../src/series.ts";
 import { simulate5R1C } from "../src/building.ts";
 import type { DatasetRef } from "../src/provenance.ts";
 import {
+  assertExternalShadingApplies,
   assertOverhangApplies,
   irradianceUnderOverhang,
+  irradianceWithExternalShading,
   overhangShadedFraction,
   overhangSkyViewRatio,
+  skyViewRatio,
+  stripViewFactor,
   type Overhang,
 } from "../src/overhang.ts";
 import { DEFAULT_ROOM_SETTINGS, referenceRoom } from "../src/reference-case.ts";
@@ -134,6 +138,69 @@ test("NREL-Geometrie: kein Schatten am Mittag vom 17. November bis 25. Januar", 
   }
 });
 
+// --- Verbauung ----------------------------------------------------------------
+
+test("Sichtfaktor im Schnitt trifft Okes Schluchtboden: ψ = cos β", () => {
+  // Oke (1981): Die Mitte des Bodens einer langen, symmetrischen Strassenschlucht
+  // sieht den Himmel mit cos β, β die Höhe der Traufkante. Die waagrechte Fläche
+  // blickt nach oben; der Himmel liegt ±(90° − β) um ihre Normale.
+  for (let beta = 5; beta <= 85; beta += 5) {
+    const psi = stripViewFactor(-(90 - beta), 90 - beta);
+    assert.ok(Math.abs(psi - Math.cos(beta * DEG)) < 1e-12, `β ${beta}°: ${psi}`);
+  }
+  // Dieselbe Regel für die senkrechte Fassade ohne Verbauung: die Hälfte.
+  assert.ok(Math.abs(stripViewFactor(0, 90) - 0.5) < 1e-12);
+});
+
+test("Himmel über Verbauung und unter Vordach gegen numerische Integration", () => {
+  const cases = [
+    { obstruction: { angle: 30 } },
+    { overhang: { depthRatio: 1, gapRatio: 0.2 }, obstruction: { angle: 20 } },
+    { overhang: { depthRatio: 0.3, gapRatio: 0 }, obstruction: { angle: 45 } },
+    { overhang: { depthRatio: 2, gapRatio: 0.1 }, obstruction: { angle: 40 } },
+  ];
+  for (const shading of cases) {
+    const p = shading.overhang?.depthRatio ?? 0;
+    const g = shading.overhang?.gapRatio ?? 0;
+    const sinEpsilon = Math.sin(shading.obstruction.angle * DEG);
+    const n = 100_000;
+    let sum = 0;
+    for (let k = 0; k < n; k++) {
+      const depth = 1 + g - (k + 0.5) / n;
+      const sinBeta = p === 0 ? 1 : Math.sin(Math.atan2(depth, p));
+      sum += Math.max(0, sinBeta - sinEpsilon);
+    }
+    assert.ok(Math.abs(skyViewRatio(shading) - sum / n) < 1e-6, `${JSON.stringify(shading)}: ${skyViewRatio(shading)} gegen ${sum / n}`);
+  }
+  // Ohne Vordach: 1 − sin ε. Ohne Verbauung: die Fadenformel.
+  assert.ok(Math.abs(skyViewRatio({ obstruction: { angle: 30 } }) - 0.5) < 1e-12);
+  const o = { depthRatio: 1, gapRatio: 0.2 };
+  assert.ok(Math.abs(skyViewRatio({ overhang: o, obstruction: { angle: 0 } }) - overhangSkyViewRatio(o)) < 1e-12);
+});
+
+test("die Verbauung nimmt die Sonne, solange ihr Profil darunter liegt", () => {
+  const on = irradianceOnSurface("perez", 600, 150, sunAt(20, 180), SOUTH, 30);
+  const low = irradianceWithExternalShading(on, sunAt(20, 180), SOUTH, { obstruction: { angle: 25 } });
+  assert.equal(low.beam, 0);
+  assert.equal(low.diffuseCircumsolar, 0);
+  assert.equal(low.diffuseHorizon, 0);
+  const high = irradianceWithExternalShading(on, sunAt(20, 180), SOUTH, { obstruction: { angle: 15 } });
+  assert.equal(high.beam, on.beam);
+  // Schräg einfallend steht die Sonne im Schnitt höher: atan(tan 20° / cos 60°) = 36.1°.
+  const oblique = sunAt(20, 240);
+  const onOblique = irradianceOnSurface("perez", 600, 150, oblique, SOUTH, 30);
+  assert.ok(irradianceWithExternalShading(onOblique, oblique, SOUTH, { obstruction: { angle: 30 } }).beam > 0);
+  assert.equal(irradianceWithExternalShading(onOblique, oblique, SOUTH, { obstruction: { angle: 40 } }).beam, 0);
+});
+
+test("Referenzraum: ohne Verbauung bleibt das Fenster wie bisher", () => {
+  assert.ok(!JSON.stringify(referenceRoom(DEFAULT_ROOM_SETTINGS).windows).includes("obstruction"));
+  const room = referenceRoom({ ...DEFAULT_ROOM_SETTINGS, obstruction: 25 });
+  assert.deepEqual(room.windows[0].obstruction, { angle: 25 });
+  assert.throws(() => assertExternalShadingApplies({ obstruction: { angle: 90 } }, SOUTH), /Verbauung/);
+  assert.throws(() => assertExternalShadingApplies({ obstruction: { angle: 20 } }, { tilt: 30, azimuth: 180 }), /senkrechten/);
+});
+
 test("Vordach nur über senkrechten Fenstern und mit gültiger Geometrie", () => {
   assert.throws(() => assertOverhangApplies({ depthRatio: 1, gapRatio: 0 }, { tilt: 45, azimuth: 180 }), /senkrechten/);
   assert.throws(() => assertOverhangApplies({ depthRatio: -1, gapRatio: 0 }, SOUTH), /Geometrie/);
@@ -159,8 +226,8 @@ test("ein Vordach senkt die solaren Einträge im Sommer", () => {
     collection: "test", station: "TST", year: 2021, variables: ["tre200h0", "gre000h0"],
     sha256: "0".repeat(64), license: "CC-BY-4.0", attribution: "Testdaten",
   };
-  const run = (overhang: number) => simulate5R1C(
-    referenceRoom({ ...DEFAULT_ROOM_SETTINGS, shading: 1, overhang }),
+  const run = (overhang: number, obstruction = 0) => simulate5R1C(
+    referenceRoom({ ...DEFAULT_ROOM_SETTINGS, shading: 1, overhang, obstruction }),
     { outdoorTemperature: outdoor, globalHorizontal: global, axis, latitude: 47.38, longitude: 8.57 },
     [source],
   );
@@ -170,4 +237,10 @@ test("ein Vordach senkt die solaren Einträge im Sommer", () => {
   const deep = gains(1.5);
   assert.ok(none > half && half > deep, `ohne ${none.toFixed(0)}, 0.5 m ${half.toFixed(0)}, 1.5 m ${deep.toFixed(0)}`);
   assert.notEqual(run(0).params.windows, run(1.5).params.windows);
+
+  const sum = (r: ReturnType<typeof run>) => r.value.solarGains.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  const open = sum(run(0));
+  const street = sum(run(0, 30));
+  const canyon = sum(run(0, 60));
+  assert.ok(open > street && street > canyon, `frei ${open.toFixed(0)}, 30° ${street.toFixed(0)}, 60° ${canyon.toFixed(0)}`);
 });
