@@ -190,8 +190,10 @@ Bekannte Vereinfachungen, in dieser Reihenfolge relevant:
 3. **Keine Verschattung durch Umgebung**, Horizont oder Auskragungen. Das
    betrifft auch den Formfaktor zum Himmel, siehe
    [008](008-langwellige-abstrahlung.md#grenzen).
-4. **Isotroper Himmel** bei der kurzwelligen Einstrahlung, siehe
-   [005](005-solar.md).
+
+Die kurzwellige Einstrahlung folgt seit Version 1.2.0 dem anisotropen
+Himmelsmodell nach Perez; das isotrope bleibt wählbar, siehe
+[005](005-solar.md).
 
 Seit Version 1.1.0 ist die **langwellige Abstrahlung gegen den Himmel**
 enthalten — siehe [008](008-langwellige-abstrahlung.md).

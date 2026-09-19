@@ -66,9 +66,17 @@ type Evaluated = ReturnType<typeof evaluate>;
 const baseRows: Evaluated[] = [];
 const recentRows: Evaluated[] = [];
 
+// Nur Jahre mit Temperatur und Globalstrahlung, beide zu mindestens 95 %.
+// Ein Jahr ohne Strahlung bricht ab; eines mit Lücken rechnet seit
+// simulate5R1C 1.4.0 weniger Stunden und drückte das Mittel der Basis.
+let incomplete = 0;
 for (const [year, meta] of Object.entries(measuredIndex)) {
-  if ((meta.completeness.tre200h0 ?? 0) < 0.95) continue;
   const y = Number(year);
+  if (!measured.roomModelYears.includes(y)) continue;
+  if ((meta.completeness.tre200h0 ?? 0) < 0.95 || (meta.completeness.gre000h0 ?? 0) < 0.95) {
+    incomplete++;
+    continue;
+  }
   const r = evaluate(await loadSeries(meta), measured.lat, measured.lon);
   if (y >= BASE_FROM && y <= BASE_TO) baseRows.push(r);
   if (y > BASE_TO) recentRows.push(r);
@@ -88,6 +96,7 @@ if (baseRows.length < 10) {
   console.log(`  Warnung: nur ${baseRows.length} Jahre in ${BASE_FROM}–${BASE_TO} gebaut.`);
   console.log(`  Für eine belastbare Basis:  python3 -m ocbl_data build --station ${abbr} --from ${BASE_FROM} --to ${BASE_TO}\n`);
 }
+if (incomplete) console.log(`  ${incomplete} Jahre mit weniger als 95 % Temperatur oder Strahlung nicht gemittelt.\n`);
 if (baseRows.length) console.log(line(`Basis ${BASE_FROM}–${BASE_TO} (${baseRows.length} Jahre)`, baseRows));
 if (recentRows.length) console.log(line(`zuletzt ${BASE_TO + 1}–2024 (${recentRows.length} Jahre)`, recentRows));
 

@@ -30,7 +30,9 @@ for (const [abbr, entry] of Object.entries(catalog.stations) as [string, any][])
 
   const index = await loadStationIndex(entry);
   const meta = index[year];
-  if (!meta || (meta.completeness?.tre200h0 ?? 0) < 0.95) {
+  // Auch die Strahlung muss vollständig sein: Seit simulate5R1C 1.4.0 rechnet
+  // ein Jahr mit Lücken weniger Stunden und rutschte in der Rangliste nach unten.
+  if (!meta || (meta.completeness?.tre200h0 ?? 0) < 0.95 || (meta.completeness?.gre000h0 ?? 0) < 0.95) {
     skipped++;
     continue;
   }

@@ -141,6 +141,13 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   falsch und sind in allen Dokumenten berichtigt.
 
 ### Behoben
+- **`climate-change.ts` brach an Stationen mit Jahren ohne Globalstrahlung
+  ab**, etwa Grenchen, weil es jedes Jahr mit vollständiger Temperatur rechnete.
+  Das Skript nimmt jetzt nur `roomModelYears` und verlangt wie `stations.ts` 95 %
+  Vollständigkeit auch bei der Strahlung; ein lückenhaftes Jahr rechnet seit
+  `simulate5R1C` 1.4.0 weniger Stunden und drückte das Mittel der Basis.
+  Ausgelassene Jahre werden gemeldet. Die Ausgaben für alle 41 Szenariostationen
+  und `stations.ts` 2023 und 1995 sind Zeichen für Zeichen gleich geblieben.
 - **Stationsfähigkeiten galten für die ganze Station statt je Jahr.** Der
   Katalog bildete sie aus der Vereinigung der Variablen über alle Jahre. Mit
   der längeren Historie hätte das Frontend 641 Stationsjahre an 39 Stationen
@@ -454,10 +461,8 @@ und mussten empirisch bestimmt werden — Herleitung in
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
 
 ### Geplant
-- Längere Historie für alle Stationen
-- Verschattung statt isotropem Himmel, als eigenes Verfahren
-- Zukunftsklima, sobald Lizenz und Publikationsstand geklärt sind
-  ([ADR 0004](docs/adr/0004-v0-nur-vergangenheit.md))
+- Verschattung durch Umgebung, Vordächer und Laibungen, als eigenes Verfahren
+  ([006](docs/methods/006-room-model-5r1c.md#gültigkeitsbereich-und-grenzen))
 
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
