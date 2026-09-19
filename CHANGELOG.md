@@ -525,6 +525,10 @@ und mussten empirisch bestimmt werden — Herleitung in
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
 
 ### Geplant
+- Veröffentlichung: App und Startpaket auf GitHub Pages, vollständiges Archiv
+  mit DOI auf Zenodo. Vorschlag mit Zahlen und offenen Fragen in
+  [ADR 0009](docs/adr/0009-veroeffentlichung.md); der Entscheid liegt beim
+  Betreiber.
 - Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
   ([011](docs/methods/011-vordach.md#grenzen))
 
