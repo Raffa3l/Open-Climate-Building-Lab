@@ -43,6 +43,8 @@ const FACADE_AREA = 9.8;
 const FACADE_WIDTH = 3.5;
 /** Sturz zwischen Fensteroberkante und Decke, m; darüber liegt das Vordach. */
 const LINTEL = 0.2;
+/** Reflexionsgrad von Vordachunterseite und Fassade gegenüber: heller Beton. */
+const SURROUNDING_ALBEDO = 0.3;
 
 /** Die Stellung der Regler. */
 export interface RoomSettings {
@@ -131,7 +133,7 @@ export function referenceRoom(s: RoomSettings): RoomSpec {
           : { factorClosed: round6(s.shading / 0.5), activationIrradiance: 200 },
         // Ohne Vordach fehlt das Feld, und der Hash bleibt der bisherige.
         ...(s.overhang > 0 ? { overhang: overhangOverWindow(s.overhang, windowArea) } : {}),
-        ...(s.obstruction > 0 ? { obstruction: { angle: s.obstruction } } : {}),
+        ...(s.obstruction > 0 ? { obstruction: { angle: s.obstruction, albedo: SURROUNDING_ALBEDO } } : {}),
       },
     ],
     massClass: s.massClass,
@@ -152,7 +154,11 @@ export function referenceRoom(s: RoomSettings): RoomSpec {
  */
 function overhangOverWindow(depth: number, windowArea: number): Overhang {
   const windowHeight = windowArea / FACADE_WIDTH;
-  return { depthRatio: round6(depth / windowHeight), gapRatio: round6(LINTEL / windowHeight) };
+  return {
+    depthRatio: round6(depth / windowHeight),
+    gapRatio: round6(LINTEL / windowHeight),
+    albedo: SURROUNDING_ALBEDO,
+  };
 }
 
 // --- Permalink ----------------------------------------------------------------

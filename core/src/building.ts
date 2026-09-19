@@ -361,9 +361,26 @@ export function simulate5R1C(
       );
       // Der Sonnenschutz regelt auf das, was unter Vordach und Verbauung
       // ankommt, wie ein Fühler am Fenster.
-      const irradiance = window.overhang || window.obstruction
-        ? irradianceWithExternalShading(onSurface, sun, window.orientation, window).total
-        : onSurface.total;
+      let irradiance = onSurface.total;
+      if (window.overhang || window.obstruction) {
+        // Die Fassade gegenüber wirft zurück, was auf sie fällt; ihre Normale
+        // zeigt zum Fenster. Gerechnet nur, wenn ein Reflexionsgrad gesetzt ist.
+        let opposite = 0;
+        if (window.obstruction?.albedo) {
+          const facing = { tilt: 90, azimuth: (window.orientation.azimuth + 180) % 360 };
+          // Symmetrische Schlucht: Die Fassade gegenüber steht ihrerseits vor
+          // einer Verbauung desselben Winkels. Ohne das wüchse ihre Reflexion
+          // mit der Höhe des Gegenübers, und eine höhere Zeile brächte mehr
+          // Sonne ins Zimmer statt weniger.
+          opposite = irradianceWithExternalShading(
+            irradianceOnSurface(skyModel, globalOk, diffuse, sun, facing, dayOfYear, albedo),
+            sun, facing, { obstruction: { angle: window.obstruction.angle } },
+          ).total;
+        }
+        irradiance = irradianceWithExternalShading(onSurface, sun, window.orientation, window, {
+          globalHorizontal: globalOk, groundAlbedo: albedo, opposite,
+        }).total;
+      }
       const shadingActive = irradiance >= window.shading.activationIrradiance;
       if (shadingActive) anyShaded = true;
       const shadingFactor = shadingActive ? window.shading.factorClosed : 1;

@@ -84,7 +84,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   alle bisherigen Hashes bleiben gleich. Sieben Tests, darunter eine
   Strahlverfolgung über 324 Sonnenstände und die Bemessung aus dem NREL-Handbuch.
   Zürich/Fluntern 2023 ohne Sonnenschutz: 1'308 Übertemperaturstunden, mit 1 m
-  Vordach 478; mit Sonnenschutz 501 und 385.
+  Vordach 505; mit Sonnenschutz 501 und 404 (mit Reflexion, siehe unten).
 - **`core/scripts/trends.ts`**: derselbe Raum an jeder Station mit mindestens
   30 vollständigen Messjahren, rangiert nach dem Trend
   ([012](docs/methods/012-mehrjahresverlauf.md#alle-stationen)). 66 der 132
@@ -116,6 +116,15 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   und dem neuen `core/scripts/trend.ts`. Ein Permalink mit `trend=1` lädt den
   Verlauf mit. Zürich/Fluntern, Voreinstellung: +46 Übertemperaturstunden pro
   Jahrzehnt, r² 0.31, Mittel 289 h in 1991–2000 und 425 h in 2015–2024.
+- **Reflexion von Vordach und Gegenüber**
+  ([011](docs/methods/011-vordach.md#reflexion)): Die Unterseite des Vordachs
+  gibt weiter, was der Boden ihr zuwirft; die Fassade gegenüber wirft im
+  Sichtfeld sin(ε)/2 zurück, was auf sie fällt. Der Reflexionsgrad steht in der
+  Geometrie des Fensters, im Referenzfall 0.3; ohne ihn bleibt alles wie zuvor,
+  auch der Hash. Die Fassade gegenüber steht dabei selbst in einer Schlucht
+  desselben Winkels — ohne diese Annahme brachte eine höhere Häuserzeile mehr
+  Sonne ins Zimmer statt weniger, was ein Test aufdeckte. Zürich/Fluntern 2023:
+  +14 bis +61 Übertemperaturstunden, 5 bis 20 %.
 - **Verbauung gegenüber** ([011](docs/methods/011-vordach.md#verbauung)), im
   Frontend als Verbauungswinkel von 0° bis 60° über dem Horizont, von der
   Fenstermitte aus. Unter dem Winkel fallen Direktstrahlung und Aufhellung um
@@ -123,8 +132,8 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Vordach in geschlossener Form über die Fensterhöhe gemittelt. Die
   Sichtfaktorregel ist an Okes Strassenschlucht verankert (ψ = cos β). Ohne
   Verbauung bleiben alle Hashes gleich, auch die mit Vordach. Zürich/Fluntern
-  2023 ohne Sonnenschutz, Westfassade: 1'099 Übertemperaturstunden frei, 697
-  bei 30°; Südfassade 1'308 und 1'154.
+  2023 ohne Sonnenschutz, Westfassade: 1'099 Übertemperaturstunden frei, 758
+  bei 30°; Südfassade 1'308 und 1'175 (mit Reflexion, siehe unten).
 
 ### Geändert
 - **Tagstunden ohne Globalstrahlung sind nicht rechenbar.**
@@ -516,8 +525,8 @@ und mussten empirisch bestimmt werden — Herleitung in
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
 
 ### Geplant
-- Seitliche Laibungen; Vordach und Verbauung begrenzter Breite; Reflexion von
-  Vordach und Gegenüber ([011](docs/methods/011-vordach.md#grenzen))
+- Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
+  ([011](docs/methods/011-vordach.md#grenzen))
 
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte

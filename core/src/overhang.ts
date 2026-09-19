@@ -39,6 +39,11 @@ export interface Overhang {
   depthRatio: number;
   /** Abstand G zwischen Fensteroberkante und Vordach, geteilt durch H. */
   gapRatio: number;
+  /**
+   * Reflexionsgrad der Unterseite. Fehlt er, reflektiert sie nicht, und
+   * Ergebnis wie Hash bleiben, was sie ohne diesen Term waren.
+   */
+  albedo?: number;
 }
 
 /**
@@ -49,6 +54,17 @@ export interface Overhang {
 export interface Obstruction {
   /** Höhe der Oberkante über dem Horizont, von der Fenstermitte aus, Grad. */
   angle: number;
+  /** Reflexionsgrad der Fassade gegenüber. Fehlt er, reflektiert sie nicht. */
+  albedo?: number;
+}
+
+/** Was die Umgebung zurückwirft, braucht die Einstrahlung ringsum. */
+export interface ReflectionInput {
+  /** Globalstrahlung horizontal, W/m² — sie beleuchtet den Boden. */
+  globalHorizontal: number;
+  groundAlbedo: number;
+  /** Bestrahlung der Fassade gegenüber, W/m², als senkrechte Fläche zum Fenster hin. */
+  opposite: number;
 }
 
 export interface ExternalShading {
@@ -120,12 +136,44 @@ export function overhangSkyViewRatio(overhang: Overhang): number {
   return skyViewRatio({ overhang });
 }
 
+/**
+ * Sichtfaktor des Fensters auf die Unterseite des Vordachs, absolut (nicht auf
+ * 1/2 bezogen). Fadenmethode im Schnitt, Fensterhöhe 1.
+ */
+export function overhangViewFactor(overhang: Overhang): number {
+  const p = overhang.depthRatio;
+  const g = overhang.gapRatio;
+  return (Math.hypot(p, g) + 1 - Math.hypot(p, 1 + g)) / 2;
+}
+
+/**
+ * Was Vordach und Gegenüber zurückwerfen, W/m² auf das Fenster.
+ *
+ * Die Unterseite des Vordachs sieht den Boden: Sie empfängt ρ_Boden · I_global
+ * und gibt davon ihren eigenen Reflexionsgrad weiter. Die Fassade gegenüber
+ * steht im Sichtfeld zwischen Horizont und Verbauungswinkel, also mit
+ * sin(ε)/2; besonnt wirft sie einen erheblichen Teil zurück.
+ */
+export function reflectedFromSurroundings(shading: ExternalShading, input: ReflectionInput): number {
+  let reflected = 0;
+  const overhang = shading.overhang;
+  if (overhang?.albedo) {
+    reflected += overhang.albedo * input.groundAlbedo * Math.max(0, input.globalHorizontal) * overhangViewFactor(overhang);
+  }
+  const obstruction = shading.obstruction;
+  if (obstruction?.albedo) {
+    reflected += obstruction.albedo * Math.max(0, input.opposite) * Math.sin(obstruction.angle * DEG) / 2;
+  }
+  return reflected;
+}
+
 /** Einstrahlung auf das Fenster mit Vordach und Verbauung. */
 export function irradianceWithExternalShading(
   irradiance: TiltedIrradiance,
   sun: SolarPosition,
   surface: SurfaceOrientation,
   shading: ExternalShading,
+  reflection?: ReflectionInput,
 ): TiltedIrradiance {
   let sunlit = shading.overhang ? 1 - overhangShadedFraction(sun, surface, shading.overhang) : 1;
   if (shading.obstruction) {
@@ -141,15 +189,19 @@ export function irradianceWithExternalShading(
   // Den Horizontstreifen verdeckt jede Verbauung, ein Vordach nicht.
   const diffuseHorizon = shading.obstruction ? 0 : irradiance.diffuseHorizon;
   const diffuse = Math.max(0, diffuseIsotropic + diffuseCircumsolar + diffuseHorizon);
+  // Was die Umgebung zurückwirft, steht bei der Bodenreflexion: beides kommt
+  // von unterhalb des Horizonts oder von einer Fläche statt vom Himmel.
+  const groundReflected = irradiance.groundReflected
+    + (reflection ? reflectedFromSurroundings(shading, reflection) : 0);
 
   return {
-    total: beam + diffuse + irradiance.groundReflected,
+    total: beam + diffuse + groundReflected,
     beam,
     diffuse,
     diffuseIsotropic,
     diffuseCircumsolar,
     diffuseHorizon,
-    groundReflected: irradiance.groundReflected,
+    groundReflected,
   };
 }
 
@@ -171,6 +223,11 @@ export function assertExternalShadingApplies(shading: ExternalShading, surface: 
   }
   for (const [key, value] of Object.entries(shading.overhang ?? {})) {
     if (!Number.isFinite(value) || value < 0) throw new Error(`Vordach: ${key} = ${value} ist keine Geometrie`);
+  }
+  for (const albedo of [shading.overhang?.albedo, shading.obstruction?.albedo]) {
+    if (albedo !== undefined && !(albedo >= 0 && albedo <= 1)) {
+      throw new Error(`Reflexionsgrad ${albedo} liegt nicht zwischen 0 und 1`);
+    }
   }
   const angle = shading.obstruction?.angle;
   if (angle !== undefined && !(angle >= 0 && angle < 90)) {

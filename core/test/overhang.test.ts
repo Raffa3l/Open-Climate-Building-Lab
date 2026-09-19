@@ -11,6 +11,7 @@ import {
   irradianceWithExternalShading,
   overhangShadedFraction,
   overhangSkyViewRatio,
+  overhangViewFactor,
   skyViewRatio,
   stripViewFactor,
   type Overhang,
@@ -196,9 +197,39 @@ test("die Verbauung nimmt die Sonne, solange ihr Profil darunter liegt", () => {
 test("Referenzraum: ohne Verbauung bleibt das Fenster wie bisher", () => {
   assert.ok(!JSON.stringify(referenceRoom(DEFAULT_ROOM_SETTINGS).windows).includes("obstruction"));
   const room = referenceRoom({ ...DEFAULT_ROOM_SETTINGS, obstruction: 25 });
-  assert.deepEqual(room.windows[0].obstruction, { angle: 25 });
+  assert.deepEqual(room.windows[0].obstruction, { angle: 25, albedo: 0.3 });
   assert.throws(() => assertExternalShadingApplies({ obstruction: { angle: 90 } }, SOUTH), /Verbauung/);
   assert.throws(() => assertExternalShadingApplies({ obstruction: { angle: 20 } }, { tilt: 30, azimuth: 180 }), /senkrechten/);
+});
+
+test("Vordach und Gegenüber werfen zurück, aber nur mit Reflexionsgrad", () => {
+  const sun = sunAt(35, 240);
+  const on = irradianceOnSurface("perez", 700, 200, sun, SOUTH, 180);
+  const reflection = { globalHorizontal: 700, groundAlbedo: 0.2, opposite: 400 };
+
+  // Ohne Reflexionsgrad bleibt es beim Boden allein.
+  const plain = irradianceWithExternalShading(on, sun, SOUTH, {
+    overhang: { depthRatio: 1, gapRatio: 0.2 }, obstruction: { angle: 30 },
+  }, reflection);
+  assert.equal(plain.groundReflected, on.groundReflected);
+
+  // Vordach: Reflexionsgrad · Bodenalbedo · Globalstrahlung · Sichtfaktor zum Vordach.
+  const overhang = { depthRatio: 1, gapRatio: 0.2, albedo: 0.3 };
+  const fromRoof = irradianceWithExternalShading(on, sun, SOUTH, { overhang }, reflection);
+  const viewFactor = overhangViewFactor(overhang);
+  assert.ok(Math.abs(fromRoof.groundReflected - on.groundReflected - 0.3 * 0.2 * 700 * viewFactor) < 1e-9);
+
+  // Gegenüber: Reflexionsgrad · Bestrahlung der Fassade · sin(ε)/2.
+  const fromWall = irradianceWithExternalShading(on, sun, SOUTH, { obstruction: { angle: 30, albedo: 0.3 } }, reflection);
+  assert.ok(Math.abs(fromWall.groundReflected - on.groundReflected - 0.3 * 400 * Math.sin(30 * DEG) / 2) < 1e-9);
+  // 0.5 · sin 30° = 0.25, also ein Viertel dessen, was die Fassade zurückwirft.
+  assert.ok(Math.abs(fromWall.groundReflected - on.groundReflected - 30) < 1e-9);
+
+  // Ohne Angaben zur Umgebung reflektiert nichts, auch mit Reflexionsgrad.
+  const withoutInput = irradianceWithExternalShading(on, sun, SOUTH, { overhang, obstruction: { angle: 30, albedo: 0.3 } });
+  assert.equal(withoutInput.groundReflected, on.groundReflected);
+
+  assert.throws(() => assertExternalShadingApplies({ obstruction: { angle: 30, albedo: 1.4 } }, SOUTH), /Reflexionsgrad/);
 });
 
 test("Vordach nur über senkrechten Fenstern und mit gültiger Geometrie", () => {
@@ -214,7 +245,7 @@ test("Referenzraum: ohne Vordach bleibt das Fenster und damit der Hash wie bishe
 
   // 40 % von 9.8 m² als Band über 3.5 m: 1.12 m hoch, darüber 0.2 m Sturz.
   const withRoof = referenceRoom({ ...DEFAULT_ROOM_SETTINGS, overhang: 1 });
-  assert.deepEqual(withRoof.windows[0].overhang, { depthRatio: 0.892857, gapRatio: 0.178571 });
+  assert.deepEqual(withRoof.windows[0].overhang, { depthRatio: 0.892857, gapRatio: 0.178571, albedo: 0.3 });
 });
 
 test("ein Vordach senkt die solaren Einträge im Sommer", () => {

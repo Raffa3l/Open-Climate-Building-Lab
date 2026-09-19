@@ -93,6 +93,43 @@ $$\frac{F_{Himmel}}{1/2} = \int_{\max(g,\ p\tan\varepsilon)}^{1+g} \left(\frac{d
 Ohne Verbauung ist das die Fadenformel von oben, ohne Vordach 1 − sin ε. Beide
 Hindernisse lassen sich so gemeinsam rechnen.
 
+## Reflexion
+
+Eine helle Balkonplatte und eine besonnte Fassade gegenüber werfen Strahlung
+aufs Fenster zurück. Beides steht bei der Bodenreflexion, denn beides kommt von
+einer Fläche statt vom Himmel:
+
+$$I_{Vordach} = \rho_{Vordach} \cdot \rho_{Boden} \cdot I_{global} \cdot F_{Fenster \to Vordach}, \qquad I_{Gegen\ddot{u}ber} = \rho_{Fassade} \cdot I_{gegen\ddot{u}ber} \cdot \frac{\sin\varepsilon}{2}$$
+
+Die Unterseite des Vordachs sieht den Boden und gibt von dessen Reflexion
+weiter, was sie nicht schluckt. Die Fassade gegenüber steht im Sichtfeld
+zwischen Horizont und ε, also mit sin ε / 2; ihre eigene Bestrahlung rechnet
+dasselbe Verfahren für eine senkrechte Fläche mit umgekehrter Ausrichtung.
+
+**Die Schlucht ist symmetrisch.** Die Fassade gegenüber steht ihrerseits vor
+einer Verbauung desselben Winkels. Ohne diese Annahme wüchse ihre Bestrahlung
+mit der Höhe des Gegenübers, und eine höhere Häuserzeile brächte mehr Sonne ins
+Zimmer statt weniger — im Test aufgefallen, als 60° mehr solare Einträge ergab
+als 30°.
+
+Der Reflexionsgrad steht in der Geometrie des Fensters und damit im Hash. Fehlt
+er, reflektiert die Fläche nicht, und Ergebnis wie Hash bleiben, was sie ohne
+diesen Term waren. Der Referenzfall setzt 0.3 für beide Flächen, heller Beton.
+
+Gemessen an Zürich/Fluntern 2023, Übertemperaturstunden mit gegen ohne
+Reflexion:
+
+| Fall | ohne | mit | Δ |
+|---|---:|---:|---:|
+| Süd, ohne Sonnenschutz, Vordach 1.0 m | 478 | 505 | +27 |
+| Süd, ohne Sonnenschutz, Verbauung 30° | 1'154 | 1'175 | +21 |
+| Süd, ohne Sonnenschutz, Vordach 1.0 m und Verbauung 30° | 304 | 361 | +57 |
+| West, ohne Sonnenschutz, Verbauung 30° | 697 | 758 | +61 |
+| Süd, Sonnenschutz, Verbauung 30° | 430 | 444 | +14 |
+
+Die Reflexion hebt die Übertemperaturstunden um 5 bis 20 %. Je mehr Vordach und
+Verbauung abschirmen, desto mehr fällt sie ins Gewicht.
+
 ## Referenzfall
 
 Das Fenster ist ein Band über die ganze Fassadenbreite von 3.5 m, die
@@ -150,19 +187,19 @@ Voreinstellung, Zürich/Fluntern 2023, 40 % Fensteranteil, mit Nachtlüftung:
 | Fassade | Sonnenschutz | Vordach | ÜTS | Kh | θ_op max | Schutz geschlossen |
 |---|---|---:|---:|---:|---:|---:|
 | Süd | g_tot 0.15 | – | 501 | 801 | 36.3 °C | 1'727 h |
-| Süd | g_tot 0.15 | 1.0 m | 385 | 539 | 35.5 °C | 634 h |
-| Süd | g_tot 0.15 | 2.0 m | 328 | 456 | 35.3 °C | 210 h |
+| Süd | g_tot 0.15 | 1.0 m | 404 | 589 | 35.6 °C | 644 h |
+| Süd | g_tot 0.15 | 2.0 m | 361 | 529 | 35.5 °C | 217 h |
 | Süd | keiner | – | 1'308 | 4'875 | 42.2 °C | |
-| Süd | keiner | 0.5 m | 831 | 2'050 | 38.6 °C | |
-| Süd | keiner | 1.0 m | 478 | 723 | 35.5 °C | |
-| Süd | keiner | 2.0 m | 328 | 456 | 35.3 °C | |
+| Süd | keiner | 0.5 m | 849 | 2'101 | 38.7 °C | |
+| Süd | keiner | 1.0 m | 505 | 787 | 35.6 °C | |
+| Süd | keiner | 2.0 m | 361 | 529 | 35.5 °C | |
 | West | keiner | – | 1'099 | 3'659 | 41.4 °C | |
-| West | keiner | 1.0 m | 695 | 1'479 | 38.5 °C | |
-| West | keiner | 2.0 m | 452 | 774 | 36.8 °C | |
+| West | keiner | 1.0 m | 720 | 1'576 | 38.6 °C | |
+| West | keiner | 2.0 m | 504 | 878 | 37.0 °C | |
 
 Auf der Südfassade ersetzt ein Vordach von gut einem Meter über einem 1.12 m
-hohen Fenster fast den ganzen Sonnenschutz. Gegen die tiefe Abendsonne im
-Westen wirkt es deutlich schwächer.
+hohen Fenster fast den ganzen Sonnenschutz: 505 gegen 501 Stunden. Gegen die
+tiefe Abendsonne im Westen wirkt es deutlich schwächer.
 
 Die Verbauung wirkt umgekehrt, sie nimmt die tiefe Sonne. Dieselbe
 Voreinstellung ohne Vordach:
@@ -170,19 +207,19 @@ Voreinstellung ohne Vordach:
 | Fassade | Sonnenschutz | Verbauung | ÜTS | Kh | θ_op max | Schutz geschlossen |
 |---|---|---:|---:|---:|---:|---:|
 | Süd | g_tot 0.15 | – | 501 | 801 | 36.3 °C | 1'727 h |
-| Süd | g_tot 0.15 | 30° | 430 | 630 | 35.9 °C | 1'247 h |
+| Süd | g_tot 0.15 | 30° | 444 | 658 | 36.0 °C | 1'273 h |
 | Süd | keiner | – | 1'308 | 4'875 | 42.2 °C | |
-| Süd | keiner | 30° | 1'154 | 3'772 | 41.3 °C | |
-| Süd | keiner | 60° | 644 | 1'450 | 38.2 °C | |
+| Süd | keiner | 30° | 1'175 | 3'926 | 41.4 °C | |
+| Süd | keiner | 60° | 674 | 1'563 | 38.4 °C | |
 | West | g_tot 0.15 | – | 538 | 940 | 36.7 °C | 1'076 h |
-| West | g_tot 0.15 | 30° | 349 | 511 | 35.3 °C | 602 h |
+| West | g_tot 0.15 | 30° | 404 | 618 | 35.6 °C | 611 h |
 | West | keiner | – | 1'099 | 3'659 | 41.4 °C | |
-| West | keiner | 30° | 697 | 1'577 | 38.1 °C | |
-| West | keiner | 60° | 332 | 456 | 35.4 °C | |
+| West | keiner | 30° | 758 | 1'809 | 38.4 °C | |
+| West | keiner | 60° | 383 | 541 | 35.7 °C | |
 
 Ein Gegenüber unter 30° nimmt der Südfassade im Sommer wenig, weil die
-Mittagssonne weit darüber steht, 12 % der Stunden ohne Sonnenschutz. Der
-Westfassade nimmt es gut ein Drittel.
+Mittagssonne weit darüber steht, 10 % der Stunden ohne Sonnenschutz. Der
+Westfassade nimmt es knapp ein Drittel.
 
 ## Grenzen
 
@@ -192,9 +229,9 @@ Westfassade nimmt es gut ein Drittel.
 2. **Keine seitlichen Laibungen oder Blenden.**
 3. **Die Verbauung gilt über die ganze Fensterhöhe.** Steht das Gegenüber nah,
    sieht die Unterkante des Fensters es höher als die Oberkante.
-4. **Vordach und Gegenüber reflektieren nicht.** Eine helle Balkonplatte oder
-   eine besonnte Fassade gegenüber wirft Strahlung aufs Fenster; die Rechnung
-   unterschätzt dann den Eintrag.
+4. **Die Reflexion nimmt eine symmetrische Schlucht an** und rechnet die
+   Fassade gegenüber als eine Fläche mit einem Reflexionsgrad, ohne ihre
+   Fenster, ihre Vorsprünge und ihre eigene Verschattung.
 5. **Die langwellige Abstrahlung bleibt unverändert.** Das Fenster sieht unter
    dem Vordach und vor dem Gegenüber weniger Himmel und verliert nachts weniger;
    der Formfaktor des Raums zum Himmel ist aber pauschal
