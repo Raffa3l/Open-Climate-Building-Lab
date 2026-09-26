@@ -8,7 +8,7 @@ Daten, Annahmen und Gleichungen sie entstanden ist.
 
 **Daten → Modell → interaktive Visualisierung → Erklärung → Quellen → Download**
 
-Online: <https://raffa3l.github.io/Open-Climate-Building-Lab/>
+Online: <https://logicc.dev/Open-Climate-Building-Lab/>
 
 ## Status
 

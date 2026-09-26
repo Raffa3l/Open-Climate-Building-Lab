@@ -17,7 +17,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   `.github/workflows/pages.yml` baut alle 4'154 Stationsjahre und 270
   Szenarien aus der Quelle, prüft Prüfsummen, Vollständigkeit und Rechenkern
   und veröffentlicht App und Daten unter
-  <https://raffa3l.github.io/Open-Climate-Building-Lab/>. Die App verlinkt die
+  <https://logicc.dev/Open-Climate-Building-Lab/>. Die App verlinkt die
   Methodenseiten und den Quelltext im Repository.
 - Downloads versuchen es bei Netzfehlern viermal. Eine fehlende Datei (die
   Quelle antwortet mit 403) bleibt ein übersprungenes Stationsjahr; eine Quelle,
