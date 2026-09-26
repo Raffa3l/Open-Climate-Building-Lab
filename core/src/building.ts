@@ -38,7 +38,7 @@ export const METHOD_ROOM_5R1C: MethodRef = {
   id: "building.simulate5R1C",
   // 1.1.0: langwellige Abstrahlung gegen den Himmel ergänzt (§11.3.5).
   // 1.2.0: Standard-Himmelsmodell von isotrop auf Perez (1990) umgestellt.
-  // 1.3.0: zyklischer Vorlauf aus dem Ende der Reihe (ADR 0008); das ganze
+  // 1.3.0: zyklischer Vorlauf aus dem Ende der Reihe ; das ganze
   //        Jahr ist gültig statt der ersten 5·τ verworfen.
   // 1.4.0: fehlt die Globalstrahlung bei Sonne über dem Horizont, ist die
   //        Stunde nicht rechenbar, statt mit 0 W/m² gerechnet zu werden.

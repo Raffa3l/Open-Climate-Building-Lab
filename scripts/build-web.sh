@@ -2,7 +2,7 @@
 # Erzeugt die browserfaehigen Artefakte fuer web/.
 #
 # Zwei Schritte, beide reproduzierbar, beide gitignoriert:
-#   1. tsc uebersetzt core/src nach natives ESM — kein Bundler, siehe ADR 0006
+#   1. tsc uebersetzt core/src nach natives ESM — kein Bundler, bewusst
 #   2. die vom ETL gebauten Stationsjahre werden neben die Seite gelegt
 
 set -euo pipefail

@@ -56,7 +56,7 @@ export interface Computation<T> {
    * Berechnungen, auf denen diese aufbaut, je mit ihrer Rolle. Ihre Identität
    * geht in den Hash ein: Eine Kennzahl aus einer Raumtemperatur trägt so die
    * Raumparameter mit, ohne sie selbst zu kennen. Fehlt das Feld, bleibt der
-   * Hash, was er ohne Vorgänger immer war (ADR 0007).
+   * Hash, was er ohne Vorgänger immer war.
    */
   upstream?: Upstream[];
 }
@@ -97,7 +97,7 @@ export function canonicalForm<T>(c: Computation<T>): string {
  * So bleibt canonicalForm() synchron, und der Hash einer Kette ist trotzdem
  * eindeutig. Ohne Vorgänger ist `upstream` undefined und fällt in
  * stableStringify() weg: Die Zeichenkette ist dann byte-gleich zu der vor
- * ADR 0007. Ein Test hält das an einem festen Hash fest.
+ * Verkettete Hashes. Ein Test hält das an einem festen Hash fest.
  */
 function canonicalObject<T>(c: Computation<T>): unknown {
   return {

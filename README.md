@@ -119,7 +119,6 @@ ohne Sonnenschutz — Kontrast, nicht baubar      2123   20656      50.8
 | [`core/`](core/) | Rechenkern in TypeScript. Läuft im Browser, in der API und im CLI — **eine** Implementierung. |
 | [`data/`](data/) | ETL in Python. Lädt MeteoSchweiz-OGD, prüft, packt nach `.ocbl`. |
 | [`docs/methods/`](docs/methods/) | Herleitung jedes Verfahrens. Ziel des Knopfs «Berechnung anzeigen». |
-| [`docs/adr/`](docs/adr/) | Architekturentscheide mit Begründung und verworfenen Alternativen. |
 | [`web/`](web/) | Frontend. Regler, Jahresdiagramm, Nachweis. Kein Framework, kein Bundler. |
 
 Von 158 Stationen messen **149** Temperatur und Feuchte, **132** zusätzlich
@@ -183,8 +182,7 @@ Rundung in der Publikationsauflösung.
 
 ## Daten und Lizenz
 
-Der **Code** steht unter [Apache-2.0](LICENSE) — Begründung in
-[ADR 0001](docs/adr/0001-open-source-apache-2.md).
+Der **Code** steht unter [Apache-2.0](LICENSE).
 
 Die **Daten** stammen vom Bundesamt für Meteorologie und Klimatologie
 MeteoSchweiz und stehen unter CC BY 4.0. Quellenangabe ist Pflicht und wird

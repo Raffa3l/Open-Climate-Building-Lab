@@ -283,7 +283,7 @@ export async function referenceCaseExport(input: ReferenceExportInput): Promise<
   });
 
   // Benannt nach dem Hash der Übertemperaturstunden: Über seine Vorgänger
-  // umfasst er Simulation, Komfortband und Datensatz (ADR 0007).
+  // umfasst er über die verketteten Hashes Simulation, Komfortband und Datensatz.
   const stem = `ocbl_${station}_${climateKey}_${await shortHash(exceedance)}`;
 
   const manifest = await exportManifest({

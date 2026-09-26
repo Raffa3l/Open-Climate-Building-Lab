@@ -61,7 +61,7 @@ Mitgeführt werden zusätzlich die Kelvinstunden der Überschreitung — eine
 ### Eingänge und Identität
 
 Die Funktion baut auf zwei Berechnungen auf und führt beide als Vorgänger
-([ADR 0007](../adr/0007-verkettete-berechnungs-hashes.md)):
+(verkettete Berechnungs-Hashes):
 
 | Rolle | Berechnung | Beitrag |
 |---|---|---|
@@ -80,7 +80,7 @@ Kenngrössen der Simulation berechnet sie dieselbe Stundenzahl wie
 `warmupHours()`, zieht den Vorlauf der Simulation ab und verwirft nur den Rest;
 die Zahl steht in `params.warmupHours`. Seit `simulate5R1C` 1.3.0 deckt der
 Vorlauf die Einschwingphase ganz ab, und das ganze Jahr wird bewertet
-([ADR 0008](../adr/0008-zyklischer-vorlauf.md)). **Die Kategorie**
+(zyklischer Vorlauf, siehe [006](006-room-model-5r1c.md)). **Die Kategorie**
 kommt aus dem Komfortband und wird nicht ein zweites Mal angegeben, weil sich
 zwei Angaben widersprechen könnten.
 
@@ -107,7 +107,7 @@ anderes als «keine Überschreitung».
 Die Tageswerte kamen **ohne Versionssprung** hinzu. Für gleiche Eingaben ändert
 sich keine bestehende Zahl, und die Version geht in den Berechnungs-Hash ein:
 Ein Sprung hätte jeden Permalink gebrochen, ohne dass sich ein publizierter
-Wert verändert hätte. Der Sprung auf 2.0.0 kam danach mit ADR 0007, aus einem
+Wert verändert hätte. Der Sprung auf 2.0.0 kam danach mit den verketteten Hashes, aus einem
 anderen Grund: Die Signatur wurde inkompatibel, und der Hash sollte sich ändern.
 
 ## Verhältnis zu SIA 180

@@ -170,7 +170,7 @@ Simulation, oder beruht die Berechnung auf einem anderen Datensatz, bricht
 Die Übertemperaturstunden bauen auf der Simulation und dem Komfortband auf, das
 Komfortband auf dem gleitenden Mittel. Jede abgeleitete Berechnung führt ihre
 Vorgänger mit, und deren kanonische Form steht verschachtelt in der eigenen
-([ADR 0007](../adr/0007-verkettete-berechnungs-hashes.md)). Die Prüfung ist
+(verkettete Berechnungs-Hashes). Die Prüfung ist
 trotzdem dieselbe wie oben: SHA-256 über `canonicalForm` ergibt `hash`.
 
 Bis 13.09.2026 war das nicht so. Die Raumparameter standen nur im Hash der
@@ -188,7 +188,7 @@ Berechnungen ohne Vorgänger behielten ihren Hash, etwa die Simulation
 Alle Hashes dieses Abschnitts gehören zum Stand vom 13.09.2026. Seither haben
 drei Änderungen jeden Hash neu gesetzt: die Quellenangabe mit Umlauten im Header
 ([004](004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)), der
-Vorlauf des Raummodells ([ADR 0008](../adr/0008-zyklischer-vorlauf.md)) und
+Vorlauf des Raummodells ([006](006-room-model-5r1c.md)) und
 `simulate5R1C` 1.4.0, das Tagstunden ohne Strahlungsmessung nicht mehr rechnet
 ([006](006-room-model-5r1c.md#fehlende-messwerte)). Die Kennzahlen dieser
 beiden Fälle sind gleich geblieben. Mit dem Vorlauf hat die CSV zusätzlich

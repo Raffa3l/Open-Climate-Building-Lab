@@ -32,7 +32,7 @@ const SOURCE: DatasetRef = {
 const axis = hourlyAxis(YEAR_2021_START, HOURS);
 
 /**
- * Minimale Vorgänger für Komfortband und Übertemperaturstunden (ADR 0007).
+ * Minimale Vorgänger für Komfortband und Übertemperaturstunden.
  * Die Kapazität steuert die Einschwingphase: 0 heisst keine, 3600 J/K bei 1 W/K
  * ergibt τ = 1 h und damit genau einen verworfenen Tag.
  */
@@ -265,7 +265,7 @@ test("α des gleitenden Mittels geht in den Hash des Komfortbands ein", async ()
 });
 
 test("der Hash der Übertemperaturstunden kennt den Raum", async () => {
-  // Die Lücke vor ADR 0007: gleiche Wetterdaten, anderer Raum, gleicher Hash.
+  // Die Lücke vor den verketteten Hashes: gleiche Wetterdaten, anderer Raum, gleicher Hash.
   const band = bandOf(new Float64Array(365).fill(28.4));
   const a = simulationOf(constantSeries(30));
   const b: Computation<SimulationResult> = { ...simulationOf(constantSeries(30)), params: { windowFraction: 0.7 } };

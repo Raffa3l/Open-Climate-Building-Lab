@@ -133,7 +133,7 @@ export interface YearTrend {
  * Trend der Übertemperaturstunden über Messjahre.
  *
  * Jede Jahresauswertung hängt als Vorgänger mit der Rolle `y<Jahr>` im Hash
- * (ADR 0007): Der Trend kennt damit Raum, Bewertung und jeden Datensatz, und
+ * (verkettete Hashes): Der Trend kennt damit Raum, Bewertung und jeden Datensatz, und
  * ein anderes Jahr oder ein anderer Raum ergibt einen anderen Hash.
  */
 export function exceedanceTrend(

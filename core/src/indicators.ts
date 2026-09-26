@@ -343,7 +343,7 @@ export interface ComfortBand {
  *
  * Seit 2.0.0 nimmt die Funktion das gleitende Mittel als Computation, nicht als
  * nackte Reihe. Dessen Parameter α geht damit in den Hash des Bandes ein; zuvor
- * ergaben zwei verschiedene α denselben Band-Hash (ADR 0007).
+ * ergaben zwei verschiedene α denselben Band-Hash.
  */
 export function adaptiveComfortBand(
   runningMean: Computation<Float64Array>,
@@ -388,7 +388,7 @@ export interface ExceedanceResult {
  * adaptive Obergrenze des jeweiligen Tages überschreitet.
  *
  * Seit 2.0.0 nimmt die Funktion die Simulation und das Komfortband als
- * Computation entgegen, nicht als nackte Reihen (ADR 0007). Das hat drei Folgen:
+ * Computation entgegen, nicht als nackte Reihen. Das hat drei Folgen:
  *
  * - Der Hash kennt den Raum. Zuvor ergaben 40 % und 70 % Fensteranteil 403 und
  *   662 Stunden unter demselben Hash, weil die Raumparameter nur in der
@@ -399,7 +399,7 @@ export interface ExceedanceResult {
  *   Kenngrössen der Simulation. Die Stundenzahl steht in `params.warmupHours`.
  *   Seit 2.1.0 zählt der Vorlauf der Simulation dagegen: Hat sie mindestens
  *   so lange vorgerechnet (Standard seit simulate5R1C 1.3.0), wird nichts
- *   verworfen und das ganze Jahr bewertet (ADR 0008).
+ *   verworfen und das ganze Jahr bewertet.
  *
  * Die Kategorie kommt aus dem Komfortband und wird nicht ein zweites Mal
  * angegeben. Zwei Angaben könnten sich widersprechen.

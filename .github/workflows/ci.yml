@@ -80,7 +80,7 @@ jobs:
         run: node core/scripts/trend.ts 'station=SMA'
       - name: Trend an allen Stationen
         run: node core/scripts/trends.ts '' 5
-      # Prüft den Emit-Pfad aus ADR 0006: bricht tsc die Browser-Ausgabe,
+      # Prüft den Emit-Pfad ohne Bundler: bricht tsc die Browser-Ausgabe,
       # fällt es hier auf und nicht erst beim Aufruf der Seite.
       - name: Web bauen
         run: cd core && npm ci && cd .. && ./scripts/build-web.sh

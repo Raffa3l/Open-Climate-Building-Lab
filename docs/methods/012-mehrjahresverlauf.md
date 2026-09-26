@@ -11,7 +11,7 @@ Prüfung: [`core/test/trend.test.ts`](../../core/test/trend.test.ts)
 
 Derselbe Raum in jedem Messjahr einer Station, und wie sich seine
 Übertemperaturstunden über die Jahre verschoben haben. Das ist die Frage, mit
-der das Projekt begann ([ADR 0004](../adr/0004-v0-nur-vergangenheit.md)): wie
+der das Projekt begann: wie
 stark sich das Raumklima an *meiner* Station wirklich verändert hat, gemessen
 statt projiziert.
 
@@ -40,7 +40,7 @@ Unter drei Jahren gibt es keine Gerade, sondern `NaN`.
 
 Der Trend ist eine eigene `Computation` (`stats.linearTrend`). Jede
 Jahresauswertung hängt als Vorgänger mit der Rolle `y<Jahr>` darin
-([ADR 0007](../adr/0007-verkettete-berechnungs-hashes.md)). Der Hash kennt damit
+(verkettete Berechnungs-Hashes). Der Hash kennt damit
 Raum, Bewertung und jeden Datensatz; ein anderes Jahr, ein anderer Regler oder
 ein neu gepacktes Stationsjahr ergibt einen anderen.
 

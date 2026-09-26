@@ -136,7 +136,7 @@ test("Titel und Link ändern den Berechnungs-Hash nicht", async () => {
   assert.equal(await computationHash(base()), await computationHash(withMeta));
 });
 
-test("Berechnung ohne Vorgänger behält den Hash von vor ADR 0007", async () => {
+test("Berechnung ohne Vorgänger behält den Hash von vor den verketteten Hashes", async () => {
   // Fester Anker, vor der Einführung von `upstream` mit dem damaligen Code
   // gerechnet. Bricht er, sind alle bestehenden Permalinks gebrochen.
   const c: Computation<number> = {

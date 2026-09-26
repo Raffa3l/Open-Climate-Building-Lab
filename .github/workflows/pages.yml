@@ -1,7 +1,7 @@
 name: Pages
 
 # Baut den vollständigen Datenstand und veröffentlicht ihn mit der App auf
-# GitHub Pages (ADR 0009). Die Daten stehen nicht im Repository; dieser Lauf
+# GitHub Pages. Die Daten stehen nicht im Repository; dieser Lauf
 # stellt sie aus data.geo.admin.ch her, so wie es lokal jeder kann.
 
 on:

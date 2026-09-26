@@ -2,7 +2,7 @@
  * Open Climate Building Lab — Frontend.
  *
  * Der Rechenkern ist derselbe, der im CLI und in den Tests läuft: aus
- * core/src, per tsc nach ESM übersetzt (ADR 0006). Es gibt keine zweite
+ * core/src, per tsc nach ESM übersetzt, ohne Bundler. Es gibt keine zweite
  * Implementierung im Browser — genau darum ist «Berechnung anzeigen» kein
  * nachträglicher Anbau, sondern die Rückgabe der Funktion selbst.
  */
@@ -187,7 +187,7 @@ function evaluate(climate, s) {
   const { series, band, entry } = climate;
   const { simulation, exceedance: uts } = evaluateReferenceCase(series, entry, s, band);
 
-  // Die Simulation rechnet einen Vorlauf aus dem Jahresende (ADR 0008);
+  // Die Simulation rechnet einen Vorlauf aus dem Jahresende;
   // verworfen wird nur, was er nicht abdeckt, im Normalfall nichts. Für die
   // Tagesmaxima im Diagramm wird dieselbe Stundenzahl hier ausgeblendet.
   const skip = uts.params.warmupHours;

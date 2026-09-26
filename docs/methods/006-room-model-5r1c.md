@@ -134,9 +134,6 @@ Aussentemperatur. Dann ist der Vorlauf exakt dasselbe, wie das Reihenende von
 Hand voranzustellen und ohne Vorlauf zu rechnen. Der Test vergleicht beide
 Reihen Wert für Wert.
 
-Gemessene Wirkung und verworfene Alternativen:
-[ADR 0008](../adr/0008-zyklischer-vorlauf.md).
-
 ## Fehlende Messwerte
 
 Ohne Aussentemperatur ist ein Schritt nicht rechenbar. Die Raumtemperaturen

@@ -13,7 +13,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
-- **Veröffentlichung auf GitHub Pages** ([ADR 0009](docs/adr/0009-veroeffentlichung.md)):
+- **Veröffentlichung auf GitHub Pages:**
   `.github/workflows/pages.yml` baut alle 4'154 Stationsjahre und 270
   Szenarien aus der Quelle, prüft Prüfsummen, Vollständigkeit und Rechenkern
   und veröffentlicht App und Daten unter
@@ -161,8 +161,8 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Grenchen 2010 von 63 auf 0. Alle Simulations-Hashes sind neu; Zürich/Fluntern
   2024 mit 40 % und 70 % Fensteranteil trägt `609ae7766214` und `a83613f02679`,
   bei unveränderten 403 und 662 h.
-- **Zyklischer Vorlauf statt verworfener Einschwingphase**
-  ([ADR 0008](docs/adr/0008-zyklischer-vorlauf.md)). `building.simulate5R1C`
+- **Zyklischer Vorlauf statt verworfener Einschwingphase.**
+  `building.simulate5R1C`
   1.3.0 rechnet vor der ersten Stunde das Ende derselben Reihe durch, so lange
   wie die bisherige Einschwingphase (mittlere Bauart 840 h). Jede Stunde des
   Jahres ist gültig: Diagramm, Tagestabelle, Spitzentemperatur und CSV-Export
@@ -171,8 +171,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   rechnet den Vorlauf an und verwirft nichts mehr. Keine Kennzahl ändert sich,
   alle Hashes schon. Vier Tests, einer weist nach, dass der Vorlauf exakt dem
   vorangestellten Reihenende entspricht.
-- **Verkettete Berechnungs-Hashes**
-  ([ADR 0007](docs/adr/0007-verkettete-berechnungs-hashes.md)). `Computation`
+- **Verkettete Berechnungs-Hashes.** `Computation`
   hat ein optionales Feld `upstream` mit den Berechnungen, auf denen sie
   aufbaut. Deren kanonische Form steht verschachtelt in der eigenen, der Hash
   umfasst damit die ganze Kette. Ohne Vorgänger entfällt das Feld, und der Hash
@@ -283,8 +282,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   damit in der Prüfsumme stehen, **ändern sich alle Prüfsummen und alle
   Berechnungs-Hashes**; Werte und CSV-Exporte bleiben gleich. Korrigiert vor der
   ersten Publikation, damit kein Permalink bricht. Die Falle steht in
-  [004](docs/methods/004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme)
-  und in CLAUDE.md.
+  [004](docs/methods/004-binary-format.md#die-quellenangabe-gehört-zur-prüfsumme).
 - **Der Kopf von `catalog.json` behielt die alte Quellenangabe.** `load()`
   übernahm Sammlung, Lizenz und Autor aus dem bestehenden Katalog und setzte
   sie nur beim ersten Anlegen aus dem Code. Nach dem Neubau trugen alle
@@ -375,7 +373,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Zeilen und 648 kB. In beiden Dateien summieren die Zeilen mit Überschreitung
   genau auf die Kennzahl (403 und 465 h). Das Python-Beispiel aus 010, wörtlich
   aus der Doku extrahiert, besteht gegen beide Dateien alle drei Prüfungen.
-- **Nachmessung ADR 0007, Zürich/Fluntern 2024, Voreinstellung:** Simulation
+- **Nachmessung verkettete Hashes, Zürich/Fluntern 2024, Voreinstellung:** Simulation
   (`a2fc5ec2f2ac`) und gleitendes Mittel (`5911973a7211`) behalten ihren Hash,
   Komfortband und Übertemperaturstunden erhalten neue. 40 % und 70 %
   Fensteranteil ergeben 403 und 662 h unter den ÜTS-Hashes `1239df88adda` und
@@ -407,7 +405,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Diffusstrahlung, Pauschalwert für die Himmelstemperatur — sind damit der
   Normalfall, nicht der Randfall.
 - **784 Stationsjahre belegen 138 MB**, im Mittel 172 kB je Stationsjahr.
-  Bestätigt die Annahme aus ADR 0003.
+  Bestätigt die Annahme, dass statische Dateien ohne Datenbank genügen.
 - **Derselbe Raum an 130 Stationen, 2023:** Lugano 778 Übertemperaturstunden,
   Zürich/Fluntern 501, Jungfraujoch 0. Der Jahresmittelwert allein erklärt die
   Rangfolge nicht — Vevey (13.4 °C) liegt vor Magadino (13.3 °C) mit 765 zu
@@ -443,8 +441,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   Kein Framework, keine Diagrammbibliothek.
 - `scripts/build-web.sh` — übersetzt `core/src` per `tsc` nach nativem ESM und
   legt die Stationsjahre daneben.
-- [ADR 0006](docs/adr/0006-browser-emit.md) und
-  [Methode 007](docs/methods/007-visualisierung.md).
+- [Methode 007](docs/methods/007-visualisierung.md).
 - `sky` — **langwellige Abstrahlung gegen den Himmel** nach EN ISO 13790
   §11.3.5. Himmelstemperatur aus der gemessenen Einstrahlung `oli000h0`, sonst
   Pauschalwert 11 K der Norm. Neuer Parameter `skyViewFactor` (0.5 senkrecht).
@@ -462,8 +459,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
   2020–2024, 138 MB. ETL um `--jobs` (parallele Downloads), `--cache-dir` und
   `--quiet` erweitert.
 - **Katalog zweistufig**: leichter Index (70 kB statt 680 kB) plus
-  `smn/<slug>/index.json` je Station. Siehe
-  [ADR 0003, Nachtrag](docs/adr/0003-keine-datenbank.md).
+  `smn/<slug>/index.json` je Station.
 - **Stationsfähigkeiten** im Katalog: `climate`, `moisture`, `roomModel`,
   `measuredDiffuse`, `measuredSky`, abgeleitet aus den vorhandenen Variablen.
   Das Frontend zeigt nur Stationen, an denen das Raummodell rechenbar ist.
@@ -516,8 +512,7 @@ und mussten empirisch bestimmt werden — Herleitung in
   einschränkend.
 
   Damit ist das Zukunftsklima nicht mehr durch eine Lizenzfrage blockiert;
-  offen bleibt allein der Publikationsstand von SIA 4028. Siehe
-  [ADR 0004, Nachtrag](docs/adr/0004-v0-nur-vergangenheit.md).
+  offen bleibt allein der Publikationsstand von SIA 4028.
 
 ### Zu beachten
 - **Ein Design Reference Year ist kein Mittel gemessener Jahre.** Der erste
@@ -537,9 +532,7 @@ und mussten empirisch bestimmt werden — Herleitung in
 
 ### Geplant
 - Veröffentlichung: App und Startpaket auf GitHub Pages, vollständiges Archiv
-  mit DOI auf Zenodo. Vorschlag mit Zahlen und offenen Fragen in
-  [ADR 0009](docs/adr/0009-veroeffentlichung.md); der Entscheid liegt beim
-  Betreiber.
+  mit DOI auf Zenodo; der Entscheid liegt beim Betreiber.
 - Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
   ([011](docs/methods/011-vordach.md#grenzen))
 
@@ -550,7 +543,7 @@ und mussten empirisch bestimmt werden — Herleitung in
   unverändert; 2.1.0 rechnet den Vorlauf der Simulation auf die
   Einschwingphase an
 - `building.simulate5R1C` **1.2.0 → 1.4.0**: 1.3.0 zyklischer Vorlauf aus dem
-  Ende der Reihe, gültige Werte ab der ersten Stunde (ADR 0008); 1.4.0
+  Ende der Reihe, gültige Werte ab der ersten Stunde; 1.4.0
   Tagstunden ohne Globalstrahlung nicht gerechnet statt mit 0 W/m²
 - Unverändert: `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen
   Verfahren
@@ -596,8 +589,7 @@ Kennwert mit Berechnungs-Hash. Kein Frontend, kein Raummodell.
   adaptiver Komfort, Binärformat.
 - `docs/methods/sources.md` mit allen Zitierschlüsseln, Datenlizenzen und den
   offenen Lizenzfragen.
-- Fünf ADRs mit Begründung und verworfenen Alternativen.
-- README, CONTRIBUTING, CLAUDE.md, CI mit Typprüfung und echtem
+- README, CONTRIBUTING, CI mit Typprüfung und echtem
   Integrationslauf.
 - `scripts/check-references.sh` — prüft, dass jeder `MethodRef.doc` auf eine
   existierende Überschrift zeigt und jeder `sources`-Schlüssel in
@@ -610,12 +602,11 @@ Kennwert mit Berechnungs-Hash. Kein Frontend, kein Raummodell.
   keine Permalinks und es war kein Versionssprung nötig.
 
 ### Entschieden
-- Kern offen unter **Apache-2.0** ([0001](docs/adr/0001-open-source-apache-2.md))
-- Rechenkern in **TypeScript**, ETL in Python ([0002](docs/adr/0002-rechenkern-in-typescript.md))
-- **Keine Datenbank** im heissen Pfad ([0003](docs/adr/0003-keine-datenbank.md))
-- v0 rechnet **nur Vergangenheit** ([0004](docs/adr/0004-v0-nur-vergangenheit.md))
+- Kern offen unter **Apache-2.0**
+- Rechenkern in **TypeScript**, ETL in Python
+- **Keine Datenbank** im heissen Pfad
+- v0 rechnet **nur Vergangenheit**
 - Klimaachse als **Erwärmungsniveau**, nicht als Jahreszahl
-  ([0005](docs/adr/0005-globale-erwaermungsniveaus.md))
 
 ### Validierung
 - Taupunkt-Kreuzvergleich Zürich/Fluntern 2023, 8760 Stunden: mittlere
