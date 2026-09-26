@@ -28,6 +28,14 @@ import {
 } from "./vendor/core/index.js";
 import { drawChart, drawCrosshair, drawYearChart } from "./chart.js";
 
+// Die Methodenseiten liegen nicht neben der App, sondern im Repository; so
+// zeigt jeder Verweis auf genau den Text, den check-references.sh prüft.
+const SOURCE_URL = "https://github.com/Raffa3l/Open-Climate-Building-Lab";
+
+function docLink(path) {
+  return `<a href="${SOURCE_URL}/blob/main/${path}">${path.split("#")[0].replace("docs/methods/", "")}</a>`;
+}
+
 // Raum, Belegungsfenster und Permalink-Lesart liegen im Kern
 // (core/src/reference-case.ts), damit der CLI-Export denselben Fall rechnet.
 const CATEGORY = REFERENCE_EVALUATION.category;
@@ -447,10 +455,10 @@ async function renderProof(elapsed) {
     <h3>Verfahren</h3>
     <dl class="kv">
       <dt>Raummodell</dt><dd>${simulation.method.id}@${simulation.method.version}</dd>
-      <dt>Herleitung</dt><dd>${simulation.method.doc}</dd>
+      <dt>Herleitung</dt><dd>${docLink(simulation.method.doc)}</dd>
       <dt>Quellen</dt><dd>${simulation.method.sources.join(", ")}</dd>
       <dt>Bewertung</dt><dd>${uts.method.id}@${uts.method.version}</dd>
-      <dt>Herleitung</dt><dd>${uts.method.doc}</dd>
+      <dt>Herleitung</dt><dd>${docLink(uts.method.doc)}</dd>
       <dt>Quellen</dt><dd>${uts.method.sources.join(", ")}</dd>
     </dl>
 
@@ -550,7 +558,7 @@ function renderDownloads() {
     `<p class="download-note">Jede Stunde des Jahres mit Raum- und Aussentemperatur, Komfortgrenze ` +
     `und Überschreitung. Dazu ein Manifest mit Hashes, kanonischer Form und Quellenangaben, ` +
     `mit dem sich die Zahlen ohne dieses Projekt nachprüfen lassen. ` +
-    `Format und Prüfanleitung: <code>docs/methods/010-export.md</code>.</p>` +
+    `Format und Prüfanleitung: ${docLink("docs/methods/010-export.md")}.</p>` +
     row("base", base) +
     (other ? row("other", other) : "");
 }
@@ -1065,7 +1073,8 @@ async function main() {
       `${usableStations().length} von ${Object.keys(catalog.stations).length} Stationen mit Globalstrahlung` +
       (scenarios ? `, ${Object.keys(scenarios.stations).length} mit Klimaszenarien` : "") + ". " +
       `Daten: ${catalog.attribution} · ${catalog.license} · Katalogstand ${swissDate(catalog.generated)}. ` +
-      `Code unter Apache-2.0. Methoden in <code>docs/methods/</code>.`;
+      `<a href="${SOURCE_URL}">Quelltext</a> unter Apache-2.0, ` +
+      `<a href="${SOURCE_URL}/tree/main/docs/methods">Methoden</a>.`;
 
     statusEl.hidden = true;
     $("app").hidden = false;

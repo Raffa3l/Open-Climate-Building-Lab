@@ -16,7 +16,7 @@ from pathlib import Path
 from . import catalog as catalog_mod
 from .pack import pack_year
 from .qa import check_dew_point
-from .http import fetch
+from .http import SourceMissing, fetch
 from .smn import available_years, load_year
 from .stations import load_stations
 
@@ -63,7 +63,7 @@ def _prefetch(targets: list[str], years_by_station: dict, cache_dir: Path, refre
         nonlocal done
         try:
             fetch(url, cache_dir=cache_dir, refresh=refresh)
-        except RuntimeError:
+        except SourceMissing:
             pass  # nicht jede Station hat jede Dekade
         done += 1
         if done % 25 == 0 or done == len(todo):

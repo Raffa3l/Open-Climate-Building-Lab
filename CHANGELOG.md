@@ -13,6 +13,17 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 ## [Unveröffentlicht]
 
 ### Hinzugefügt
+- **Veröffentlichung auf GitHub Pages** ([ADR 0009](docs/adr/0009-veroeffentlichung.md)):
+  `.github/workflows/pages.yml` baut alle 4'154 Stationsjahre und 270
+  Szenarien aus der Quelle, prüft Prüfsummen, Vollständigkeit und Rechenkern
+  und veröffentlicht App und Daten unter
+  <https://raffa3l.github.io/Open-Climate-Building-Lab/>. Die App verlinkt die
+  Methodenseiten und den Quelltext im Repository.
+- Downloads versuchen es bei Netzfehlern viermal. Eine fehlende Datei (die
+  Quelle antwortet mit 403) bleibt ein übersprungenes Stationsjahr; eine Quelle,
+  die nicht antwortet, bricht den Bau ab. Bisher wurden beide gleich behandelt,
+  und ein Netzaussetzer hätte still Jahre aus dem Datenstand entfernt. Der
+  Cache legt Dateien erst nach vollständigem Empfang ab.
 - **Download** (`core/src/export.ts`, [010](docs/methods/010-export.md)): je
   Klimastand eine Stundenreihe als CSV und ein Manifest als JSON, im Frontend
   unter «Daten herunterladen». Das Manifest führt für Simulation,

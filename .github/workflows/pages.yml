@@ -1,0 +1,111 @@
+name: Pages
+
+# Baut den vollständigen Datenstand und veröffentlicht ihn mit der App auf
+# GitHub Pages (ADR 0009). Die Daten stehen nicht im Repository; dieser Lauf
+# stellt sie aus data.geo.admin.ch her, so wie es lokal jeder kann.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Veröffentlichungen gleichzeitig, eine laufende aber nicht abbrechen:
+# ein halber Datenbau kostet 40 Minuten.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Erhöhen, um den Datenstand neu von der Quelle zu laden, ohne am ETL etwas
+  # zu ändern, etwa wenn MeteoSchweiz ältere Jahre nachgeliefert hat.
+  DATA_REVISION: "1"
+  YEAR_FROM: "1991"
+  YEAR_TO: "2024"
+  # Stand 20.09.2026. Weniger heisst: Stationsjahre fehlen, die es gibt.
+  # Die Quelle ergänzt, sie streicht nicht; mehr ist deshalb erlaubt.
+  MIN_STATION_YEARS: "4154"
+  SCENARIOS: "270"
+
+jobs:
+  build:
+    name: Datenstand und Seite bauen
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Der Datenstand hängt nur am ETL-Code und am Jahresbereich. Ändert sich
+      # beides nicht, veröffentlicht ein Push der App die Daten vom letzten
+      # Bau, statt 4 GB Rohdaten neu zu laden.
+      - name: Datenstand aus dem Cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: data/build
+          key: ocbl-build-r${{ env.DATA_REVISION }}-${{ env.YEAR_FROM }}-${{ env.YEAR_TO }}-${{ hashFiles('data/ocbl_data/**/*.py') }}
+
+      - name: Messdaten bauen
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd data
+          python -m ocbl_data build --from "$YEAR_FROM" --to "$YEAR_TO" \
+            --jobs 12 --quiet --cache-dir ~/.cache/ocbl
+      - name: Klimaszenarien bauen
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cd data && python -m ocbl_data scenarios --quiet --cache-dir ~/.cache/ocbl
+
+      - name: Prüfsummen beider Kataloge
+        run: cd data && python -m ocbl_data verify
+      # Übersprungene Stationsjahre sind im Bau kein Fehler (eine Dekade vor
+      # Messbeginn gibt es schlicht nicht). Veröffentlicht werden darf aber
+      # nur ein vollständiger Stand.
+      - name: Vollständigkeit
+        run: |
+          years=$(find data/build/smn -name '*.ocbl' | wc -l)
+          scenarios=$(find data/build/dry -name '*.ocbl' | wc -l)
+          echo "$years Stationsjahre, $scenarios Szenarien, $(du -sh data/build | cut -f1)"
+          test "$years" -ge "$MIN_STATION_YEARS"
+          test "$scenarios" -eq "$SCENARIOS"
+
+      - name: Rechenkern prüfen
+        run: |
+          cd core && npm ci && npx tsc --noEmit && cd ..
+          node --test "core/test/*.test.ts"
+          ./scripts/check-references.sh
+
+      # build-web.sh legt die Daten als Symlink neben die Seite. Pages braucht
+      # echte Dateien; kopiert statt verschoben, damit der Cache data/build
+      # am Ende des Laufs noch findet.
+      - name: Seite zusammenstellen
+        run: |
+          ./scripts/build-web.sh
+          rm web/data
+          cp -R data/build web/data
+          echo "Seite: $(du -sh web | cut -f1), $(find web -type f | wc -l) Dateien"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    name: Veröffentlichen
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -19,7 +19,7 @@ from calendar import isleap
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .http import fetch
+from .http import SourceMissing, fetch
 from .variables import VARIABLES
 
 BASE_URL = "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"
@@ -130,7 +130,7 @@ def load_year(
     for url in candidates:
         try:
             raw = fetch(url, cache_dir=cache_dir, refresh=refresh)
-        except RuntimeError:
+        except SourceMissing:
             # Nicht jede Station hat jede Dekade; das ist kein Fehler.
             continue
         if _parse_into(raw, data) > 0:
