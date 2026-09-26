@@ -45,12 +45,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Vor dem Datenbau: Scheitert der Rechenkern erst danach, sind 40 Minuten
+      # verloren.
+      - name: Rechenkern prüfen
+        run: |
+          cd core && npm ci && npx tsc --noEmit && cd ..
+          node --test "core/test/*.test.ts"
+          ./scripts/check-references.sh
+
       # Der Datenstand hängt nur am ETL-Code und am Jahresbereich. Ändert sich
       # beides nicht, veröffentlicht ein Push der App die Daten vom letzten
       # Bau, statt 4 GB Rohdaten neu zu laden.
       - name: Datenstand aus dem Cache
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: data/build
           key: ocbl-build-r${{ env.DATA_REVISION }}-${{ env.YEAR_FROM }}-${{ env.YEAR_TO }}-${{ hashFiles('data/ocbl_data/**/*.py') }}
@@ -77,21 +85,24 @@ jobs:
           echo "$years Stationsjahre, $scenarios Szenarien, $(du -sh data/build | cut -f1)"
           test "$years" -ge "$MIN_STATION_YEARS"
           test "$scenarios" -eq "$SCENARIOS"
-
-      - name: Rechenkern prüfen
-        run: |
-          cd core && npm ci && npx tsc --noEmit && cd ..
-          node --test "core/test/*.test.ts"
-          ./scripts/check-references.sh
+      # Gleich nach der Prüfung sichern, nicht erst am Ende: Scheitert danach
+      # die Seite, soll der nächste Lauf den Datenbau nicht wiederholen.
+      - name: Datenstand in den Cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: data/build
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+      - name: Rechenkern auf dem Datenstand
+        run: node --test core/test/pack.test.ts
 
       # build-web.sh legt die Daten als Symlink neben die Seite. Pages braucht
-      # echte Dateien; kopiert statt verschoben, damit der Cache data/build
-      # am Ende des Laufs noch findet.
+      # echte Dateien.
       - name: Seite zusammenstellen
         run: |
           ./scripts/build-web.sh
           rm web/data
-          cp -R data/build web/data
+          mv data/build web/data
           echo "Seite: $(du -sh web | cut -f1), $(find web -type f | wc -l) Dateien"
 
       - uses: actions/configure-pages@v5

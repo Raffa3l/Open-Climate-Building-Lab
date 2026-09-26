@@ -17,7 +17,9 @@ status=0
 
 slugify() {
   # GitHub-Anker: Kleinschreibung, Satzzeichen weg, Leerzeichen zu Bindestrich.
-  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' \
+  # Kleinschreibung mit Perl statt tr: GNU tr arbeitet bytweise und liess auf
+  # Linux «Ü» stehen, das der sed-Filter danach verwarf. Auf macOS lief es.
+  printf '%s' "$1" | perl -CSD -pe '$_ = lc' \
     | sed -E 's/[^a-z0-9äöüàéèç ._-]//g; s/ /-/g'
 }
 
