@@ -55,13 +55,14 @@ jobs:
 
       # Der Datenstand hängt nur am ETL-Code und am Jahresbereich. Ändert sich
       # beides nicht, veröffentlicht ein Push der App die Daten vom letzten
-      # Bau, statt 4 GB Rohdaten neu zu laden.
+      # Bau, statt 4 GB Rohdaten neu zu laden. Die Versionsnummer in
+      # __init__.py geht in keine Datei ein und darf keinen Neubau auslösen.
       - name: Datenstand aus dem Cache
         id: cache
         uses: actions/cache/restore@v4
         with:
           path: data/build
-          key: ocbl-build-r${{ env.DATA_REVISION }}-${{ env.YEAR_FROM }}-${{ env.YEAR_TO }}-${{ hashFiles('data/ocbl_data/**/*.py') }}
+          key: ocbl-build-r${{ env.DATA_REVISION }}-${{ env.YEAR_FROM }}-${{ env.YEAR_TO }}-${{ hashFiles('data/ocbl_data/**/*.py', '!data/ocbl_data/__init__.py') }}
 
       - name: Messdaten bauen
         if: steps.cache.outputs.cache-hit != 'true'

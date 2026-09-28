@@ -12,6 +12,18 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 
 ## [Unveröffentlicht]
 
+### Geplant
+- Vollständiges Archiv des Datenstands mit DOI auf Zenodo.
+- Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
+  ([011](docs/methods/011-vordach.md#grenzen))
+
+## [0.2.0] — 2026-09-28
+
+Erste veröffentlichte Fassung, online unter
+<https://logicc.dev/Open-Climate-Building-Lab/>: Raummodell 5R1C im Browser mit
+Vergleich zweier Klimastände, Mehrjahresverlauf und Download, gerechnet auf
+allen SwissMetNet-Stationen ab 1991 und den CH2018-Klimaszenarien.
+
 ### Hinzugefügt
 - **Veröffentlichung auf GitHub Pages:**
   `.github/workflows/pages.yml` baut alle 4'154 Stationsjahre und 270
@@ -529,12 +541,6 @@ und mussten empirisch bestimmt werden — Herleitung in
 - Die DRY-Dateien haben 365 Tage; 2060 ist ein Schaltjahr. Die Reihe wird
   deshalb auf das nächste Nicht-Schaltjahr gelegt (2061), damit die
   Datumsangaben und mit ihnen der Sonnenstand nicht verrutschen.
-
-### Geplant
-- Veröffentlichung: App und Startpaket auf GitHub Pages, vollständiges Archiv
-  mit DOI auf Zenodo; der Entscheid liegt beim Betreiber.
-- Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
-  ([011](docs/methods/011-vordach.md#grenzen))
 
 ### Verfahrensversionen
 - `comfort.adaptiveComfortBand` **1.0.0 → 2.0.0**: Signatur und Hash, Werte
