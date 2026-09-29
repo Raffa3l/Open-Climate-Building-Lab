@@ -17,7 +17,7 @@ ein erhöhter Verfahrensstand ändert alle davon abhängigen Berechnungs-Hashes.
 - Seitliche Laibungen; Vordach und Verbauung begrenzter Breite
   ([011](docs/methods/011-vordach.md#grenzen))
 
-## [0.2.0] — 2026-09-28
+## [0.2.0] vom 28.09.2026
 
 Erste veröffentlichte Fassung, online unter
 <https://logicc.dev/Open-Climate-Building-Lab/>: Raummodell 5R1C im Browser mit
@@ -554,7 +554,7 @@ und mussten empirisch bestimmt werden — Herleitung in
 - Unverändert: `comfort.runningMeanOutdoorTemperature` 1.0.0 und alle übrigen
   Verfahren
 
-## [0.1.0] — 2026-08-22
+## [0.1.0] vom 22.08.2026
 
 Erste lauffähige Fassung der vollständigen Kette von MeteoSchweiz-OGD bis zum
 Kennwert mit Berechnungs-Hash. Kein Frontend, kein Raummodell.
