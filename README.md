@@ -189,14 +189,12 @@ MeteoSchweiz und stehen unter CC BY 4.0. Quellenangabe ist Pflicht und wird
 über die Provenance mitgeführt. Details, offene Lizenzfragen und alle
 Zitierschlüssel: [`docs/methods/sources.md`](docs/methods/sources.md).
 
+Die stündlichen **Klimaszenarien** `ch.meteoschweiz.klimaszenarien-raumklima`
+(45 Stationen, auf Basis von CH2018) stehen unter «Freie Nutzung.
+Quellenangabe ist Pflicht.», kommerzielle Nutzung eingeschlossen. Die Angabe
+`proprietary` im STAC-Katalog bedeutet nur, dass es für diese Bedingungen keine
+SPDX-Standardkennung gibt.
+
 Eine **vollständige** Quellenangabe verlangen beide Lizenzen: Autor, Titel und
 Link zum Datensatz, bei CC BY zusätzlich die Lizenz. Der `DatasetRef` führt
 diese Felder deshalb einzeln mit, und «Berechnung anzeigen» weist sie aus.
-
-> **Geklärt am 22. August 2026.** Der stündliche DRY-Datensatz
-> `ch.meteoschweiz.klimaszenarien-raumklima` (45 Stationen, CH2018-basiert)
-> steht unter *„Freie Nutzung. Quellenangabe ist Pflicht."* — kommerzielle
-> Nutzung eingeschlossen. Das `proprietary` im STAC-Katalog war kein
-> Widerspruch, sondern bedeutet dort nur „keine SPDX-Standardkennung".
-> Der Datensatz ist damit **nutzbar**; das Zukunftsklima ist nicht mehr durch
-> eine Lizenzfrage blockiert.
