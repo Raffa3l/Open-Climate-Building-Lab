@@ -42,7 +42,7 @@ cd data && python3 -m ocbl_data stations --canton ZH
 python3 -m ocbl_data build --station SMA --from 2019 --to 2024 --qa
 
 # Oder alles: 158 Stationen ab 1991, rund 40 Minuten, ~4 GB Download
-python3 -m ocbl_data build --from 1991 --to 2024 --jobs 12 --quiet \
+python3 -m ocbl_data build --from 1991 --to 2025 --jobs 12 --quiet \
   --cache-dir ~/.cache/ocbl
 
 # Prüfsummen nachrechnen

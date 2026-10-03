@@ -64,7 +64,7 @@ for (const [abbr, entry] of Object.entries(catalog.stations) as [string, any][])
 if (rows.length === 0) {
   console.log(`\nKeine Station hat ${MIN_YEARS} vollständige Messjahre. Vorhanden sind höchstens ` +
     `${Math.max(0, ...Object.values(catalog.stations).map((e: any) => e.roomModelYears.length))} Jahre.`);
-  console.log(`Mehr bauen:  cd data && python3 -m ocbl_data build --from 1991 --to 2024 --jobs 12 --quiet`);
+  console.log(`Mehr bauen:  cd data && python3 -m ocbl_data build --from 1991 --to 2025 --jobs 12 --quiet`);
   console.log(`Oder mit kleinerer Mindestzahl:  node core/scripts/trends.ts '' 10\n`);
   process.exit(0);
 }

@@ -25,10 +25,10 @@ env:
   # zu ändern, etwa wenn MeteoSchweiz ältere Jahre nachgeliefert hat.
   DATA_REVISION: "1"
   YEAR_FROM: "1991"
-  YEAR_TO: "2024"
-  # Stand 20.09.2026. Weniger heisst: Stationsjahre fehlen, die es gibt.
+  YEAR_TO: "2025"
+  # Stand 03.10.2026. Weniger heisst: Stationsjahre fehlen, die es gibt.
   # Die Quelle ergänzt, sie streicht nicht; mehr ist deshalb erlaubt.
-  MIN_STATION_YEARS: "4154"
+  MIN_STATION_YEARS: "4312"
   SCENARIOS: "270"
 
 jobs:
